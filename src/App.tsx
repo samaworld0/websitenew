@@ -8,6 +8,7 @@ import { TryInvitationForm } from "./TryInvitationForm"
 import { WhatsAppMenu } from "./WhatsAppMenu"
 import { AdminPanel } from "./AdminPanel"
 import HowItWorks from "./components/HowItWorks"
+import Footer from "./components/Footer"
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("all")
@@ -27,8 +28,6 @@ export default function App() {
   const previewInv = allInvitations.find(
     (inv) => inv.id.toString() === previewId,
   )
-  // رابط الدعوة الخاصة يحمل بياناتها كاملة داخل ?inv= — يشتغل من أي جهاز
-  // أو متصفح بدون أي اعتماد على localStorage
   const sharedInvParam = urlParams.get("inv")
   const sharedInv = sharedInvParam
     ? decodeInvitationFromUrl(sharedInvParam)
@@ -154,7 +153,6 @@ export default function App() {
 
       {/* ============ Hero (شاشة الاستقبال) ============ */}
       <section className="relative overflow-hidden">
-        {/* نقاط زخرفية عائمة */}
         <span className="hidden sm:block absolute top-24 left-[8%] w-3 h-3 rounded-full bg-rose-400 animate-float" />
         <span className="hidden sm:block absolute top-10 left-[50%] w-2.5 h-2.5 rounded-full bg-[#93c5fd] animate-float-delay" />
         <span className="hidden sm:block absolute top-16 right-[6%] w-2 h-2 rounded-full bg-[#7dd3c8] animate-float" />
@@ -201,7 +199,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* بطاقات معاينة مكدّسة */}
         <div className="relative max-w-3xl mx-auto px-6 pb-20 pt-4">
           <div className="flex items-end justify-center gap-4 md:gap-6">
             <div
@@ -254,7 +251,7 @@ export default function App() {
       </section>
 
       {/* ============ القوالب ============ */}
-      <section id="templates" className="max-w-7xl mx-auto px-6 pb-24">
+      <section id="templates" className="max-w-7xl mx-auto px-6 pb-16">
         <div className="text-center mb-16">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
@@ -275,8 +272,11 @@ export default function App() {
         </div>
       </section>
 
-      {/* ============ قسم كيف نشتغل الجديد تم نقله هنا ============ */}
+      {/* ============ قسم كيف نشتغل ============ */}
       <HowItWorks />
+
+      {/* ============ النافذة الحمراء والفوتر ============ */}
+      <Footer />
 
     </div>
   )
