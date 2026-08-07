@@ -7,7 +7,7 @@ import { InvitationFullView } from "./InvitationFullView"
 import { TryInvitationForm } from "./TryInvitationForm"
 import { WhatsAppMenu } from "./WhatsAppMenu"
 import { AdminPanel } from "./AdminPanel"
-import HowItWorks from "./components/HowItWorks" // تم إضافة هذا السطر لاستدعاء القسم الجديد
+import HowItWorks from "./components/HowItWorks"
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("all")
@@ -253,9 +253,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* ============ قسم كيف نشتغل الجديد ============ */}
-      <HowItWorks />
-
       {/* ============ القوالب ============ */}
       <section id="templates" className="max-w-7xl mx-auto px-6 pb-24">
         <div className="text-center mb-16">
@@ -277,6 +274,10 @@ export default function App() {
           ))}
         </div>
       </section>
+
+      {/* ============ قسم كيف نشتغل الجديد تم نقله هنا ============ */}
+      <HowItWorks />
+
     </div>
   )
 }
