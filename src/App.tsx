@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Invitation } from "./types"
 import { invitations } from "./data"
-import { loadInvitations, decodeInvitationFromUrl, isAdminLoggedIn, loadSiteSettings, saveSiteSettings } from "./backend"
+import { loadInvitations, decodeInvitationFromUrl, isAdminLoggedIn, loadSiteSettings } from "./backend"
 import { InvitationCard } from "./InvitationCard"
 import { InvitationFullView } from "./InvitationFullView"
 import { TryInvitationForm } from "./TryInvitationForm"
@@ -18,9 +18,8 @@ export default function App() {
   const [tryBase, setTryBase] = useState<Invitation | null>(null)
   
   const [isLoggedAdmin, setIsLoggedAdmin] = useState(false)
-  const [isEditMode, setIsEditMode] = useState(false)
 
-  // واجهة الموقع القابلة للتعديل
+  // إعدادات واجهة الموقع القابلة للتعديل بالكامل من لوحة التحكم
   const [heroTitle, setHeroTitle] = useState("دعوة إلكترونية تخطف الأنظار لمناسبتك القادمة")
   const [heroSubtitle, setHeroSubtitle] = useState("رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.")
   const [primaryColor, setPrimaryColor] = useState("#e11d48")
@@ -31,7 +30,7 @@ export default function App() {
       setIsLoggedAdmin(loggedIn)
     })
     
-    // جلب النصوص والألوان من Supabase لجميع الزوار
+    // جلب جميع الإعدادات المحدثة من Supabase لجميع الزوار
     loadSiteSettings().then((settings) => {
       if (settings) {
         if (settings.hero_title) setHeroTitle(settings.hero_title)
@@ -40,18 +39,6 @@ export default function App() {
       }
     })
   }, [])
-
-  const handleSaveContent = async () => {
-    const ok = await saveSiteSettings({
-      hero_title: heroTitle,
-      hero_subtitle: heroSubtitle,
-      primary_color: primaryColor
-    })
-    if (ok) {
-      alert("تم حفظ التعديلات وتحديث الموقع بنجاح لكل الزوار!")
-      setIsEditMode(false)
-    }
-  }
 
   const urlParams = new URLSearchParams(window.location.search)
   const isAdmin = urlParams.get("admin") === "1" || isLoggedAdmin
