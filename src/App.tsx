@@ -113,17 +113,17 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen bg-background"
+      className="min-h-screen bg-cream-50"
       dir="rtl"
       style={{ fontFamily: "Cairo, sans-serif" }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=El+Messiri:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Cairo:wght@300;400;500;600;700;800&display=swap');
       `}</style>
-      <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
+      <nav className="sticky top-0 z-40 border-b border-gold-100 bg-cream-50/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810]">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gold-400 text-white">
               ✨
             </div>
             <div>
@@ -133,7 +133,7 @@ export default function App() {
               >
                 سما
               </h1>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[10px] text-warm-700/60">
                 للدعوات الالكترونية
               </p>
             </div>
@@ -142,7 +142,7 @@ export default function App() {
             <a
               href="?admin=1"
               title="لوحة التحكم"
-              className="w-9 h-9 rounded-full flex items-center justify-center border border-border text-muted-foreground hover:text-foreground"
+              className="w-9 h-9 rounded-full flex items-center justify-center border border-gold-100 text-warm-700/60 hover:text-warm-900"
             >
               ⚙️
             </a>
@@ -151,108 +151,84 @@ export default function App() {
         </div>
       </nav>
 
-      {/* ============ Hero (شاشة الاستقبال) ============ */}
-      <section className="relative overflow-hidden">
-        {/* نقاط زخرفية عائمة */}
-        <span className="hidden sm:block absolute top-24 left-[8%] w-3 h-3 rounded-full bg-rose-400 animate-float" />
-        <span className="hidden sm:block absolute top-10 left-[50%] w-2.5 h-2.5 rounded-full bg-[#93c5fd] animate-float-delay" />
-        <span className="hidden sm:block absolute top-16 right-[6%] w-2 h-2 rounded-full bg-[#7dd3c8] animate-float" />
-        <span className="hidden sm:block absolute bottom-40 left-[12%] w-3 h-3 rounded-full bg-[#c4b5fd] animate-float-delay" />
-        <span className="hidden sm:block absolute bottom-24 right-[10%] w-2.5 h-2.5 rounded-full bg-gold-400 animate-float" />
-        <span className="hidden sm:block absolute top-52 right-[3%] w-1.5 h-1.5 rounded-full bg-rose-500 animate-float-delay" />
-
-        <div className="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center relative">
-          <a
-            href="#try"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs md:text-sm font-bold bg-gold-50 border border-gold-200 text-gold-700 mb-8"
-            style={{ fontFamily: "Cairo, sans-serif" }}
-          >
-            🎁 جرّب دعوتك مجاناً قبل ما تدفع أي فلس
-          </a>
-
-          <h1
-            className="text-4xl md:text-6xl font-bold leading-tight text-warm-900 mb-6"
+      {/* ============ كيف نشتغل ============ */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="text-center mb-14">
+          <h2
+            className="text-3xl md:text-4xl font-bold mb-3"
             style={{ fontFamily: "'El Messiri', serif" }}
           >
-            دعوة إلكترونية تخطف الأنظار
-            <br />
-            لمناسبتك القادمة
-          </h1>
-
+            كيف نشتغل؟
+          </h2>
           <p
-            className="text-warm-700/80 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10"
+            className="text-warm-700/70 text-sm md:text-base"
             style={{ fontFamily: "Cairo, sans-serif" }}
           >
-            رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد
-            حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.
+            أربع خطوات وتوصلك دعوتك
           </p>
-
-          <button
-            onClick={() =>
-              document
-                .getElementById("templates")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="btn-gold inline-flex items-center gap-2 px-8 py-4 rounded-full text-white font-bold text-base"
-            style={{ fontFamily: "Cairo, sans-serif" }}
-          >
-            ✨ شاهد القوالب
-          </button>
         </div>
 
-        {/* بطاقات معاينة مكدّسة */}
-        <div className="relative max-w-3xl mx-auto px-6 pb-20 pt-4">
-          <div className="flex items-end justify-center gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[
+            {
+              step: 1,
+              icon: "✏️",
+              iconBg: "bg-rose-400",
+              title: "جهّز بنفسك",
+              desc: "اختر قالبك واكتب اسماءكم وموعدكم بثلاث خطوات.",
+            },
+            {
+              step: 2,
+              icon: "👁️",
+              iconBg: "bg-gold-400",
+              title: "شاهدها بأسمائكم",
+              desc: "تفتح دعوتك حية بأنميشنها الكامل قبل أي دفع.",
+            },
+            {
+              step: 3,
+              icon: "💳",
+              iconBg: "bg-[#5aa9e6]",
+              title: "ادفع",
+              desc: "وحال الدفع يفتح رابط دعوتك ورابط التحكم فوراً.",
+            },
+            {
+              step: 4,
+              icon: "➤",
+              iconBg: "bg-gold-600",
+              title: "شارك الرابط",
+              desc: "رابط واحد لكل المعازيم، وكشف الحضور يتحدّث برابطك لحظياً.",
+            },
+          ].map((s) => (
             <div
-              className="w-28 md:w-40 rounded-2xl overflow-hidden shadow-xl border-4 border-white rotate-[8deg] translate-y-3"
-              style={{ aspectRatio: "3/4" }}
+              key={s.step}
+              className="relative bg-white rounded-2xl border border-gold-100 p-6 text-center shadow-sm"
             >
-              <img
-                src="/mnbra/wedding-01.jpg"
-                alt="معاينة دعوة"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div
-              className="w-32 md:w-48 rounded-2xl overflow-hidden shadow-2xl border-4 border-white -translate-y-4 z-10 flex flex-col items-center justify-center text-center px-3"
-              style={{
-                aspectRatio: "3/4",
-                background: "linear-gradient(180deg, #1A0E10 0%, #2A161A 100%)",
-              }}
-            >
+              <span className="absolute top-4 left-5 text-2xl font-bold text-gold-100">
+                {s.step}
+              </span>
+              <div
+                className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-xl text-white mb-4 ${s.iconBg}`}
+              >
+                {s.icon}
+              </div>
+              <h3
+                className="font-bold text-base mb-2"
+                style={{ fontFamily: "'El Messiri', serif" }}
+              >
+                {s.title}
+              </h3>
               <p
-                className="text-gold-300 text-xs mb-1"
+                className="text-warm-700/70 text-sm leading-relaxed"
                 style={{ fontFamily: "Cairo, sans-serif" }}
               >
-                دعوة زواج
+                {s.desc}
               </p>
-              <p
-                className="text-gold-100 text-lg md:text-xl font-bold shimmer-text"
-                style={{ fontFamily: "'Aref Ruqaa', serif" }}
-              >
-                محمد &amp; زينب
-              </p>
-              <span className="mt-3 text-[10px] md:text-xs px-3 py-1.5 rounded-full bg-gold-400 text-warm-900 font-bold">
-                افتح الدعوة
-              </span>
             </div>
-
-            <div
-              className="w-28 md:w-40 rounded-2xl overflow-hidden shadow-xl border-4 border-white rotate-[-8deg] translate-y-3"
-              style={{ aspectRatio: "3/4" }}
-            >
-              <img
-                src="/mnbra/wedding-02.jpg"
-                alt="معاينة دعوة"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <section id="templates" className="max-w-7xl mx-auto px-6 pb-24">
+      <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
