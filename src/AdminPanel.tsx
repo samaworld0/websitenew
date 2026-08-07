@@ -27,7 +27,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
 
-  // حالة لوحة تعديل الواجهة (القلم)
+  // حالة لوحة تعديل واجهة الموقع (القلم) داخل لوحة التحكم
   const [isEditingInterface, setIsEditingInterface] = useState(false)
   const [heroTitle, setHeroTitle] = useState("")
   const [heroSubtitle, setHeroSubtitle] = useState("")
@@ -49,7 +49,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (unlocked) {
       loadInvitations().then(setList)
-      // جلب إعدادات واجهة الموقع من Supabase عند الدخول للأدمن
+      // جلب إعدادات واجهة الموقع من Supabase عند دخول لوحة التحكم
       loadSiteSettings().then((settings) => {
         if (settings) {
           if (settings.hero_title) setHeroTitle(settings.hero_title)
@@ -86,7 +86,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     setUnlocked(false)
   }
 
-  // حفظ تعديلات الواجهة (العنوان والوصف واللون) إلى Supabase
+  // حفظ تعديلات الواجهة إلى Supabase لتنعكس على الموقع لكل الزوار
   const handleSaveInterfaceSettings = async () => {
     setSavingInterface(true)
     const success = await saveSiteSettings({
@@ -321,7 +321,23 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {/* زر القلم ✏️ بجانب زر إنشاء دعوة خاصة */}
+            {/* زر رجوع للموقع */}
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-full text-sm font-bold border border-border hover:bg-gray-50"
+            >
+              رجوع للموقع
+            </button>
+
+            {/* زر تسجيل خروج */}
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-full text-sm font-bold border border-border hover:bg-gray-50"
+            >
+              تسجيل خروج
+            </button>
+
+            {/* زر القلم ✏️ لتعديل الواجهة (تم وضعه هنا بجانب زر إنشاء دعوة خاصة) */}
             <button
               onClick={() => setIsEditingInterface(!isEditingInterface)}
               title="تعديل نصوص وألوان واجهة الموقع"
@@ -330,9 +346,10 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
               }`}
             >
               <span>✏️</span>
-              <span>{isEditingInterface ? "إغلاق تعديل الواجهة" : "تعديل الواجهة"}</span>
+              <span>{isEditingInterface ? "إغلاق التعديل" : "تعديل الواجهة"}</span>
             </button>
 
+            {/* زر إنشاء دعوة خاصة جديدة */}
             <button
               onClick={() => {
                 if (createStep === "closed") {
@@ -342,26 +359,14 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                   setCreateTemplate(null)
                 }
               }}
-              className="px-4 py-2 rounded-full text-sm font-bold bg-[#B8862F] text-white"
+              className="px-5 py-2 rounded-full text-sm font-bold bg-[#B8862F] text-white shadow-sm"
             >
               {createStep === "closed" ? "+ دعوة خاصة جديدة" : "إغلاق"}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 rounded-full text-sm font-bold border border-border"
-            >
-              تسجيل خروج
-            </button>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-full text-sm font-bold border border-border"
-            >
-              رجوع للموقع
             </button>
           </div>
         </div>
 
-        {/* لوحة تعديل واجهة الموقع (تفتح عند الضغط على زر القلم) */}
+        {/* صندوق تعديل الواجهة الذي يفتح عند الضغط على زر القلم ✏️ */}
         {isEditingInterface && (
           <div className="bg-white border-2 border-rose-200 rounded-3xl p-6 mb-8 shadow-xl space-y-4">
             <h3 className="text-lg font-bold text-rose-800 flex items-center gap-2" style={{ fontFamily: "'El Messiri', serif" }}>
@@ -396,7 +401,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                   type="color"
                   value={primaryColor}
                   onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-14 h-10 rounded-xl cursor-pointer border p-0.5 bg-white"
+                  className="w-16 h-10 rounded-xl cursor-pointer border p-0.5 bg-white"
                 />
                 <span className="text-xs text-gray-500 font-mono">{primaryColor}</span>
               </div>
@@ -606,7 +611,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
 
         {shareLinkModal && (
           <div
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-6"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px6"
             onClick={() => setShareLinkModal(null)}
           >
             <div
