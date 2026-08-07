@@ -87,7 +87,7 @@ export function persistAssetCounter(n: number) {
 }
 
 // ==========================================
-// --- نظام إدارة وتعديل محتوى الواجهة الشامل ---
+// --- نظام إدارة وتعديل محتوى وألوان الواجهة الشامل ---
 // ==========================================
 
 export interface SiteSettings {
@@ -99,6 +99,12 @@ export interface SiteSettings {
   how_it_works_subtitle: string;
   footer_title: string;
   footer_subtitle: string;
+  banner_badge: string;
+  banner_btn_text: string;
+  footer_secure_text: string;
+  banner_bg_color: string;
+  banner_btn_color: string;
+  banner_btn_text_color: string;
 }
 
 const defaultSiteSettings: SiteSettings = {
@@ -109,7 +115,13 @@ const defaultSiteSettings: SiteSettings = {
   how_it_works_title: "كيف نشتغل؟",
   how_it_works_subtitle: "أربع خطوات وتوصلك دعوتك",
   footer_title: "خلّوا فرحتكم تنفتح بأسمائكم.",
-  footer_subtitle: "اختاروا القالب، اكتبوا الأسماء، وشوفوا دعوتكم الحقيقية قبل ما تطلبوها — تجربة سريعة ومجانية."
+  footer_subtitle: "اختاروا القالب، اكتبوا الأسماء، وشوفوا دعوتكم الحقيقية قبل ما تطلبوها — تجربة سريعة ومجانية.",
+  banner_badge: "أول خطوة علينا ✨",
+  banner_btn_text: "جرّبوا دعوتكم الآن",
+  footer_secure_text: "ادفع بأمان من أي مكان في العالم",
+  banner_bg_color: "#e11d48",
+  banner_btn_color: "#ffffff",
+  banner_btn_text_color: "#e11d48"
 }
 
 // جلب إعدادات الواجهة مع إنشاء وتعبئة القيم تلقائياً لو كانت القاعدة فارغة
@@ -122,7 +134,6 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
       .maybeSingle();
 
     if (error || !data) {
-      // إدخال القيم الافتراضية مباشرة إذا لم تكن موجودة
       await supabase.from("site_settings").upsert([defaultSiteSettings]);
       return defaultSiteSettings;
     }
@@ -137,7 +148,7 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
   }
 }
 
-// حفظ وتحديث إعدادات الواجهة الشاملة في Supabase مع إظهار تفاصيل الخطأ لو وجد
+// حفظ وتحديث إعدادات الواجهة والألوان في Supabase
 export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
   try {
     const { error } = await supabase
