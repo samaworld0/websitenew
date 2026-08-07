@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Invitation } from "./types"
 import { invitations } from "./data"
-import { loadInvitations, decodeInvitationFromUrl } from "./backend"
+import { loadInvitations, decodeInvitationFromUrl, isAdminLoggedIn, loadSiteSettings, saveSiteSettings } from "./backend"
 import { InvitationCard } from "./InvitationCard"
 import { InvitationFullView } from "./InvitationFullView"
 import { TryInvitationForm } from "./TryInvitationForm"
@@ -12,26 +12,51 @@ import Footer from "./components/Footer"
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("all")
-  const [allInvitations, setAllInvitations] =
-    useState<Invitation[]>(invitations)
+  const [allInvitations, setAllInvitations] = useState<Invitation[]>(invitations)
   const [tryStep, setTryStep] = useState<"form" | "preview" | null>(null)
   const [tryInv, setTryInv] = useState<Invitation | null>(null)
   const [tryBase, setTryBase] = useState<Invitation | null>(null)
+  
+  const [isLoggedAdmin, setIsLoggedAdmin] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+
+  // واجهة الموقع القابلة للتعديل
+  const [heroTitle, setHeroTitle] = useState("دعوة إلكترونية تخطف الأنظار لمناسبتك القادمة")
+  const [heroSubtitle, setHeroSubtitle] = useState("رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.")
+  const [primaryColor, setPrimaryColor] = useState("#e11d48")
 
   useEffect(() => {
     loadInvitations().then(setAllInvitations)
+    isAdminLoggedIn().then(setIsLoggedAdmin)
+    
+    loadSiteSettings().then((settings) => {
+      if (settings) {
+        if (settings.hero_title) setHeroTitle(settings.hero_title)
+        if (settings.hero_subtitle) setHeroSubtitle(settings.hero_subtitle)
+        if (settings.primary_color) setPrimaryColor(settings.primary_color)
+      }
+    })
   }, [])
 
+  const handleSaveContent = async () => {
+    const ok = await saveSiteSettings({
+      hero_title: heroTitle,
+      hero_subtitle: heroSubtitle,
+      primary_color: primaryColor
+    })
+    if (ok) {
+      alert("تم حفظ التعديلات وتحديث الموقع بنجاح لكل الزوار!")
+      setIsEditMode(false)
+    }
+  }
+
   const urlParams = new URLSearchParams(window.location.search)
-  const isAdmin = urlParams.get("admin") === "1"
+  const isAdmin = urlParams.get("admin") === "1" || isLoggedAdmin
   const previewId = urlParams.get("preview")
-  const previewInv = allInvitations.find(
-    (inv) => inv.id.toString() === previewId,
-  )
+  const previewInv = allInvitations.find((inv) => inv.id.toString() === previewId)
+  
   const sharedInvParam = urlParams.get("inv")
-  const sharedInv = sharedInvParam
-    ? decodeInvitationFromUrl(sharedInvParam)
-    : null
+  const sharedInv = sharedInvParam ? decodeInvitationFromUrl(sharedInvParam) : null
 
   const handlePreview = (inv: Invitation) => {
     window.location.href = `${window.location.pathname}?preview=${inv.id}`
@@ -43,13 +68,9 @@ export default function App() {
   }
 
   const listedInvitations = allInvitations.filter((inv) => !inv.unlisted)
+  const filtered = activeCategory === "all" ? listedInvitations : listedInvitations.filter((inv) => inv.category === activeCategory)
 
-  const filtered =
-    activeCategory === "all"
-      ? listedInvitations
-      : listedInvitations.filter((inv) => inv.category === activeCategory)
-
-  if (isAdmin) {
+  if (isAdmin && urlParams.get("admin") === "1") {
     return (
       <AdminPanel
         onClose={() => {
@@ -115,11 +136,12 @@ export default function App() {
     <div
       className="min-h-screen bg-background"
       dir="rtl"
-      style={{ fontFamily: "Cairo, sans-serif" }}
+      style={{ fontFamily: "Cairo, sans-serif", "--primary-color": primaryColor } as any}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=El+Messiri:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Cairo:wght@300;400;500;600;700;800&display=swap');
       `}</style>
+      
       <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -139,6 +161,18 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* زر القلم لتعديل الواجهة يظهر فقط عند تسجيل دخول الأدمن */}
+            {isLoggedAdmin && (
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                title="تعديل نصوص وألوان الواجهة"
+                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
+                  isEditMode ? "bg-rose-600 text-white border-rose-600 animate-pulse" : "border-border text-muted-foreground hover:text-foreground bg-white"
+                }`}
+              >
+                ✏️
+              </button>
+            )}
             <a
               href="?admin=1"
               title="لوحة التحكم"
@@ -150,6 +184,58 @@ export default function App() {
           </div>
         </div>
       </nav>
+
+      {/* لوحة تحكم تعديل الواجهة السريعة تظهر عند تفعيل القلم */}
+      {isEditMode && (
+        <div className="bg-rose-50 border-b border-rose-200 py-4 px-6 sticky top-[73px] z-30 shadow-md">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="w-full space-y-3">
+              <h3 className="font-bold text-rose-800 text-sm">🛠️ وضع تعديل الواجهة مباشرة:</h3>
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">العنوان الرئيسي:</label>
+                <input
+                  type="text"
+                  value={heroTitle}
+                  onChange={(e) => setHeroTitle(e.target.value)}
+                  className="w-full p-2 border rounded-lg text-sm bg-white"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">الوصف التعريفي:</label>
+                <textarea
+                  value={heroSubtitle}
+                  onChange={(e) => setHeroSubtitle(e.target.value)}
+                  className="w-full p-2 border rounded-lg text-sm bg-white"
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">اللون الأساسي:</label>
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="w-16 h-8 rounded cursor-pointer border p-0.5 bg-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <button
+                onClick={handleSaveContent}
+                className="px-6 py-2.5 bg-rose-600 text-white font-bold rounded-xl shadow hover:bg-rose-700 text-sm"
+              >
+                حفظ ونشر التعديلات للكل 🚀
+              </button>
+              <button
+                onClick={() => setIsEditMode(false)}
+                className="px-4 py-2.5 bg-gray-200 text-gray-700 font-bold rounded-xl text-sm"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ============ Hero (شاشة الاستقبال) ============ */}
       <section className="relative overflow-hidden">
@@ -173,17 +259,14 @@ export default function App() {
             className="text-4xl md:text-6xl font-bold leading-tight text-warm-900 mb-6"
             style={{ fontFamily: "'El Messiri', serif" }}
           >
-            دعوة إلكترونية تخطف الأنظار
-            <br />
-            لمناسبتك القادمة
+            {heroTitle}
           </h1>
 
           <p
             className="text-warm-700/80 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10"
             style={{ fontFamily: "Cairo, sans-serif" }}
           >
-            رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد
-            حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.
+            {heroSubtitle}
           </p>
 
           <button
@@ -193,12 +276,13 @@ export default function App() {
                 ?.scrollIntoView({ behavior: "smooth" })
             }
             className="btn-gold inline-flex items-center gap-2 px-8 py-4 rounded-full text-white font-bold text-base"
-            style={{ fontFamily: "Cairo, sans-serif" }}
+            style={{ fontFamily: "Cairo, sans-serif", backgroundColor: primaryColor }}
           >
             ✨ شاهد القوالب
           </button>
         </div>
 
+        {/* بطاقات معاينة مكدّسة */}
         <div className="relative max-w-3xl mx-auto px-6 pb-20 pt-4">
           <div className="flex items-end justify-center gap-4 md:gap-6">
             <div
@@ -251,7 +335,7 @@ export default function App() {
       </section>
 
       {/* ============ القوالب ============ */}
-      <section id="templates" className="max-w-7xl mx-auto px-6 pb-16">
+      <section id="templates" className="max-w-7xl mx-auto px-6 pb-24">
         <div className="text-center mb-16">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
@@ -275,7 +359,7 @@ export default function App() {
       {/* ============ قسم كيف نشتغل ============ */}
       <HowItWorks />
 
-      {/* ============ النافذة الحمراء والفوتر ============ */}
+      {/* ============ الفوتر والنافذة الحمراء ============ */}
       <Footer />
 
     </div>
