@@ -27,8 +27,11 @@ export default function App() {
 
   useEffect(() => {
     loadInvitations().then(setAllInvitations)
-    isAdminLoggedIn().then(setIsLoggedAdmin)
+    isAdminLoggedIn().then((loggedIn) => {
+      setIsLoggedAdmin(loggedIn)
+    })
     
+    // جلب النصوص والألوان من Supabase لجميع الزوار
     loadSiteSettings().then((settings) => {
       if (settings) {
         if (settings.hero_title) setHeroTitle(settings.hero_title)
@@ -161,18 +164,6 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* زر القلم لتعديل الواجهة يظهر فقط عند تسجيل دخول الأدمن */}
-            {isLoggedAdmin && (
-              <button
-                onClick={() => setIsEditMode(!isEditMode)}
-                title="تعديل نصوص وألوان الواجهة"
-                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all ${
-                  isEditMode ? "bg-rose-600 text-white border-rose-600 animate-pulse" : "border-border text-muted-foreground hover:text-foreground bg-white"
-                }`}
-              >
-                ✏️
-              </button>
-            )}
             <a
               href="?admin=1"
               title="لوحة التحكم"
@@ -184,58 +175,6 @@ export default function App() {
           </div>
         </div>
       </nav>
-
-      {/* لوحة تحكم تعديل الواجهة السريعة تظهر عند تفعيل القلم */}
-      {isEditMode && (
-        <div className="bg-rose-50 border-b border-rose-200 py-4 px-6 sticky top-[73px] z-30 shadow-md">
-          <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="w-full space-y-3">
-              <h3 className="font-bold text-rose-800 text-sm">🛠️ وضع تعديل الواجهة مباشرة:</h3>
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">العنوان الرئيسي:</label>
-                <input
-                  type="text"
-                  value={heroTitle}
-                  onChange={(e) => setHeroTitle(e.target.value)}
-                  className="w-full p-2 border rounded-lg text-sm bg-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">الوصف التعريفي:</label>
-                <textarea
-                  value={heroSubtitle}
-                  onChange={(e) => setHeroSubtitle(e.target.value)}
-                  className="w-full p-2 border rounded-lg text-sm bg-white"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">اللون الأساسي:</label>
-                <input
-                  type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-16 h-8 rounded cursor-pointer border p-0.5 bg-white"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 flex-shrink-0">
-              <button
-                onClick={handleSaveContent}
-                className="px-6 py-2.5 bg-rose-600 text-white font-bold rounded-xl shadow hover:bg-rose-700 text-sm"
-              >
-                حفظ ونشر التعديلات للكل 🚀
-              </button>
-              <button
-                onClick={() => setIsEditMode(false)}
-                className="px-4 py-2.5 bg-gray-200 text-gray-700 font-bold rounded-xl text-sm"
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ============ Hero (شاشة الاستقبال) ============ */}
       <section className="relative overflow-hidden">
