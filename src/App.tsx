@@ -113,17 +113,17 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen bg-cream-50"
+      className="min-h-screen bg-background"
       dir="rtl"
       style={{ fontFamily: "Cairo, sans-serif" }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=El+Messiri:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Cairo:wght@300;400;500;600;700;800&display=swap');
       `}</style>
-      <nav className="sticky top-0 z-40 border-b border-gold-100 bg-cream-50/95 backdrop-blur-md">
+      <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-gold-400 text-white">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810]">
               ✨
             </div>
             <div>
@@ -133,7 +133,7 @@ export default function App() {
               >
                 سما
               </h1>
-              <p className="text-[10px] text-warm-700/60">
+              <p className="text-[10px] text-muted-foreground">
                 للدعوات الالكترونية
               </p>
             </div>
@@ -142,7 +142,7 @@ export default function App() {
             <a
               href="?admin=1"
               title="لوحة التحكم"
-              className="w-9 h-9 rounded-full flex items-center justify-center border border-gold-100 text-warm-700/60 hover:text-warm-900"
+              className="w-9 h-9 rounded-full flex items-center justify-center border border-border text-muted-foreground hover:text-foreground"
             >
               ⚙️
             </a>
@@ -150,83 +150,6 @@ export default function App() {
           </div>
         </div>
       </nav>
-
-      {/* ============ كيف نشتغل ============ */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="text-center mb-14">
-          <h2
-            className="text-3xl md:text-4xl font-bold mb-3"
-            style={{ fontFamily: "'El Messiri', serif" }}
-          >
-            كيف نشتغل؟
-          </h2>
-          <p
-            className="text-warm-700/70 text-sm md:text-base"
-            style={{ fontFamily: "Cairo, sans-serif" }}
-          >
-            أربع خطوات وتوصلك دعوتك
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            {
-              step: 1,
-              icon: "✏️",
-              iconBg: "bg-rose-400",
-              title: "جهّز بنفسك",
-              desc: "اختر قالبك واكتب اسماءكم وموعدكم بثلاث خطوات.",
-            },
-            {
-              step: 2,
-              icon: "👁️",
-              iconBg: "bg-gold-400",
-              title: "شاهدها بأسمائكم",
-              desc: "تفتح دعوتك حية بأنميشنها الكامل قبل أي دفع.",
-            },
-            {
-              step: 3,
-              icon: "💳",
-              iconBg: "bg-[#5aa9e6]",
-              title: "ادفع",
-              desc: "وحال الدفع يفتح رابط دعوتك ورابط التحكم فوراً.",
-            },
-            {
-              step: 4,
-              icon: "➤",
-              iconBg: "bg-gold-600",
-              title: "شارك الرابط",
-              desc: "رابط واحد لكل المعازيم، وكشف الحضور يتحدّث برابطك لحظياً.",
-            },
-          ].map((s) => (
-            <div
-              key={s.step}
-              className="relative bg-white rounded-2xl border border-gold-100 p-6 text-center shadow-sm"
-            >
-              <span className="absolute top-4 left-5 text-2xl font-bold text-gold-100">
-                {s.step}
-              </span>
-              <div
-                className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-xl text-white mb-4 ${s.iconBg}`}
-              >
-                {s.icon}
-              </div>
-              <h3
-                className="font-bold text-base mb-2"
-                style={{ fontFamily: "'El Messiri', serif" }}
-              >
-                {s.title}
-              </h3>
-              <p
-                className="text-warm-700/70 text-sm leading-relaxed"
-                style={{ fontFamily: "Cairo, sans-serif" }}
-              >
-                {s.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
 
       <section className="max-w-7xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
