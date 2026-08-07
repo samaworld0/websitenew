@@ -10,21 +10,17 @@ export const SHEETS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyweFj9nsC81jES_PGEwDnGiKL7rxTB78D-evgZ0yisT4HptdqdHIqkyban5c39rvlN/exec"
 
 // عميل Supabase — المفتاح هذا "publishable/anon" وآمن يكون بكود الواجهة
-// (مو المفتاح السري secret/service_role، هذا ما يصير يكون بالفرونت اند أبداً)
 const SUPABASE_URL = "https://yybdncbgradywuiomyik.supabase.co"
 const SUPABASE_ANON_KEY = "sb_publishable_ghQkvzBNAVphFa5PJMwoHQ_2zIoeBHD"
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// تسجيل دخول الأدمن الآن حقيقي عبر Supabase Auth (إيميل + باسورد) بدل
-// اليوزر/الباسورد الثابتين بالكود. الجلسة تنحفظ وتتدار تلقائياً من مكتبة supabase.
+// تسجيل دخول الأدمن حقيقي عبر Supabase Auth (إيميل + باسورد)
 export async function isAdminLoggedIn(): Promise<boolean> {
   const { data } = await supabase.auth.getSession()
   return !!data.session
 }
 
-// كل الدعوات (الافتراضية + أي إضافة/تعديل من لوحة التحكم) تنخزن هلأ بجدول
-// "invitations" على Supabase بدل localStorage، حتى تكون نفس البيانات
-// ظاهرة لكل زوار الموقع من أي جهاز، مو بس بمتصفح الأدمن اللي أضافها.
+// جلب الدعوات من Supabase
 export async function loadInvitations(): Promise<Invitation[]> {
   try {
     const { data, error } = await supabase
@@ -47,10 +43,7 @@ export async function loadInvitations(): Promise<Invitation[]> {
   }
 }
 
-// نتعامل مع القائمة الكاملة كمصدر الحقيقة: أي دعوة انحذفت من القائمة تنحذف
-// من الجدول، وأي دعوة موجودة تنعمل لها upsert (تحديث لو موجودة، إضافة لو جديدة).
-// هذا يخلي استدعاء persistInvitations(list) يشتغل بنفس الطريقة القديمة
-// بالضبط بدون ما نغيّر منطق باقي الكود (حذف/تعديل/تكرار/إضافة).
+// تحديث وحفظ الدعوات في Supabase
 export async function persistInvitations(list: Invitation[]) {
   try {
     if (list.length > 0) {
@@ -64,14 +57,12 @@ export async function persistInvitations(list: Invitation[]) {
       if (error) throw error
     }
   } catch (err) {
-    alert("حدث خطأ أثناء الحفظ. قد يكون حجم الملفات المرفوعة (مثل الفيديوهات) كبيراً جداً على قاعدة البيانات. يُفضل تقليل حجمها أو استخدام روابط مباشرة.")
+    alert("حدث خطأ أثناء الحفظ. قد يكون حجم الملفات المرفوعة (مثل الفيديوهات) كبيراً جداً على قاعدة البيانات.")
     console.error("Supabase persistInvitations error:", err)
   }
 }
 
-// ترميز/فك ترميز دعوة كاملة داخل رابط URL — هذا يخلي رابط الدعوة الخاصة
-// يشتغل من أي جهاز أو متصفح، لأنه يحمل بيانات الدعوة بنفسه بدل ما يدور
-// عليها بـ localStorage (اللي يكون فاضي عند أي شخص ثاني يفتح الرابط).
+// ترميز/فك ترميز دعوة كاملة داخل رابط URL
 export function encodeInvitationForUrl(inv: Invitation): string {
   return encodeURIComponent(JSON.stringify(inv))
 }
@@ -84,9 +75,7 @@ export function decodeInvitationFromUrl(raw: string): Invitation | null {
   }
 }
 
-// عداد أسماء الملفات الخاصة بكل دعوة مكرَّرة — يبدأ من 3 لأن hero-bg و hero-bg-2
-// (وما يقابلهما) مستخدمين أصلاً بالدعوتين الافتراضيتين. كل تكرار ياخذ رقم جديد
-// حتى ما تتشابك ملفات دعوة مع ثانية.
+// عداد أسماء الملفات الخاصة بكل دعوة مكرَّرة
 const ASSET_COUNTER_KEY = "dawaati_asset_counter"
 
 export function loadAssetCounter(): number {
@@ -98,4 +87,48 @@ export function loadAssetCounter(): number {
 
 export function persistAssetCounter(n: number) {
   window.localStorage.setItem(ASSET_COUNTER_KEY, String(n))
+}
+
+// ==========================================
+// --- نظام إدارة محتوى الواجهة عبر Supabase ---
+// ==========================================
+
+export interface SiteSettings {
+  id: number;
+  hero_title: string;
+  hero_subtitle: string;
+  primary_color: string;
+}
+
+// جلب إعدادات النصوص والألوان للواجهة من Supabase
+export async function loadSiteSettings(): Promise<SiteSettings | null> {
+  try {
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("*")
+      .limit(1)
+      .single();
+
+    if (error) return null;
+    return data;
+  } catch (err) {
+    console.error("Error loading site settings:", err);
+    return null;
+  }
+}
+
+// حفظ وتحديث إعدادات النصوص والألوان في Supabase لتتحدث لكل الزوار
+export async function saveSiteSettings(settings: { hero_title: string; hero_subtitle: string; primary_color: string }): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("site_settings")
+      .upsert({ id: 1, ...settings });
+
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error("Error saving site settings:", err);
+    alert("حدث خطأ أثناء حفظ إعدادات الواجهة في قاعدة البيانات.");
+    return false;
+  }
 }
