@@ -251,8 +251,9 @@ export default function App() {
       </section>
 
       {/* ============ القوالب ============ */}
-      <section id="templates" className="max-w-7xl mx-auto px-6 pb-16">
-        <div className="text-center mb-16">
+      {/* التعديل تم هنا: max-w-5xl ليتطابق مع الأقسام السفلية */}
+      <section id="templates" className="max-w-5xl mx-auto px-5 pb-16">
+        <div className="text-center mb-12">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
             style={{ fontFamily: "'El Messiri', serif" }}
@@ -260,7 +261,7 @@ export default function App() {
             اختر دعوتك المثالية
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filtered.map((inv) => (
             <InvitationCard
               key={inv.id}
