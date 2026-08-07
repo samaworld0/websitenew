@@ -19,10 +19,20 @@ export default function App() {
   
   const [isLoggedAdmin, setIsLoggedAdmin] = useState(false)
 
-  // إعدادات واجهة الموقع القابلة للتعديل بالكامل من لوحة التحكم
+  // الإعدادات الشاملة (النصوص والألوان)
   const [heroTitle, setHeroTitle] = useState("دعوة إلكترونية تخطف الأنظار لمناسبتك القادمة")
   const [heroSubtitle, setHeroSubtitle] = useState("رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.")
   const [primaryColor, setPrimaryColor] = useState("#e11d48")
+  const [howItWorksTitle, setHowItWorksTitle] = useState("كيف نشتغل؟")
+  const [howItWorksSubtitle, setHowItWorksSubtitle] = useState("أربع خطوات وتوصلك دعوتك")
+  const [footerTitle, setFooterTitle] = useState("خلّوا فرحتكم تنفتح بأسمائكم.")
+  const [footerSubtitle, setFooterSubtitle] = useState("اختاروا القالب، اكتبوا الأسماء، وشوفوا دعوتكم الحقيقية قبل ما تطلبوها — تجربة سريعة ومجانية.")
+  const [bannerBadge, setBannerBadge] = useState("أول خطوة علينا ✨")
+  const [bannerBtnText, setBannerBtnText] = useState("جرّبوا دعوتكم الآن")
+  const [footerSecureText, setFooterSecureText] = useState("ادفع بأمان من أي مكان في العالم")
+  const [bannerBgColor, setBannerBgColor] = useState("#e11d48")
+  const [bannerBtnColor, setBannerBtnColor] = useState("#ffffff")
+  const [bannerBtnTextColor, setBannerBtnTextColor] = useState("#e11d48")
 
   useEffect(() => {
     loadInvitations().then(setAllInvitations)
@@ -30,12 +40,22 @@ export default function App() {
       setIsLoggedAdmin(loggedIn)
     })
     
-    // جلب جميع الإعدادات المحدثة من Supabase لجميع الزوار
+    // جلب جميع الإعدادات الشاملة من Supabase
     loadSiteSettings().then((settings) => {
       if (settings) {
         if (settings.hero_title) setHeroTitle(settings.hero_title)
         if (settings.hero_subtitle) setHeroSubtitle(settings.hero_subtitle)
         if (settings.primary_color) setPrimaryColor(settings.primary_color)
+        if (settings.how_it_works_title) setHowItWorksTitle(settings.how_it_works_title)
+        if (settings.how_it_works_subtitle) setHowItWorksSubtitle(settings.how_it_works_subtitle)
+        if (settings.footer_title) setFooterTitle(settings.footer_title)
+        if (settings.footer_subtitle) setFooterSubtitle(settings.footer_subtitle)
+        if (settings.banner_badge) setBannerBadge(settings.banner_badge)
+        if (settings.banner_btn_text) setBannerBtnText(settings.banner_btn_text)
+        if (settings.footer_secure_text) setFooterSecureText(settings.footer_secure_text)
+        if (settings.banner_bg_color) setBannerBgColor(settings.banner_bg_color)
+        if (settings.banner_btn_color) setBannerBtnColor(settings.banner_btn_color)
+        if (settings.banner_btn_text_color) setBannerBtnTextColor(settings.banner_btn_text_color)
       }
     })
   }, [])
@@ -283,10 +303,19 @@ export default function App() {
       </section>
 
       {/* ============ قسم كيف نشتغل ============ */}
-      <HowItWorks />
+      <HowItWorks title={howItWorksTitle} subtitle={howItWorksSubtitle} />
 
-      {/* ============ الفوتر والنافذة الحمراء ============ */}
-      <Footer />
+      {/* ============ الفوتر والبانر المخصص (مع الألوان والنصوص القابلة للتعديل) ============ */}
+      <Footer
+        title={footerTitle}
+        subtitle={footerSubtitle}
+        badge={bannerBadge}
+        btnText={bannerBtnText}
+        secureText={footerSecureText}
+        bgColor={bannerBgColor}
+        btnColor={bannerBtnColor}
+        btnTextColor={bannerBtnTextColor}
+      />
 
     </div>
   )
