@@ -9,12 +9,12 @@ export const WHATSAPP_KSA = "966580690167"
 export const SHEETS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyweFj9nsC81jES_PGEwDnGiKL7rxTB78D-evgZ0yisT4HptdqdHIqkyban5c39rvlN/exec"
 
-// عميل Supabase — المفتاح هذا "publishable/anon" وآمن يكون بكود الواجهة
+// عميل Supabase
 const SUPABASE_URL = "https://yybdncbgradywuiomyik.supabase.co"
 const SUPABASE_ANON_KEY = "sb_publishable_ghQkvzBNAVphFa5PJMwoHQ_2zIoeBHD"
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// تسجيل دخول الأدمن حقيقي عبر Supabase Auth (إيميل + باسورد)
+// تسجيل دخول الأدمن حقيقي عبر Supabase Auth
 export async function isAdminLoggedIn(): Promise<boolean> {
   const { data } = await supabase.auth.getSession()
   return !!data.session
@@ -30,7 +30,6 @@ export async function loadInvitations(): Promise<Invitation[]> {
 
     if (error) throw error
 
-    // أول مرة يكون الجدول فاضي — نزرع فيه الدعوات الافتراضية
     if (!data || data.length === 0) {
       await supabase.from("invitations").upsert(invitations)
       return invitations
@@ -57,12 +56,11 @@ export async function persistInvitations(list: Invitation[]) {
       if (error) throw error
     }
   } catch (err) {
-    alert("حدث خطأ أثناء الحفظ. قد يكون حجم الملفات المرفوعة (مثل الفيديوهات) كبيراً جداً على قاعدة البيانات.")
+    alert("حدث خطأ أثناء الحفظ. قد يكون حجم الملفات المرفوعة كبيراً جداً على قاعدة البيانات.")
     console.error("Supabase persistInvitations error:", err)
   }
 }
 
-// ترميز/فك ترميز دعوة كاملة داخل رابط URL
 export function encodeInvitationForUrl(inv: Invitation): string {
   return encodeURIComponent(JSON.stringify(inv))
 }
@@ -75,7 +73,6 @@ export function decodeInvitationFromUrl(raw: string): Invitation | null {
   }
 }
 
-// عداد أسماء الملفات الخاصة بكل دعوة مكرَّرة
 const ASSET_COUNTER_KEY = "dawaati_asset_counter"
 
 export function loadAssetCounter(): number {
@@ -90,7 +87,7 @@ export function persistAssetCounter(n: number) {
 }
 
 // ==========================================
-// --- نظام إدارة محتوى الواجهة عبر Supabase ---
+// --- نظام إدارة وتعديل محتوى الواجهة الشامل ---
 // ==========================================
 
 export interface SiteSettings {
@@ -98,9 +95,13 @@ export interface SiteSettings {
   hero_title: string;
   hero_subtitle: string;
   primary_color: string;
+  how_it_works_title: string;
+  how_it_works_subtitle: string;
+  footer_title: string;
+  footer_subtitle: string;
 }
 
-// جلب إعدادات النصوص والألوان للواجهة من Supabase
+// جلب إعدادات الواجهة كاملة من Supabase
 export async function loadSiteSettings(): Promise<SiteSettings | null> {
   try {
     const { data, error } = await supabase
@@ -117,8 +118,8 @@ export async function loadSiteSettings(): Promise<SiteSettings | null> {
   }
 }
 
-// حفظ وتحديث إعدادات النصوص والألوان في Supabase لتتحدث لكل الزوار
-export async function saveSiteSettings(settings: { hero_title: string; hero_subtitle: string; primary_color: string }): Promise<boolean> {
+// حفظ وتحديث إعدادات الواجهة الشاملة في Supabase لجميع الزوار
+export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
   try {
     const { error } = await supabase
       .from("site_settings")
