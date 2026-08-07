@@ -9,8 +9,6 @@ import {
   loadAssetCounter,
   persistAssetCounter,
   SHEETS_SCRIPT_URL,
-  loadSiteSettings,
-  saveSiteSettings,
 } from "./backend"
 import { TemplatePicker } from "./TemplatePicker"
 import { AdminCreateForm } from "./AdminCreateForm"
@@ -27,25 +25,15 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
 
-  // حالة لوحة تعديل واجهة الموقع (القلم)
-  const [isEditingInterface, setIsEditingInterface] = useState(false)
-  const [heroTitle, setHeroTitle] = useState("")
-  const [heroSubtitle, setHeroSubtitle] = useState("")
-  const [primaryColor, setPrimaryColor] = useState("#e11d48")
-  
-  // الحقول الجديدة لقسم كيف نشتغل والفوتر
-  const [howItWorksTitle, setHowItWorksTitle] = useState("")
-  const [howItWorksSubtitle, setHowItWorksSubtitle] = useState("")
-  const [footerTitle, setFooterTitle] = useState("")
-  const [footerSubtitle, setFooterSubtitle] = useState("")
-  
-  const [savingInterface, setSavingInterface] = useState(false)
-
+  // تدفّق إنشاء الدعوة الخاصة: مغلق -> اختيار تصميم -> تعبئة تفاصيل
   const [createStep, setCreateStep] =
     useState<"closed" | "template" | "details">("closed")
   const [createTemplate, setCreateTemplate] = useState<Invitation | null>(null)
 
+  // لو تعذّر النسخ التلقائي للحافظة (شائع بالمتصفحات أو المعاينات المقيّدة)
+  // نعرض الرابط بمربع نص يقدر المستخدم يحدده وينسخه يدوياً بنفسه
   const [shareLinkModal, setShareLinkModal] = useState<string | null>(null)
+
   const [loginLoading, setLoginLoading] = useState(false)
 
   useEffect(() => {
@@ -53,20 +41,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   }, [])
 
   useEffect(() => {
-    if (unlocked) {
-      loadInvitations().then(setList)
-      loadSiteSettings().then((settings) => {
-        if (settings) {
-          if (settings.hero_title) setHeroTitle(settings.hero_title)
-          if (settings.hero_subtitle) setHeroSubtitle(settings.hero_subtitle)
-          if (settings.primary_color) setPrimaryColor(settings.primary_color)
-          if (settings.how_it_works_title) setHowItWorksTitle(settings.how_it_works_title)
-          if (settings.how_it_works_subtitle) setHowItWorksSubtitle(settings.how_it_works_subtitle)
-          if (settings.footer_title) setFooterTitle(settings.footer_title)
-          if (settings.footer_subtitle) setFooterSubtitle(settings.footer_subtitle)
-        }
-      })
-    }
+    if (unlocked) loadInvitations().then(setList)
   }, [unlocked])
 
   const flash = (msg: string) => {
@@ -74,6 +49,8 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     setTimeout(() => setToastMsg(null), 4500)
   }
 
+  // تسجيل الدخول الآن حقيقي عبر Supabase Auth بالإيميل والباسورد
+  // (حقل "username" صار يستقبل الإيميل)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginLoading(true)
@@ -95,25 +72,9 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     setUnlocked(false)
   }
 
-  // حفظ التعديلات الشاملة إلى Supabase
-  const handleSaveInterfaceSettings = async () => {
-    setSavingInterface(true)
-    const success = await saveSiteSettings({
-      hero_title: heroTitle,
-      hero_subtitle: heroSubtitle,
-      primary_color: primaryColor,
-      how_it_works_title: howItWorksTitle,
-      how_it_works_subtitle: howItWorksSubtitle,
-      footer_title: footerTitle,
-      footer_subtitle: footerSubtitle,
-    })
-    setSavingInterface(false)
-    if (success) {
-      flash("تم حفظ وتحديث نصوص الموقع بنجاح لجميع الزوار! ✨")
-      setIsEditingInterface(false)
-    }
-  }
-
+  // كل تكرار ياخذ رقم أصول جديد (hero-bg-N.jpg / weeding-N.jpg / intro-poster-N.jpg / intro-N.mp4)
+  // حتى ما تشتبك ملفات الدعوة المكررة مع أي دعوة ثانية. الملفات نفسها لازم تنرفع
+  // يدوياً بنفس الاسم داخل public/images، public/mnbra، public/videos.
   const handleDuplicate = (id: number) => {
     const src = list.find((inv) => inv.id === id)
     if (!src) return
@@ -160,6 +121,10 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const buildShareLink = (inv: Invitation) =>
     `${window.location.origin}${window.location.pathname}?inv=${encodeInvitationForUrl(inv)}`
 
+  // نسخ رابط الدعوة للحافظة: نجرب أولاً الـ Clipboard API الحديثة، ولو فشلت
+  // (شائع بالمعاينات أو الصفحات المقيّدة اللي تمنع الوصول للحافظة) نرجع
+  // لطريقة execCommand الاحتياطية، ولو فشلت هي الثانية نعرض الرابط بمربع نص
+  // يقدر المستخدم يحدده وينسخه يدوياً — حتى ما نقول "تم النسخ" وهو ما انسخ فعلاً
   const copyShareLink = async (inv: Invitation) => {
     const link = buildShareLink(inv)
     let copied = false
@@ -193,10 +158,18 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     if (copied) {
       flash("تم نسخ رابط الدعوة 📋")
     } else {
+      // ما قدرنا ننسخ تلقائياً — نعرض الرابط حتى ينسخه المستخدم يدوياً
       setShareLinkModal(link)
     }
   }
 
+  // إنشاء دعوة خاصة جديدة اعتماداً على تصميم دعوة موجودة بالضبط (نفس الخلفيات
+  // والصور والفيديوهات والألوان) — بس بتفاصيل نصية جديدة. ما فيه أي أسماء
+  // ملفات جديدة لازم تُرفع لأننا نستخدم نفس ملفات القالب المختار.
+  //
+  // كل دعوة خاصة تاخذ شيت خاص فيها (createSheet) — هذا الشيت هو اللي راح
+  // تتخزن فيه تأكيدات الحضور (RSVP) لما الضيوف يعبّون النموذج، عن طريق
+  // action: "addGuest" داخل WisalTemplateView.
   const handleCreateFromTemplate = async (draft: CreateDetailsDraft) => {
     if (!createTemplate) return
 
@@ -321,7 +294,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         @import url('https://fonts.googleapis.com/css2?family=El+Messiri:wght@600;700&family=Cairo:wght@400;500;600;700&display=swap');
       `}</style>
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h1
               className="text-2xl font-bold"
@@ -333,33 +306,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
               كرّر، عدّل، أو احذف أي دعوة موجودة
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-full text-sm font-bold border border-border hover:bg-gray-50"
-            >
-              رجوع للموقع
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 rounded-full text-sm font-bold border border-border hover:bg-gray-50"
-            >
-              تسجيل خروج
-            </button>
-
-            {/* زر القلم لتعديل الواجهة */}
-            <button
-              onClick={() => setIsEditingInterface(!isEditingInterface)}
-              title="تعديل نصوص وألوان واجهة الموقع"
-              className={`px-4 py-2 rounded-full text-sm font-bold border transition-all flex items-center gap-1.5 ${
-                isEditingInterface ? "bg-rose-600 text-white border-rose-600" : "bg-white text-gray-700 border-border hover:bg-gray-50"
-              }`}
-            >
-              <span>✏️</span>
-              <span>{isEditingInterface ? "إغلاق التعديل" : "تعديل الواجهة"}</span>
-            </button>
-
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 if (createStep === "closed") {
@@ -369,113 +316,24 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                   setCreateTemplate(null)
                 }
               }}
-              className="px-5 py-2 rounded-full text-sm font-bold bg-[#B8862F] text-white shadow-sm"
+              className="px-4 py-2 rounded-full text-sm font-bold bg-[#B8862F] text-white"
             >
               {createStep === "closed" ? "+ دعوة خاصة جديدة" : "إغلاق"}
             </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-full text-sm font-bold border border-border"
+            >
+              تسجيل خروج
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-full text-sm font-bold border border-border"
+            >
+              رجوع للموقع
+            </button>
           </div>
         </div>
-
-        {/* لوحة تعديل النصوص والألوان الشاملة */}
-        {isEditingInterface && (
-          <div className="bg-white border-2 border-rose-200 rounded-3xl p-6 mb-8 shadow-xl space-y-4">
-            <h3 className="text-lg font-bold text-rose-800 flex items-center gap-2" style={{ fontFamily: "'El Messiri', serif" }}>
-              <span>🛠️</span>
-              <span>تعديل محتوى واجهة الموقع (تظهر لجميع الزوار)</span>
-            </h3>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">العنوان الرئيسي للواجهة:</label>
-              <input
-                type="text"
-                value={heroTitle}
-                onChange={(e) => setHeroTitle(e.target.value)}
-                className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm text-gray-900 bg-white focus:outline-none focus:border-rose-500 shadow-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">الوصف التعريفي تحت العنوان:</label>
-              <textarea
-                value={heroSubtitle}
-                onChange={(e) => setHeroSubtitle(e.target.value)}
-                className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm text-gray-900 bg-white focus:outline-none focus:border-rose-500 shadow-sm"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">عنوان قسم "كيف نشتغل؟":</label>
-                <input
-                  type="text"
-                  value={howItWorksTitle}
-                  onChange={(e) => setHowItWorksTitle(e.target.value)}
-                  className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm text-gray-900 bg-white shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">العنوان الفرعي لـ "كيف نشتغل؟":</label>
-                <input
-                  type="text"
-                  value={howItWorksSubtitle}
-                  onChange={(e) => setHowItWorksSubtitle(e.target.value)}
-                  className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm text-gray-900 bg-white shadow-sm"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">عنوان الفوتر (البانر الأحمر):</label>
-                <input
-                  type="text"
-                  value={footerTitle}
-                  onChange={(e) => setFooterTitle(e.target.value)}
-                  className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm text-gray-900 bg-white shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">نصف وصف الفوتر (البانر الأحمر):</label>
-                <input
-                  type="text"
-                  value={footerSubtitle}
-                  onChange={(e) => setFooterSubtitle(e.target.value)}
-                  className="w-full border border-gray-300 rounded-2xl px-4 py-3 text-sm text-gray-900 bg-white shadow-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">اللون الأساسي للأزرار:</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={primaryColor}
-                  onChange={(e) => setPrimaryColor(e.target.value)}
-                  className="w-16 h-10 rounded-xl cursor-pointer border p-0.5 bg-white"
-                />
-                <span className="text-xs text-gray-700 font-mono">{primaryColor}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={handleSaveInterfaceSettings}
-                disabled={savingInterface}
-                className="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl text-sm shadow transition-all disabled:opacity-50"
-              >
-                {savingInterface ? "جاري الحفظ..." : "حفظ ونشر التعديلات للكل 🚀"}
-              </button>
-              <button
-                onClick={() => setIsEditingInterface(false)}
-                className="px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-2xl text-sm"
-              >
-                إلغاء
-              </button>
-            </div>
-          </div>
-        )}
 
         {createStep === "template" && (
           <TemplatePicker
@@ -516,6 +374,11 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                     {inv.unlisted && (
                       <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#B8862F]/15 text-[#B8862F]">
                         خاصة — غير ظاهرة بالموقع
+                      </span>
+                    )}
+                    {inv.unlisted && !inv.sheetId && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
+                        بدون شيت — RSVP ما راح ينحفظ
                       </span>
                     )}
                   </div>
@@ -655,7 +518,54 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
             {toastMsg}
           </div>
         )}
+
+        {shareLinkModal && (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 px-6"
+            onClick={() => setShareLinkModal(null)}
+          >
+            <div
+              className="w-full max-w-lg bg-white rounded-3xl p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-base font-bold mb-2">رابط الدعوة</h3>
+              <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+                المتصفح منع النسخ التلقائي للحافظة — حدد الرابط بالأسفل وانسخه
+                يدوياً (Ctrl+C أو اضغط مطولاً واختر نسخ)
+              </p>
+              <input
+                readOnly
+                value={shareLinkModal}
+                onFocus={(e) => e.currentTarget.select()}
+                autoFocus
+                dir="ltr"
+                className="w-full border border-border rounded-xl px-4 py-3 text-xs mb-4 bg-[#FAF7F2]"
+              />
+              <button
+                onClick={() => setShareLinkModal(null)}
+                className="w-full py-3 bg-[#B8862F] text-white rounded-2xl font-bold"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        )}
+
+        <p className="text-xs text-muted-foreground mt-10 leading-relaxed">
+          ✅ الدعوات هلأ تنخزن بقاعدة بيانات Supabase، يعني أي تعديل تسويه يظهر
+          لكل الزوار ومن أي جهاز أو متصفح فوراً.
+          <br />
+          ⚠️ الدعوة الخاصة الجديدة تستخدم نفس صور وفيديوهات التصميم اللي تختاره
+          بالضبط، فما تحتاج ترفع أي ملفات جديدة. زر "تكرار" وحده هو اللي يولّد
+          أسماء ملفات جديدة (لأنه يفترض تصميم مستقل)، وبهاي الحالة لازم ترفعها
+          يدوياً بنفس الاسم داخل public/images و public/mnbra و public/videos.
+          <br />
+          ⚠️ تأكيدات الحضور (RSVP) تترسل فقط للدعوات الخاصة اللي عندها شيت
+          (sheetId) — الدعوات العامة و"جرّب دعوتك" تضل معاينة محلية فقط بدون
+          إرسال، حسب طلبك.
+        </p>
       </div>
     </div>
   )
 }
+
