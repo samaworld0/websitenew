@@ -1,88 +1,87 @@
-import React from 'react'
+import React from 'react';
 
-interface FooterProps {
-  title?: string
-  subtitle?: string
-  badge?: string
-  btnText?: string
-  secureText?: string
-  bgColor?: string
-  btnColor?: string
-  btnTextColor?: string
-}
-
-export default function Footer({
-  title = "خلّوا فرحتكم تنفتح بأسمائكم.",
-  subtitle = "اختاروا القالب، اكتبوا الأسماء، وشوفوا دعوتكم الحقيقية قبل ما تطلبوها — تجربة سريعة ومجانية.",
-  badge = "أول خطوة علينا ✨",
-  btnText = "جرّبوا دعوتكم الآن",
-  secureText = "ادفع بأمان من أي مكان في العالم",
-  bgColor = "#e11d48",
-  btnColor = "#ffffff",
-  btnTextColor = "#e11d48",
-}: FooterProps) {
+const Footer = () => {
   return (
-    <footer className="relative bg-[#1A0E10] pt-20 pb-12 overflow-hidden text-white" dir="rtl">
-      {/* البانر الملون القابل للتعديل */}
-      <div className="max-w-5xl mx-auto px-6 mb-16">
-        <div
-          className="relative rounded-3xl p-8 md:p-12 shadow-2xl overflow-hidden text-center transition-all"
-          style={{ backgroundColor: bgColor }}
+    <>
+      {/* ============ نافذة: خلوا فرحتكم تنفتح بأسماءكم ============ */}
+      <section className="px-5 py-16 bg-background" dir="rtl" style={{ fontFamily: "Cairo, sans-serif" }}>
+        <div 
+          className="max-w-5xl mx-auto rounded-3xl p-10 md:p-14 flex flex-col md:flex-row items-center justify-between text-white shadow-2xl relative overflow-hidden"
+          /* تدرج لوني أحمر نقي بناءً على طلبك */
+          style={{ background: 'linear-gradient(to left, #e11d48, #fb7185)' }} 
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-white/20 text-white mb-6 backdrop-blur-sm">
-            {badge}
+          {/* دوائر تجميلية خفيفة في الخلفية */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/3"></div>
+
+          <div className="text-right mb-8 md:mb-0 relative z-10">
+            <p className="text-sm md:text-base mb-2 font-medium opacity-90">✨ أول خطوة علينا</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-snug" style={{ fontFamily: "'El Messiri', serif" }}>
+              خلّوا فرحتكم تنفتح بأسمائكم.
+            </h2>
+            <p className="text-sm md:text-base opacity-90 max-w-xl leading-relaxed">
+              اختاروا القالب، اكتبوا الأسماء، وشوفوا دعوتكم الحقيقية قبل ما تطلبوها —<br className="hidden md:block" /> تجربة سريعة ومجانية.
+            </p>
+          </div>
+          
+          <div className="relative z-10 w-full md:w-auto">
+            <a 
+              href="#try" 
+              className="bg-white text-rose-600 px-8 py-4 rounded-full font-bold flex items-center justify-center gap-3 hover:scale-105 transition-transform shadow-lg w-full md:w-auto"
+            >
+              <i className="fas fa-arrow-left text-sm"></i>
+              جرّبوا دعوتكم الآن 
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ الفوتر (القسم السفلي) ============ */}
+      <footer className="bg-[#241b2e] pt-16 pb-16 text-center text-white" dir="rtl" style={{ fontFamily: "Cairo, sans-serif" }}>
+        <div className="max-w-4xl mx-auto px-5 flex flex-col items-center">
+          
+          {/* الشعار */}
+          <div className="bg-rose-500 text-white px-8 py-2.5 rounded-[20px] text-3xl font-bold mb-10 shadow-lg" style={{ fontFamily: "'Aref Ruqaa', serif" }}>
+            سما
           </div>
 
-          <h2
-            className="text-3xl md:text-5xl font-bold mb-4 leading-tight"
-            style={{ fontFamily: "'El Messiri', serif" }}
-          >
-            {title}
-          </h2>
+          {/* أيقونات التواصل الاجتماعي فقط (بدون نصوص) */}
+          <div className="flex gap-5 mb-12">
+            <a href="https://instagram.com/samaworld_sa" target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-600 flex items-center justify-center text-2xl hover:bg-rose-500 hover:border-rose-500 transition-all" title="Instagram">
+              <i className="fab fa-instagram"></i>
+            </a>
+            <a href="https://tiktok.com/@isama.est" target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full border border-gray-600 flex items-center justify-center text-2xl hover:bg-rose-500 hover:border-rose-500 transition-all" title="TikTok">
+              <i className="fab fa-tiktok"></i>
+            </a>
+          </div>
 
-          <p className="text-white/90 text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
-            {subtitle}
-          </p>
+          {/* طرق الدفع */}
+          <div className="mb-4 text-sm text-gray-400 font-medium">ادفع بأمان من أي مكان في العالم</div>
+          <div className="flex flex-wrap justify-center gap-3 mb-4">
+            {/* بطاقات الدفع */}
+            <div className="bg-white text-[#1a1f71] px-4 py-2 rounded-md font-black text-sm flex items-center shadow-sm">
+              VISA
+            </div>
+            <div className="bg-white text-gray-800 px-4 py-2 rounded-md font-bold text-sm flex items-center shadow-sm">
+              mastercard 
+              <div className="mr-2 flex">
+                <div className="w-3.5 h-3.5 rounded-full bg-red-500 opacity-90"></div>
+                <div className="w-3.5 h-3.5 rounded-full bg-yellow-500 opacity-90 -mr-1.5"></div>
+              </div>
+            </div>
+            <div className="bg-white text-gray-800 px-4 py-2 rounded-md font-bold text-sm flex items-center shadow-sm">
+              زين كاش
+            </div>
+            <div className="bg-white text-gray-800 px-4 py-2 rounded-md font-bold text-sm flex items-center shadow-sm">
+              <div className="ml-2 w-4 h-4 bg-yellow-400 rounded-sm"></div>
+              كي كارد
+            </div>
+          </div>
 
-          <a
-            href="#try"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold text-base shadow-lg transition-all hover:opacity-95"
-            style={{ backgroundColor: btnColor, color: btnTextColor }}
-          >
-            <span>{btnText}</span>
-            <span>←</span>
-          </a>
         </div>
-      </div>
+      </footer>
+    </>
+  );
+};
 
-      {/* أسفل الفوتر (شعار ومواقع التواصل) */}
-      <div className="max-w-7xl mx-auto px-6 text-center space-y-6">
-        <div className="inline-block px-5 py-2 rounded-full bg-white/10 text-white font-bold text-lg" style={{ fontFamily: "'Aref Ruqaa', serif" }}>
-          سما
-        </div>
-
-        <div className="flex items-center justify-center gap-4 text-gray-400 text-sm">
-          <a href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition">
-            🌐
-          </a>
-          <a href="#" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition">
-            📷
-          </a>
-        </div>
-
-        <p className="text-xs text-gray-400">{secureText}</p>
-
-        <div className="flex items-center justify-center gap-3 flex-wrap pt-2 opacity-80">
-          <span className="px-3 py-1 bg-white/10 rounded text-[10px]">VISA</span>
-          <span className="px-3 py-1 bg-white/10 rounded text-[10px]">Mastercard</span>
-          <span className="px-3 py-1 bg-white/10 rounded text-[10px]">زين كاش</span>
-          <span className="px-3 py-1 bg-white/10 rounded text-[10px]">كي كارد</span>
-        </div>
-
-        <p className="text-[11px] text-gray-500 pt-6 border-t border-white/5">
-          جميع الحقوق محفوظة © 2026 سما للدعوات الإلكترونية
-        </p>
-      </div>
-    </footer>
-  )
-}
+export default Footer;
