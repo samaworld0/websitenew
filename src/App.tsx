@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Invitation } from "./types"
 import { invitations } from "./data"
-import { loadInvitations, decodeInvitationFromUrl, isAdminLoggedIn, loadSiteSettings } from "./backend"
+import { loadInvitations, decodeInvitationFromUrl } from "./backend"
 import { InvitationCard } from "./InvitationCard"
 import { InvitationFullView } from "./InvitationFullView"
 import { TryInvitationForm } from "./TryInvitationForm"
@@ -12,61 +12,26 @@ import Footer from "./components/Footer"
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("all")
-  const [allInvitations, setAllInvitations] = useState<Invitation[]>(invitations)
+  const [allInvitations, setAllInvitations] =
+    useState<Invitation[]>(invitations)
   const [tryStep, setTryStep] = useState<"form" | "preview" | null>(null)
   const [tryInv, setTryInv] = useState<Invitation | null>(null)
   const [tryBase, setTryBase] = useState<Invitation | null>(null)
-  
-  const [isLoggedAdmin, setIsLoggedAdmin] = useState(false)
-
-  // الإعدادات الشاملة (النصوص والألوان)
-  const [heroTitle, setHeroTitle] = useState("دعوة إلكترونية تخطف الأنظار لمناسبتك القادمة")
-  const [heroSubtitle, setHeroSubtitle] = useState("رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.")
-  const [primaryColor, setPrimaryColor] = useState("#e11d48")
-  const [howItWorksTitle, setHowItWorksTitle] = useState("كيف نشتغل؟")
-  const [howItWorksSubtitle, setHowItWorksSubtitle] = useState("أربع خطوات وتوصلك دعوتك")
-  const [footerTitle, setFooterTitle] = useState("خلّوا فرحتكم تنفتح بأسمائكم.")
-  const [footerSubtitle, setFooterSubtitle] = useState("اختاروا القالب، اكتبوا الأسماء، وشوفوا دعوتكم الحقيقية قبل ما تطلبوها — تجربة سريعة ومجانية.")
-  const [bannerBadge, setBannerBadge] = useState("أول خطوة علينا ✨")
-  const [bannerBtnText, setBannerBtnText] = useState("جرّبوا دعوتكم الآن")
-  const [footerSecureText, setFooterSecureText] = useState("ادفع بأمان من أي مكان في العالم")
-  const [bannerBgColor, setBannerBgColor] = useState("#e11d48")
-  const [bannerBtnColor, setBannerBtnColor] = useState("#ffffff")
-  const [bannerBtnTextColor, setBannerBtnTextColor] = useState("#e11d48")
 
   useEffect(() => {
     loadInvitations().then(setAllInvitations)
-    isAdminLoggedIn().then((loggedIn) => {
-      setIsLoggedAdmin(loggedIn)
-    })
-    
-    // جلب جميع الإعدادات الشاملة من Supabase
-    loadSiteSettings().then((settings) => {
-      if (settings) {
-        if (settings.hero_title) setHeroTitle(settings.hero_title)
-        if (settings.hero_subtitle) setHeroSubtitle(settings.hero_subtitle)
-        if (settings.primary_color) setPrimaryColor(settings.primary_color)
-        if (settings.how_it_works_title) setHowItWorksTitle(settings.how_it_works_title)
-        if (settings.how_it_works_subtitle) setHowItWorksSubtitle(settings.how_it_works_subtitle)
-        if (settings.footer_title) setFooterTitle(settings.footer_title)
-        if (settings.footer_subtitle) setFooterSubtitle(settings.footer_subtitle)
-        if (settings.banner_badge) setBannerBadge(settings.banner_badge)
-        if (settings.banner_btn_text) setBannerBtnText(settings.banner_btn_text)
-        if (settings.footer_secure_text) setFooterSecureText(settings.footer_secure_text)
-        if (settings.banner_bg_color) setBannerBgColor(settings.banner_bg_color)
-        if (settings.banner_btn_color) setBannerBtnColor(settings.banner_btn_color)
-        if (settings.banner_btn_text_color) setBannerBtnTextColor(settings.banner_btn_text_color)
-      }
-    })
   }, [])
 
   const urlParams = new URLSearchParams(window.location.search)
-  const isAdmin = urlParams.get("admin") === "1" || isLoggedAdmin
+  const isAdmin = urlParams.get("admin") === "1"
   const previewId = urlParams.get("preview")
-  const previewInv = allInvitations.find((inv) => inv.id.toString() === previewId)
-  
+  const previewInv = allInvitations.find(
+    (inv) => inv.id.toString() === previewId,
+  )
   const sharedInvParam = urlParams.get("inv")
-  const sharedInv = sharedInvParam ? decodeInvitationFromUrl(sharedInvParam) : null
+  const sharedInv = sharedInvParam
+    ? decodeInvitationFromUrl(sharedInvParam)
+    : null
 
   const handlePreview = (inv: Invitation) => {
     window.location.href = `${window.location.pathname}?preview=${inv.id}`
@@ -78,9 +43,13 @@ export default function App() {
   }
 
   const listedInvitations = allInvitations.filter((inv) => !inv.unlisted)
-  const filtered = activeCategory === "all" ? listedInvitations : listedInvitations.filter((inv) => inv.category === activeCategory)
 
-  if (isAdmin && urlParams.get("admin") === "1") {
+  const filtered =
+    activeCategory === "all"
+      ? listedInvitations
+      : listedInvitations.filter((inv) => inv.category === activeCategory)
+
+  if (isAdmin) {
     return (
       <AdminPanel
         onClose={() => {
@@ -146,12 +115,11 @@ export default function App() {
     <div
       className="min-h-screen bg-background"
       dir="rtl"
-      style={{ fontFamily: "Cairo, sans-serif", "--primary-color": primaryColor } as any}
+      style={{ fontFamily: "Cairo, sans-serif" }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=El+Messiri:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Cairo:wght@300;400;500;600;700;800&display=swap');
       `}</style>
-      
       <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -205,14 +173,17 @@ export default function App() {
             className="text-4xl md:text-6xl font-bold leading-tight text-warm-900 mb-6"
             style={{ fontFamily: "'El Messiri', serif" }}
           >
-            {heroTitle}
+            دعوة إلكترونية تخطف الأنظار
+            <br />
+            لمناسبتك القادمة
           </h1>
 
           <p
             className="text-warm-700/80 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10"
             style={{ fontFamily: "Cairo, sans-serif" }}
           >
-            {heroSubtitle}
+            رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد
+            حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.
           </p>
 
           <button
@@ -222,13 +193,12 @@ export default function App() {
                 ?.scrollIntoView({ behavior: "smooth" })
             }
             className="btn-gold inline-flex items-center gap-2 px-8 py-4 rounded-full text-white font-bold text-base"
-            style={{ fontFamily: "Cairo, sans-serif", backgroundColor: primaryColor }}
+            style={{ fontFamily: "Cairo, sans-serif" }}
           >
             ✨ شاهد القوالب
           </button>
         </div>
 
-        {/* بطاقات معاينة مكدّسة */}
         <div className="relative max-w-3xl mx-auto px-6 pb-20 pt-4">
           <div className="flex items-end justify-center gap-4 md:gap-6">
             <div
@@ -281,7 +251,7 @@ export default function App() {
       </section>
 
       {/* ============ القوالب ============ */}
-      <section id="templates" className="max-w-7xl mx-auto px-6 pb-24">
+      <section id="templates" className="max-w-7xl mx-auto px-6 pb-16">
         <div className="text-center mb-16">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
@@ -303,19 +273,10 @@ export default function App() {
       </section>
 
       {/* ============ قسم كيف نشتغل ============ */}
-      <HowItWorks title={howItWorksTitle} subtitle={howItWorksSubtitle} />
+      <HowItWorks />
 
-      {/* ============ الفوتر والبانر المخصص (مع الألوان والنصوص القابلة للتعديل) ============ */}
-      <Footer
-        title={footerTitle}
-        subtitle={footerSubtitle}
-        badge={bannerBadge}
-        btnText={bannerBtnText}
-        secureText={footerSecureText}
-        bgColor={bannerBgColor}
-        btnColor={bannerBtnColor}
-        btnTextColor={bannerBtnTextColor}
-      />
+      {/* ============ النافذة الحمراء والفوتر ============ */}
+      <Footer />
 
     </div>
   )
