@@ -101,35 +101,58 @@ export interface SiteSettings {
   footer_subtitle: string;
 }
 
-// جلب إعدادات الواجهة كاملة من Supabase
-export async function loadSiteSettings(): Promise<SiteSettings | null> {
+const defaultSiteSettings: SiteSettings = {
+  id: 1,
+  hero_title: "دعوة إلكترونية تخطف الأنظار لمناسبتك القادمة",
+  hero_subtitle: "رابط واحد أنيق ترسله لكل المعازيم — بأنميشن يفتح كالسحر، وتأكيد حضور، وكشف بالحاضرين تشوفه برابط تحكمك لحظة بلحظة.",
+  primary_color: "#e11d48",
+  how_it_works_title: "كيف نشتغل؟",
+  how_it_works_subtitle: "أربع خطوات وتوصلك دعوتك",
+  footer_title: "خلّوا فرحتكم تنفتح بأسمائكم.",
+  footer_subtitle: "اختاروا القالب، اكتبوا الأسماء، وشوفوا دعوتكم الحقيقية قبل ما تطلبوها — تجربة سريعة ومجانية."
+}
+
+// جلب إعدادات الواجهة مع إنشاء وتعبئة القيم تلقائياً لو كانت القاعدة فارغة
+export async function loadSiteSettings(): Promise<SiteSettings> {
   try {
     const { data, error } = await supabase
       .from("site_settings")
       .select("*")
-      .limit(1)
-      .single();
+      .eq("id", 1)
+      .maybeSingle();
 
-    if (error) return null;
-    return data;
+    if (error || !data) {
+      // إدخال القيم الافتراضية مباشرة إذا لم تكن موجودة
+      await supabase.from("site_settings").upsert([defaultSiteSettings]);
+      return defaultSiteSettings;
+    }
+
+    return {
+      ...defaultSiteSettings,
+      ...data,
+    };
   } catch (err) {
     console.error("Error loading site settings:", err);
-    return null;
+    return defaultSiteSettings;
   }
 }
 
-// حفظ وتحديث إعدادات الواجهة الشاملة في Supabase لجميع الزوار
+// حفظ وتحديث إعدادات الواجهة الشاملة في Supabase مع إظهار تفاصيل الخطأ لو وجد
 export async function saveSiteSettings(settings: Partial<SiteSettings>): Promise<boolean> {
   try {
     const { error } = await supabase
       .from("site_settings")
       .upsert({ id: 1, ...settings });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase saveSiteSettings error:", error);
+      alert("حدث خطأ أثناء الحفظ في قاعدة البيانات: " + error.message);
+      return false;
+    }
     return true;
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error saving site settings:", err);
-    alert("حدث خطأ أثناء حفظ إعدادات الواجهة في قاعدة البيانات.");
+    alert("حدث خطأ غير متوقع أثناء الحفظ.");
     return false;
   }
 }
