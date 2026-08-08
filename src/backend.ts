@@ -69,6 +69,23 @@ export async function persistInvitations(list: Invitation[]) {
   }
 }
 
+// تحديث دعوة وحيدة بدون المساس بباقي الدعوات (على عكس persistInvitations
+// اللي تحذف أي دعوة مو موجودة بالقائمة المرسلة لها). يُستخدم من زر القلم
+// اللي يعدّل على الدعوة مباشرة من صفحتها (بدون فتح لوحة التحكم كاملة).
+export async function updateSingleInvitation(
+  inv: Invitation,
+): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("invitations").upsert(inv)
+    if (error) throw error
+    return true
+  } catch (err) {
+    alert("حدث خطأ أثناء حفظ التعديلات.")
+    console.error("Supabase updateSingleInvitation error:", err)
+    return false
+  }
+}
+
 // ترميز/فك ترميز دعوة كاملة داخل رابط URL — هذا يخلي رابط الدعوة الخاصة
 // يشتغل من أي جهاز أو متصفح، لأنه يحمل بيانات الدعوة بنفسه بدل ما يدور
 // عليها بـ localStorage (اللي يكون فاضي عند أي شخص ثاني يفتح الرابط).
