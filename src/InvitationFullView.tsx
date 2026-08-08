@@ -1,6 +1,7 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Invitation } from "./types"
 import { WisalTemplateView } from "./WisalTemplateView"
+import { isAdminLoggedIn } from "./backend"
 
 export function InvitationFullView({
   inv,
@@ -11,6 +12,17 @@ export function InvitationFullView({
   onClose: () => void
   isTrial?: boolean
 }) {
+  // لو الأدمن مسجل دخول، نعرض زر قلم فوق الدعوة يوديه مباشرة لفورم تعديل
+  // هالدعوة بالذات بلوحة التحكم — بدون ما يدور عليها يدوياً بالقائمة.
+  // دعوات التجربة (isTrial) ما تنعدّل، فما نسوي الفحص أصلاً بهالحالة.
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    if (!isTrial) {
+      isAdminLoggedIn().then(setIsAdmin)
+    }
+  }, [isTrial])
+
   useEffect(() => {
     window.scrollTo(0, 0)
     document.body.style.overflow = "hidden"
@@ -29,6 +41,16 @@ export function InvitationFullView({
           >
             وضع تجربة — معاينة فقط
           </span>
+        )}
+        {isAdmin && (
+          <a
+            href={`?admin=1&edit=${inv.id}`}
+            title="تعديل الدعوة"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-lg bg-[#B8862F] text-white backdrop-blur-md"
+            style={{ fontFamily: "Cairo, sans-serif" }}
+          >
+            ✏️ تعديل
+          </a>
         )}
         <button
           onClick={onClose}
