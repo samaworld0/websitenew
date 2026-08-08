@@ -35,13 +35,158 @@ function useRevealOnScroll(active: boolean) {
   }, [active])
 }
 
-export function WisalTemplateView({ inv }: { inv: Invitation }) {
+// عنصر نص قابل للسحب (تغيير مكانه بحرية) وللتعديل المباشر (كتابة فوقه)
+// يُستخدم بس بوضع التعديل (editable=true) بشاشة الدعوة الأولى. المقبض
+// الذهبي الصغير (✥) يسحب مكان العنصر، والنص نفسه قابل للكتابة مباشرة عليه.
+function EditableField({
+  editable,
+  offsetKey,
+  offset,
+  onOffsetChange,
+  value,
+  onChange,
+  as: Tag = "div",
+  className,
+  style,
+}: {
+  editable: boolean
+  offsetKey: string
+  offset: { x: number; y: number }
+  onOffsetChange: (key: string, x: number, y: number) => void
+  value: string
+  onChange: (v: string) => void
+  as?: any
+  className?: string
+  style?: React.CSSProperties
+}) {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startY = e.clientY
+    const origX = offset.x
+    const origY = offset.y
+    const handleMove = (ev: PointerEvent) => {
+      onOffsetChange(
+        offsetKey,
+        origX + (ev.clientX - startX),
+        origY + (ev.clientY - startY),
+      )
+    }
+    const handleUp = () => {
+      window.removeEventListener("pointermove", handleMove)
+      window.removeEventListener("pointerup", handleUp)
+    }
+    window.addEventListener("pointermove", handleMove)
+    window.addEventListener("pointerup", handleUp)
+  }
+
+  return (
+    <div
+      className="relative inline-block max-w-full"
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
+    >
+      {editable && (
+        <span
+          onPointerDown={handlePointerDown}
+          title="اسحب لتحريك هذا العنصر"
+          className="absolute -top-3 -right-3 z-30 w-7 h-7 rounded-full bg-[#B8862F] text-white text-sm flex items-center justify-center shadow-lg cursor-move select-none"
+          style={{ touchAction: "none" }}
+        >
+          ✥
+        </span>
+      )}
+      <Tag
+        contentEditable={editable}
+        suppressContentEditableWarning
+        onPointerDown={(e: React.PointerEvent) => {
+          if (editable) e.stopPropagation()
+        }}
+        onBlur={(e: React.FocusEvent<HTMLElement>) =>
+          onChange(e.currentTarget.textContent || "")
+        }
+        className={`${className || ""} ${
+          editable
+            ? "outline outline-2 outline-dashed outline-[#D4AF37]/70 outline-offset-4 rounded-lg cursor-text px-1"
+            : ""
+        }`}
+        style={style}
+      >
+        {value}
+      </Tag>
+    </div>
+  )
+}
+
+export function WisalTemplateView({
+  inv,
+  editable,
+  onSaveEdits,
+  onExitEdit,
+}: {
+  inv: Invitation
+  editable?: boolean
+  onSaveEdits?: (updates: Partial<Invitation>) => void
+  onExitEdit?: () => void
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [particles, setParticles] = useState<GoldenParticle[]>([])
+
+  // مسودّة التعديل — نصوص وأماكن العناصر بالشاشة الأولى، تتصفّر من بيانات
+  // الدعوة الحالية وتتحدث محلياً وأنت تسحب/تكتب، وما تنحفظ فعلياً إلا لما
+  // تضغط "حفظ التعديلات".
+  const [draftGroom, setDraftGroom] = useState(inv.groom)
+  const [draftBride, setDraftBride] = useState(inv.bride)
+  const [draftDate, setDraftDate] = useState(inv.dateGreg)
+  const [draftEyebrow, setDraftEyebrow] = useState(
+    inv.heroEyebrow || "دعوة زفاف",
+  )
+  const [draftSubtitle, setDraftSubtitle] = useState(
+    inv.heroSubtitle || "فتحنا باب فرحتنا... وطارت البشائر تدعوكم",
+  )
+  const [layout, setLayout] = useState<Record<string, { x: number; y: number }>>(
+    inv.heroLayout || {},
+  )
+
+  // لو الدعوة تغيّرت من تحتنا (مثلاً بعد الحفظ) نعيد ضبط المسودة عليها
+  useEffect(() => {
+    setDraftGroom(inv.groom)
+    setDraftBride(inv.bride)
+    setDraftDate(inv.dateGreg)
+    setDraftEyebrow(inv.heroEyebrow || "دعوة زفاف")
+    setDraftSubtitle(inv.heroSubtitle || "فتحنا باب فرحتنا... وطارت البشائر تدعوكم")
+    setLayout(inv.heroLayout || {})
+  }, [inv.id])
+
+  const getOffset = (key: string) => layout[key] || { x: 0, y: 0 }
+  const setOffset = (key: string, x: number, y: number) =>
+    setLayout((prev) => ({ ...prev, [key]: { x, y } }))
+
+  const handleCancelEdit = () => {
+    setDraftGroom(inv.groom)
+    setDraftBride(inv.bride)
+    setDraftDate(inv.dateGreg)
+    setDraftEyebrow(inv.heroEyebrow || "دعوة زفاف")
+    setDraftSubtitle(inv.heroSubtitle || "فتحنا باب فرحتنا... وطارت البشائر تدعوكم")
+    setLayout(inv.heroLayout || {})
+    onExitEdit?.()
+  }
+
+  const handleSaveEdit = () => {
+    onSaveEdits?.({
+      groom: draftGroom,
+      bride: draftBride,
+      dateGreg: draftDate,
+      heroEyebrow: draftEyebrow,
+      heroSubtitle: draftSubtitle,
+      heroLayout: layout,
+    })
+    onExitEdit?.()
+  }
 
   // العداد التنازلي محسوب فعلياً من inv.countdownDate (يتحدث الأدمن عليه من
   // لوحة التحكم) بدل أرقام ثابتة — ويعاد حسابه كل ثانية.
@@ -68,6 +213,15 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
       : `https://www.google.com/maps/search/?api=1&query=${mapQuery}`
 
   useRevealOnScroll(isOpen)
+
+  // بوضع التعديل نفتح المشهد فوراً بدون فيديو المقدمة، حتى الأدمن يشوف
+  // ويعدّل النصوص والأماكن على طول بدون ما يحتاج يضغط "اضغط لفتح الدعوة"
+  useEffect(() => {
+    if (editable) {
+      setIsOpen(true)
+      setOverlayMounted(false)
+    }
+  }, [editable])
 
   const generateGoldenParticles = () => {
     const items: GoldenParticle[] = []
@@ -296,26 +450,68 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div />
               <div className="my-auto flex flex-col items-center text-center">
-                <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow">
-                  دعوة زفاف
-                </p>
+                <EditableField
+                  editable={!!editable}
+                  offsetKey="eyebrow"
+                  offset={getOffset("eyebrow")}
+                  onOffsetChange={setOffset}
+                  value={draftEyebrow}
+                  onChange={setDraftEyebrow}
+                  as="p"
+                  className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow"
+                />
                 <span className="text-[#D4AF37] text-xl mb-4">✿</span>
-                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  {inv.groom}
-                </h1>
-                <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
-                  و
-                </span>
-                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  {inv.bride}
-                </h1>
+                <EditableField
+                  editable={!!editable}
+                  offsetKey="groom"
+                  offset={getOffset("groom")}
+                  onOffsetChange={setOffset}
+                  value={draftGroom}
+                  onChange={setDraftGroom}
+                  as="h1"
+                  className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl"
+                />
+                <EditableField
+                  editable={!!editable}
+                  offsetKey="divider"
+                  offset={getOffset("divider")}
+                  onOffsetChange={setOffset}
+                  value="و"
+                  onChange={() => {}}
+                  as="span"
+                  className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa"
+                />
+                <EditableField
+                  editable={!!editable}
+                  offsetKey="bride"
+                  offset={getOffset("bride")}
+                  onOffsetChange={setOffset}
+                  value={draftBride}
+                  onChange={setDraftBride}
+                  as="h1"
+                  className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl"
+                />
                 <div className="mt-8 space-y-2">
-                  <p className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri">
-                    {inv.dateGreg}
-                  </p>
-                  <p className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
-                    فتحنا باب فرحتنا... وطارت البشائر تدعوكم
-                  </p>
+                  <EditableField
+                    editable={!!editable}
+                    offsetKey="date"
+                    offset={getOffset("date")}
+                    onOffsetChange={setOffset}
+                    value={draftDate}
+                    onChange={setDraftDate}
+                    as="p"
+                    className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri"
+                  />
+                  <EditableField
+                    editable={!!editable}
+                    offsetKey="subtitle"
+                    offset={getOffset("subtitle")}
+                    onOffsetChange={setOffset}
+                    value={draftSubtitle}
+                    onChange={setDraftSubtitle}
+                    as="p"
+                    className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal"
+                  />
                 </div>
               </div>
               <div className="mb-4 flex flex-col items-center opacity-80">
@@ -553,6 +749,34 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           </div>
         </div>
       </div>
+
+      {/* شريط أدوات التعديل — يطلع بس وأنت بوضع تعديل الشاشة الأولى */}
+      {editable && (
+        <div className="fixed bottom-6 inset-x-0 z-[110] flex items-center justify-center gap-3 px-4">
+          <div className="flex items-center gap-3 bg-black/80 backdrop-blur-md border border-[#D4AF37]/40 rounded-full px-5 py-3 shadow-2xl">
+            <span
+              className="text-xs text-[#E8DCC4] hidden sm:inline"
+              style={{ fontFamily: "Cairo, sans-serif" }}
+            >
+              اسحب أي عنصر من مقبضه ✥ لتغيير مكانه، أو اضغط عليه مباشرة لتعديل النص
+            </span>
+            <button
+              onClick={handleSaveEdit}
+              className="px-5 py-2 rounded-full text-sm font-bold bg-[#B8862F] text-white"
+              style={{ fontFamily: "Cairo, sans-serif" }}
+            >
+              حفظ التعديلات
+            </button>
+            <button
+              onClick={handleCancelEdit}
+              className="px-5 py-2 rounded-full text-sm font-bold border border-white/30 text-white"
+              style={{ fontFamily: "Cairo, sans-serif" }}
+            >
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر — تنشال كلياً من الـ DOM بعد الفتح */}
       {overlayMounted && (
