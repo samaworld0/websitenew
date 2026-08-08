@@ -44,6 +44,23 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     if (unlocked) loadInvitations().then(setList)
   }, [unlocked])
 
+  // لو دخلنا على لوحة التحكم برابط فيه ?edit=ID (مثلاً من زر القلم بصفحة
+  // الدعوة نفسها) نفتح فورم التعديل مباشرة على هذي الدعوة ونمرر لها بالصفحة،
+  // بدل ما المستخدم يدور عليها يدوياً بالقائمة.
+  useEffect(() => {
+    if (!unlocked || list.length === 0) return
+    const editId = new URLSearchParams(window.location.search).get("edit")
+    if (!editId) return
+    const targetId = parseInt(editId, 10)
+    if (!list.some((inv) => inv.id === targetId)) return
+    setEditingId(targetId)
+    setTimeout(() => {
+      document
+        .getElementById(`inv-row-${targetId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+    }, 100)
+  }, [unlocked, list])
+
   const flash = (msg: string) => {
     setToastMsg(msg)
     setTimeout(() => setToastMsg(null), 4500)
@@ -365,7 +382,8 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
           const renderRow = (inv: Invitation) => (
             <div
               key={inv.id}
-              className="border border-border rounded-3xl overflow-hidden"
+              id={`inv-row-${inv.id}`}
+              className="border border-border rounded-3xl overflow-hidden scroll-mt-24"
             >
               <div className="flex items-center justify-between px-6 py-4 gap-4 flex-wrap">
                 <div>
@@ -568,4 +586,3 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     </div>
   )
 }
-
