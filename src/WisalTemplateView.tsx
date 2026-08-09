@@ -516,12 +516,11 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               </div>
             </section>
 
-            {/* برنامج الحفل والمكان — خلفية كريمية فاتحة مع لمسة بنفسجية،
-                والزهرة في المنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#FBF6EC] text-[#5C4433] border-t-2 border-[#D4AF37]">
+            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل،
+                والزهرة الحمراء بالمنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
+            <section className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]">
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
-                <h3 className="text-3xl font-bold text-[#5C4433] mb-12 custom-font-heading">
-                  <span className="text-[#A78BDB] ml-2">✿</span>
+                <h3 className="text-3xl font-bold text-[#F1D989] mb-12 custom-font-heading">
                   برنامج الحفل
                 </h3>
                 <div
@@ -536,11 +535,11 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                     className="relative"
                     style={{ gridColumn: 2, gridRow: "1 / span 3" }}
                   >
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#A78BDB]/40" />
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#D4AF37]/40" />
                     {[0, 50, 100].map((pos) => (
                       <span
                         key={pos}
-                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#A78BDB]"
+                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#D4AF37]"
                         style={{ top: `${pos}%` }}
                       />
                     ))}
@@ -548,44 +547,44 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                       className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl transition-[top] duration-150 ease-out select-none"
                       style={{ top: `${programTimeline.progress}%` }}
                     >
-                      🌸
+                      🌹
                     </span>
                   </div>
 
                   <div
-                    className="flex items-center justify-end py-4 text-[#8C7568]"
+                    className="flex items-center justify-end py-4 text-[#F5EBE0]"
                     style={{ gridColumn: 1, gridRow: 1 }}
                   >
                     استقبال الضيوف
                   </div>
                   <div
-                    className="flex items-center justify-start py-4 font-bold text-[#5C4433]"
+                    className="flex items-center justify-start py-4 font-bold text-[#F1D989]"
                     style={{ gridColumn: 3, gridRow: 1 }}
                   >
                     ٧:٠٠ مساءً
                   </div>
 
                   <div
-                    className="flex items-center justify-end py-4 text-[#8C7568]"
+                    className="flex items-center justify-end py-4 text-[#F5EBE0]"
                     style={{ gridColumn: 1, gridRow: 2 }}
                   >
                     عقد القران
                   </div>
                   <div
-                    className="flex items-center justify-start py-4 font-bold text-[#5C4433]"
+                    className="flex items-center justify-start py-4 font-bold text-[#F1D989]"
                     style={{ gridColumn: 3, gridRow: 2 }}
                   >
                     ٧:٣٠ مساءً
                   </div>
 
                   <div
-                    className="flex items-center justify-end py-4 text-[#8C7568]"
+                    className="flex items-center justify-end py-4 text-[#F5EBE0]"
                     style={{ gridColumn: 1, gridRow: 3 }}
                   >
                     العشاء
                   </div>
                   <div
-                    className="flex items-center justify-start py-4 font-bold text-[#5C4433]"
+                    className="flex items-center justify-start py-4 font-bold text-[#F1D989]"
                     style={{ gridColumn: 3, gridRow: 3 }}
                   >
                     ٩:٠٠ مساءً
@@ -594,10 +593,10 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               </div>
 
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
-                <h3 className="text-3xl font-bold text-[#5C4433] mb-7 custom-font-heading">
+                <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-heading">
                   مكان الحفل
                 </h3>
-                <h4 className="text-2xl font-bold text-[#5C4433] mb-7 custom-font-heading">
+                <h4 className="text-2xl font-bold text-[#F5EBE0] mb-7 custom-font-heading">
                   {inv.venue}
                 </h4>
                 <a
