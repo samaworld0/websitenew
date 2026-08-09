@@ -367,88 +367,58 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
               </div>
             </section>
 
-            {/* برنامج الحفل والمكان */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A227]">
+            {/* برنامج الحفل والمكان — خلفية كريمية فاتحة مع لمسة بنفسجية،
+                والزهرة في المنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
+            <section className="py-20 px-6 flex flex-col items-center bg-[#FBF6EC] text-[#5C4433] border-t-2 border-[#C9A227]">
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
-                <h3 className="text-3xl font-bold text-[#F1D4B8] mb-10 lamsa-heading">
+                <h3 className="text-3xl font-bold text-[#5C4433] mb-12 lamsa-heading">
+                  <span className="text-[#A78BDB] ml-2">✿</span>
                   برنامج الحفل
                 </h3>
                 <div
                   ref={programTimeline.ref}
-                  className="grid gap-x-4 text-base md:text-lg text-[#F5E9E4] lamsa-tajawal"
-                  style={{ gridTemplateColumns: "1fr 2rem 1fr" }}
+                  className="relative space-y-9 text-base md:text-lg lamsa-tajawal"
                 >
-                  {/* الخط العمودي يمتد عبر الصفوف الثلاثة ويتحرك مع السكرول */}
-                  <div
-                    className="relative"
-                    style={{ gridColumn: 2, gridRow: "1 / span 3" }}
+                  {/* خط عمودي منقّط خفيف على أقصى اليسار للزينة */}
+                  <div className="absolute inset-y-0 -left-2 w-px border-l border-dotted border-[#A78BDB]/40" />
+
+                  {/* الزهرة تتحرك عمودياً عبر منتصف القائمة حسب تقدم السكرول */}
+                  <span
+                    className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl transition-[top] duration-150 ease-out select-none"
+                    style={{ top: `${programTimeline.progress}%` }}
                   >
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-[#C9A227]/20" />
-                    <div
-                      className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] bg-[#C9A227] transition-[height] duration-150 ease-out"
-                      style={{ height: `${programTimeline.progress}%` }}
-                    />
-                    {[0, 50, 100].map((pos) => (
-                      <span
-                        key={pos}
-                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#C9A227]/60"
-                        style={{ top: `${pos}%` }}
-                      />
-                    ))}
-                    <span
-                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl text-[#F1D4B8] drop-shadow-lg transition-[top] duration-150 ease-out"
-                      style={{ top: `${programTimeline.progress}%` }}
-                    >
-                      ✿
+                    🌸
+                  </span>
+
+                  <div className="flex justify-between items-center lamsa-reveal blur-reveal">
+                    <span className="text-[#8C7568]">استقبال الضيوف</span>
+                    <span className="flex-1 flex justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
                     </span>
+                    <span className="font-bold text-[#5C4433]">٦:٠٠ مساءً</span>
                   </div>
-
-                  <div
-                    className="flex items-center justify-end py-5 font-bold text-[#F1D4B8] lamsa-reveal blur-reveal"
-                    style={{ gridColumn: 1, gridRow: 1 }}
-                  >
-                    ٦:٠٠ مساءً
+                  <div className="flex justify-between items-center lamsa-reveal blur-reveal lamsa-reveal-delay-1">
+                    <span className="text-[#8C7568]">حفل الخطوبة وتقديم الشبكة</span>
+                    <span className="flex-1 flex justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
+                    </span>
+                    <span className="font-bold text-[#5C4433]">٦:٣٠ مساءً</span>
                   </div>
-                  <div
-                    className="flex items-center justify-start py-5 lamsa-reveal blur-reveal"
-                    style={{ gridColumn: 3, gridRow: 1 }}
-                  >
-                    استقبال الضيوف
-                  </div>
-
-                  <div
-                    className="flex items-center justify-end py-5 font-bold text-[#F1D4B8] lamsa-reveal blur-reveal lamsa-reveal-delay-1"
-                    style={{ gridColumn: 1, gridRow: 2 }}
-                  >
-                    ٦:٣٠ مساءً
-                  </div>
-                  <div
-                    className="flex items-center justify-start py-5 lamsa-reveal blur-reveal lamsa-reveal-delay-1"
-                    style={{ gridColumn: 3, gridRow: 2 }}
-                  >
-                    حفل الخطوبة وتقديم الشبكة
-                  </div>
-
-                  <div
-                    className="flex items-center justify-end py-5 font-bold text-[#F1D4B8] lamsa-reveal blur-reveal lamsa-reveal-delay-2"
-                    style={{ gridColumn: 1, gridRow: 3 }}
-                  >
-                    ٨:٠٠ مساءً
-                  </div>
-                  <div
-                    className="flex items-center justify-start py-5 lamsa-reveal blur-reveal lamsa-reveal-delay-2"
-                    style={{ gridColumn: 3, gridRow: 3 }}
-                  >
-                    الحلوى والتهنئة
+                  <div className="flex justify-between items-center lamsa-reveal blur-reveal lamsa-reveal-delay-2">
+                    <span className="text-[#8C7568]">الحلوى والتهنئة</span>
+                    <span className="flex-1 flex justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
+                    </span>
+                    <span className="font-bold text-[#5C4433]">٨:٠٠ مساءً</span>
                   </div>
                 </div>
               </div>
 
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
-                <h3 className="text-3xl font-bold text-[#F1D4B8] mb-7 lamsa-heading">
+                <h3 className="text-3xl font-bold text-[#5C4433] mb-7 lamsa-heading">
                   مكان الحفل
                 </h3>
-                <h4 className="text-2xl font-bold text-[#F5E9E4] mb-7 lamsa-heading">
+                <h4 className="text-2xl font-bold text-[#5C4433] mb-7 lamsa-heading">
                   {inv.venue}
                 </h4>
                 <a
