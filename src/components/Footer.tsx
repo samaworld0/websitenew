@@ -4,7 +4,7 @@ const Footer = () => {
   return (
     <>
       {/* ============ نافذة: خلوا فرحتكم تنفتح بأسماءكم ============ */}
-      <section className="px-5 py-16 bg-background" dir="rtl" style={{ fontFamily: "Cairo, sans-serif" }}>
+      <section className="px-5 pt-16 pb-28 bg-background" dir="rtl" style={{ fontFamily: "Cairo, sans-serif" }}>
         <div 
           className="max-w-5xl mx-auto rounded-3xl p-10 md:p-14 flex flex-col md:flex-row items-center justify-between text-white shadow-2xl relative overflow-hidden"
           /* تدرج لوني أحمر نقي بناءً على طلبك */
