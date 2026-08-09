@@ -367,12 +367,11 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
               </div>
             </section>
 
-            {/* برنامج الحفل والمكان — خلفية كريمية فاتحة مع لمسة بنفسجية،
-                والزهرة في المنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#FBF6EC] text-[#5C4433] border-t-2 border-[#C9A227]">
+            {/* برنامج الحفل والمكان — خلفية عنّابية مع خط ذهبي فاصل،
+                والزهرة الحمراء بالمنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
+            <section className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A227]">
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
-                <h3 className="text-3xl font-bold text-[#5C4433] mb-12 lamsa-heading">
-                  <span className="text-[#A78BDB] ml-2">✿</span>
+                <h3 className="text-3xl font-bold text-[#F1D4B8] mb-12 lamsa-heading">
                   برنامج الحفل
                 </h3>
                 <div
@@ -387,11 +386,11 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                     className="relative"
                     style={{ gridColumn: 2, gridRow: "1 / span 3" }}
                   >
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#A78BDB]/40" />
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#C9A227]/40" />
                     {[0, 50, 100].map((pos) => (
                       <span
                         key={pos}
-                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#A78BDB]"
+                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#C9A227]"
                         style={{ top: `${pos}%` }}
                       />
                     ))}
@@ -399,44 +398,44 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                       className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl transition-[top] duration-150 ease-out select-none"
                       style={{ top: `${programTimeline.progress}%` }}
                     >
-                      🌸
+                      🌹
                     </span>
                   </div>
 
                   <div
-                    className="flex items-center justify-end py-4 text-[#8C7568] lamsa-reveal blur-reveal"
+                    className="flex items-center justify-end py-4 text-[#F5E9E4] lamsa-reveal blur-reveal"
                     style={{ gridColumn: 1, gridRow: 1 }}
                   >
                     استقبال الضيوف
                   </div>
                   <div
-                    className="flex items-center justify-start py-4 font-bold text-[#5C4433] lamsa-reveal blur-reveal"
+                    className="flex items-center justify-start py-4 font-bold text-[#F1D4B8] lamsa-reveal blur-reveal"
                     style={{ gridColumn: 3, gridRow: 1 }}
                   >
                     ٦:٠٠ مساءً
                   </div>
 
                   <div
-                    className="flex items-center justify-end py-4 text-[#8C7568] lamsa-reveal blur-reveal lamsa-reveal-delay-1"
+                    className="flex items-center justify-end py-4 text-[#F5E9E4] lamsa-reveal blur-reveal lamsa-reveal-delay-1"
                     style={{ gridColumn: 1, gridRow: 2 }}
                   >
                     حفل الخطوبة وتقديم الشبكة
                   </div>
                   <div
-                    className="flex items-center justify-start py-4 font-bold text-[#5C4433] lamsa-reveal blur-reveal lamsa-reveal-delay-1"
+                    className="flex items-center justify-start py-4 font-bold text-[#F1D4B8] lamsa-reveal blur-reveal lamsa-reveal-delay-1"
                     style={{ gridColumn: 3, gridRow: 2 }}
                   >
                     ٦:٣٠ مساءً
                   </div>
 
                   <div
-                    className="flex items-center justify-end py-4 text-[#8C7568] lamsa-reveal blur-reveal lamsa-reveal-delay-2"
+                    className="flex items-center justify-end py-4 text-[#F5E9E4] lamsa-reveal blur-reveal lamsa-reveal-delay-2"
                     style={{ gridColumn: 1, gridRow: 3 }}
                   >
                     الحلوى والتهنئة
                   </div>
                   <div
-                    className="flex items-center justify-start py-4 font-bold text-[#5C4433] lamsa-reveal blur-reveal lamsa-reveal-delay-2"
+                    className="flex items-center justify-start py-4 font-bold text-[#F1D4B8] lamsa-reveal blur-reveal lamsa-reveal-delay-2"
                     style={{ gridColumn: 3, gridRow: 3 }}
                   >
                     ٨:٠٠ مساءً
@@ -445,10 +444,10 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
               </div>
 
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
-                <h3 className="text-3xl font-bold text-[#5C4433] mb-7 lamsa-heading">
+                <h3 className="text-3xl font-bold text-[#F1D4B8] mb-7 lamsa-heading">
                   مكان الحفل
                 </h3>
-                <h4 className="text-2xl font-bold text-[#5C4433] mb-7 lamsa-heading">
+                <h4 className="text-2xl font-bold text-[#F5E9E4] mb-7 lamsa-heading">
                   {inv.venue}
                 </h4>
                 <a
