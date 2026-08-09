@@ -35,6 +35,51 @@ function useRevealOnScroll(active: boolean) {
   }, [active])
 }
 
+// يحسب نسبة تقدم السكرول عبر عنصر معيّن (٠ عند دخوله الشاشة، ١٠٠ بعد
+// تجاوزه) لتحريك زهرة برنامج الحفل مع نزول الصفحة. القالب يستخدم div
+// داخلي overflow-y-auto بدل سكرول الصفحة نفسها، فلازم نلقى هالحاوية
+// الفعلية ونسمع للسكرول عليها بدل window.
+function useScrollProgress(active: boolean) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (!active) return
+    const el = ref.current
+    if (!el) return
+
+    let scrollParent: HTMLElement | Window = window
+    let node: HTMLElement | null = el.parentElement
+    while (node) {
+      const style = getComputedStyle(node)
+      if (
+        (style.overflowY === "auto" || style.overflowY === "scroll") &&
+        node.scrollHeight > node.clientHeight
+      ) {
+        scrollParent = node
+        break
+      }
+      node = node.parentElement
+    }
+
+    const handle = () => {
+      const rect = el.getBoundingClientRect()
+      const vh = window.innerHeight || 1
+      const pct = ((vh - rect.top) / (vh + rect.height)) * 100
+      setProgress(Math.max(0, Math.min(100, pct)))
+    }
+    handle()
+    scrollParent.addEventListener("scroll", handle, { passive: true })
+    window.addEventListener("resize", handle)
+    return () => {
+      scrollParent.removeEventListener("scroll", handle)
+      window.removeEventListener("resize", handle)
+    }
+  }, [active])
+
+  return { ref, progress }
+}
+
 export function WisalTemplateView({ inv }: { inv: Invitation }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -125,6 +170,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
   }
 
   useRevealOnScroll(isOpen)
+  const programTimeline = useScrollProgress(isOpen)
 
   const generateGoldenParticles = () => {
     const items: GoldenParticle[] = []
@@ -470,36 +516,58 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               </div>
             </section>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]">
+            {/* برنامج الحفل والمكان — خلفية كريمية فاتحة مع لمسة بنفسجية،
+                والزهرة في المنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
+            <section className="py-20 px-6 flex flex-col items-center bg-[#FBF6EC] text-[#5C4433] border-t-2 border-[#D4AF37]">
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
-                <h3 className="text-3xl font-bold text-[#F1D989] mb-10 custom-font-heading">
+                <h3 className="text-3xl font-bold text-[#5C4433] mb-12 custom-font-heading">
+                  <span className="text-[#A78BDB] ml-2">✿</span>
                   برنامج الحفل
                 </h3>
-                <div className="space-y-7 text-base md:text-lg text-[#F5EBE0] custom-font-tajawal">
-                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-5">
-                    <span className="font-bold text-[#F1D989]">٧:٠٠ مساءً</span>
-                    <div className="flex-1 border-b border-dashed border-[#D4AF37]/30 mx-4" />
-                    <span>استقبال الضيوف</span>
+                <div
+                  ref={programTimeline.ref}
+                  className="relative space-y-9 text-base md:text-lg custom-font-tajawal"
+                >
+                  {/* خط عمودي منقّط خفيف على أقصى اليسار للزينة */}
+                  <div className="absolute inset-y-0 -left-2 w-px border-l border-dotted border-[#A78BDB]/40" />
+
+                  {/* الزهرة تتحرك عمودياً عبر منتصف القائمة حسب تقدم السكرول */}
+                  <span
+                    className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl transition-[top] duration-150 ease-out select-none"
+                    style={{ top: `${programTimeline.progress}%` }}
+                  >
+                    🌸
+                  </span>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#8C7568]">استقبال الضيوف</span>
+                    <span className="flex-1 flex justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
+                    </span>
+                    <span className="font-bold text-[#5C4433]">٧:٠٠ مساءً</span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-5">
-                    <span className="font-bold text-[#F1D989]">٧:٣٠ مساءً</span>
-                    <div className="flex-1 border-b border-dashed border-[#D4AF37]/30 mx-4" />
-                    <span>عقد القران</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#8C7568]">عقد القران</span>
+                    <span className="flex-1 flex justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
+                    </span>
+                    <span className="font-bold text-[#5C4433]">٧:٣٠ مساءً</span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-5">
-                    <span className="font-bold text-[#F1D989]">٩:٠٠ مساءً</span>
-                    <div className="flex-1 border-b border-dashed border-[#D4AF37]/30 mx-4" />
-                    <span>العشاء</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#8C7568]">العشاء</span>
+                    <span className="flex-1 flex justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
+                    </span>
+                    <span className="font-bold text-[#5C4433]">٩:٠٠ مساءً</span>
                   </div>
                 </div>
               </div>
 
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
-                <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-heading">
+                <h3 className="text-3xl font-bold text-[#5C4433] mb-7 custom-font-heading">
                   مكان الحفل
                 </h3>
-                <h4 className="text-2xl font-bold text-[#F5EBE0] mb-7 custom-font-heading">
+                <h4 className="text-2xl font-bold text-[#5C4433] mb-7 custom-font-heading">
                   {inv.venue}
                 </h4>
                 <a
