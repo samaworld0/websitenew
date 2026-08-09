@@ -543,12 +543,25 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                         style={{ top: `${pos}%` }}
                       />
                     ))}
-                    <span
-                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl transition-[top] duration-150 ease-out select-none"
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 transition-[top] duration-150 ease-out drop-shadow"
                       style={{ top: `${programTimeline.progress}%` }}
                     >
-                      🌹
-                    </span>
+                      <g fill="#D0342C">
+                        {[0, 72, 144, 216, 288].map((angle) => (
+                          <ellipse
+                            key={angle}
+                            cx="12"
+                            cy="6"
+                            rx="3.2"
+                            ry="5.5"
+                            transform={`rotate(${angle} 12 12)`}
+                          />
+                        ))}
+                      </g>
+                      <circle cx="12" cy="12" r="2" fill="#F1C40F" />
+                    </svg>
                   </div>
 
                   <div
