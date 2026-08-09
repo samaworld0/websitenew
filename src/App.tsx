@@ -139,7 +139,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a
+            
               href="?admin=1"
               title="لوحة التحكم"
               className="w-9 h-9 rounded-full flex items-center justify-center border border-border text-muted-foreground hover:text-foreground"
@@ -161,7 +161,7 @@ export default function App() {
         <span className="hidden sm:block absolute top-52 right-[3%] w-1.5 h-1.5 rounded-full bg-rose-500 animate-float-delay" />
 
         <div className="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center relative">
-          <a
+          
             href="#try"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs md:text-sm font-bold bg-gold-50 border border-gold-200 text-gold-700 mb-8"
             style={{ fontFamily: "Cairo, sans-serif" }}
@@ -251,7 +251,7 @@ export default function App() {
       </section>
 
       {/* ============ القوالب ============ */}
-      <section id="templates" className="max-w-7xl mx-auto px-6 pb-16">
+      <section id="templates" className="max-w-7xl mx-auto px-6 pt-8 pb-28">
         <div className="text-center mb-16">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
