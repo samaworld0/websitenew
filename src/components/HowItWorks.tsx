@@ -2,7 +2,7 @@ import React from 'react';
 
 const HowItWorks = () => {
   return (
-    <section className="py-16 px-5 bg-background text-center" dir="rtl" style={{ fontFamily: "Cairo, sans-serif" }}>
+    <section className="py-28 px-5 bg-background text-center" dir="rtl" style={{ fontFamily: "Cairo, sans-serif" }}>
       {/* تم تصغير العرض هنا إلى max-w-4xl ليكون بنفس مستوى كروت الدعوات */}
       <div className="max-w-4xl mx-auto">
         <div className="mb-12">
