@@ -525,40 +525,70 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   برنامج الحفل
                 </h3>
                 <div
-                  ref={programTimeline.ref}
-                  className="relative space-y-9 text-base md:text-lg custom-font-tajawal"
+                  className="grid gap-x-3 text-base md:text-lg custom-font-tajawal"
+                  style={{ gridTemplateColumns: "1fr 2rem 1fr" }}
                 >
-                  {/* خط عمودي منقّط خفيف على أقصى اليسار للزينة */}
-                  <div className="absolute inset-y-0 -left-2 w-px border-l border-dotted border-[#A78BDB]/40" />
-
-                  {/* الزهرة تتحرك عمودياً عبر منتصف القائمة حسب تقدم السكرول */}
-                  <span
-                    className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl transition-[top] duration-150 ease-out select-none"
-                    style={{ top: `${programTimeline.progress}%` }}
+                  {/* عمود الزينة الأوسط: يمتد عبر كل الصفوف ويحتوي النقاط
+                      الثابتة + الزهرة المتحركة، بمعزل تام عن نصوص الصفوف
+                      حتى ما تتراكب فوق أي كلام */}
+                  <div
+                    ref={programTimeline.ref}
+                    className="relative"
+                    style={{ gridColumn: 2, gridRow: "1 / span 3" }}
                   >
-                    🌸
-                  </span>
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#A78BDB]/40" />
+                    {[0, 50, 100].map((pos) => (
+                      <span
+                        key={pos}
+                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#A78BDB]"
+                        style={{ top: `${pos}%` }}
+                      />
+                    ))}
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-xl transition-[top] duration-150 ease-out select-none"
+                      style={{ top: `${programTimeline.progress}%` }}
+                    >
+                      🌸
+                    </span>
+                  </div>
 
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#8C7568]">استقبال الضيوف</span>
-                    <span className="flex-1 flex justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
-                    </span>
-                    <span className="font-bold text-[#5C4433]">٧:٠٠ مساءً</span>
+                  <div
+                    className="flex items-center justify-end py-4 text-[#8C7568]"
+                    style={{ gridColumn: 1, gridRow: 1 }}
+                  >
+                    استقبال الضيوف
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#8C7568]">عقد القران</span>
-                    <span className="flex-1 flex justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
-                    </span>
-                    <span className="font-bold text-[#5C4433]">٧:٣٠ مساءً</span>
+                  <div
+                    className="flex items-center justify-start py-4 font-bold text-[#5C4433]"
+                    style={{ gridColumn: 3, gridRow: 1 }}
+                  >
+                    ٧:٠٠ مساءً
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[#8C7568]">العشاء</span>
-                    <span className="flex-1 flex justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#A78BDB]" />
-                    </span>
-                    <span className="font-bold text-[#5C4433]">٩:٠٠ مساءً</span>
+
+                  <div
+                    className="flex items-center justify-end py-4 text-[#8C7568]"
+                    style={{ gridColumn: 1, gridRow: 2 }}
+                  >
+                    عقد القران
+                  </div>
+                  <div
+                    className="flex items-center justify-start py-4 font-bold text-[#5C4433]"
+                    style={{ gridColumn: 3, gridRow: 2 }}
+                  >
+                    ٧:٣٠ مساءً
+                  </div>
+
+                  <div
+                    className="flex items-center justify-end py-4 text-[#8C7568]"
+                    style={{ gridColumn: 1, gridRow: 3 }}
+                  >
+                    العشاء
+                  </div>
+                  <div
+                    className="flex items-center justify-start py-4 font-bold text-[#5C4433]"
+                    style={{ gridColumn: 3, gridRow: 3 }}
+                  >
+                    ٩:٠٠ مساءً
                   </div>
                 </div>
               </div>
