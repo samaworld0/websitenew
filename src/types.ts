@@ -54,6 +54,9 @@ export interface Invitation {
   // المفتاح هو معرّف النص (مثل groomName)، والقيمة حجم الخط بالبكسل
   // ومقدار الإزاحة الأفقية/العمودية بالبكسل عن موضعه الأصلي بالتصميم.
   textStyles?: Record<string, { size?: number; x?: number; y?: number }>
+  // النص الصغير اللي يطلع فوق الوردة بأعلى الشاشة الأولى (افتراضياً "دعوة
+  // زفاف") — قابل للتعديل من نموذج "تعديل الدعوة"
+  heroEyebrow?: string
 }
 
 // نموذج تفاصيل الدعوة الخاصة — يُستخدم بين AdminCreateForm و AdminPanel
