@@ -95,6 +95,9 @@ export function DeselectSurface({ children }: { children: ReactNode }) {
 
 const MIN_PX = 8
 const MAX_PX = 220
+// أقصى مسافة تحريك مسموحة (بكسل) بأي اتجاه — تمنع سحب النص بالغلط لمسافة
+// كبيرة تطلعه برّه حدود الشاشة على شاشات أصغر من اللي استخدمها بالمحرر
+const MAX_OFFSET = 150
 
 export function EditableText({
   id,
@@ -133,11 +136,15 @@ export function EditableText({
       )
     }
     // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
-    // الحجم/الموضع المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية
+    // الحجم/الموضع المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية — مع حد أقصى
+    // احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد) ما تطلع
+    // النص برّه حدود الشاشة
+    const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
+    const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
-      transform: `translate(${savedStyle.x || 0}px, ${savedStyle.y || 0}px)`,
+      transform: `translate(${clampedX}px, ${clampedY}px)`,
       display: "inline-block",
     }
     return (
@@ -196,7 +203,9 @@ export function EditableText({
     } else {
       const dx = ev.clientX - d.startX
       const dy = ev.clientY - d.startY
-      updateStyle(id, { x: d.startX0 + dx, y: d.startY0 + dy })
+      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dx))
+      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dy))
+      updateStyle(id, { x: nextX, y: nextY })
     }
   }
   const handleUp = () => {
