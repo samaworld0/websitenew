@@ -62,7 +62,6 @@ export function AdminCreateForm({
       <div>
         <label className="block text-sm font-bold mb-2">اسم العريس</label>
         <input
-          required
           value={groom}
           onChange={(e) => setGroom(e.target.value)}
           className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
@@ -71,7 +70,6 @@ export function AdminCreateForm({
       <div>
         <label className="block text-sm font-bold mb-2">اسم العروس</label>
         <input
-          required
           value={bride}
           onChange={(e) => setBride(e.target.value)}
           className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
