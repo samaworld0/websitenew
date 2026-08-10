@@ -38,7 +38,15 @@ export async function loadInvitations(): Promise<Invitation[]> {
 
     // أول مرة يكون الجدول فاضي — نزرع فيه الدعوات الافتراضية
     if (!data || data.length === 0) {
-      await supabase.from("invitations").upsert(invitations)
+      const seedRows = invitations.map(toDatabaseInvitation)
+      const { error: seedError } = await supabase
+        .from("invitations")
+        .upsert(seedRows, { onConflict: "id" })
+
+      if (seedError) {
+        console.error("Supabase seed invitations error:", seedError)
+      }
+
       return invitations
     }
 
@@ -140,38 +148,85 @@ function describeError(err: unknown): string {
   return String(err)
 }
 
+
+// تحويل بيانات الدعوة إلى أعمدة موجودة فعلياً في public.invitations.
+// لا نستخدم ...inv هنا، لأن Invitation يحتوي حقولاً إضافية مثل
+// nameFontSize و programItems غير موجودة كأعمدة في جدول Supabase.
+// بيانات التصميم المباشر محفوظة داخل textStyles (jsonb).
+function toDatabaseInvitation(inv: Invitation) {
+  return {
+    id: inv.id,
+    category: inv.category,
+    title: inv.title,
+    subtitle: inv.subtitle,
+    groom: inv.groom,
+    bride: inv.bride,
+    dateGreg: inv.dateGreg,
+    time: inv.time,
+    venue: inv.venue,
+    gradient: inv.gradient ?? [],
+    accentColor: inv.accentColor,
+    tag: inv.tag,
+    price: inv.price,
+    verse: inv.verse,
+    sheetId: inv.sheetId ?? null,
+    sheetUrl: inv.sheetUrl ?? null,
+    templateType: inv.templateType ?? null,
+    heroBg: inv.heroBg ?? null,
+    doorBgVideo: inv.doorBgVideo ?? null,
+    introVideo: inv.introVideo ?? null,
+    introPoster: inv.introPoster ?? null,
+    musicUrl: inv.musicUrl ?? null,
+    coverImage: inv.coverImage ?? null,
+    unlisted: inv.unlisted ?? false,
+    countdownDate: inv.countdownDate ?? null,
+    mapUrl: inv.mapUrl ?? null,
+    textStyles: inv.textStyles ?? null,
+  }
+}
+
 export async function persistInvitations(list: Invitation[]): Promise<boolean> {
-  // نرحّل أي حقول Base64 قديمة لـ Storage قبل الحفظ (انظر التعليق فوق).
-  // هذي خطوة منفصلة عن الحفظ بقاعدة البيانات حتى نقدر نميّز سبب الفشل.
   let migratedList: Invitation[]
+
   try {
     migratedList = await Promise.all(list.map(migrateBase64Fields))
   } catch (err) {
     console.error("Supabase migrateBase64Fields error:", err)
     alert(
-      `فشل رفع أحد الملفات إلى Supabase Storage قبل الحفظ.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود أو غير مفعّل كـ Public في Storage.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
+      `فشل رفع أحد الملفات إلى Supabase Storage قبل الحفظ.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
     )
     return false
   }
 
   try {
-    // مهم: نعمل upsert أولاً، وبعد نجاحه فقط نحذف الدعوات التي لم تعد موجودة.
-    // بهذا الشكل إذا فشل الحفظ ما نخاطر بحذف البيانات القديمة من الجدول.
-    if (migratedList.length > 0) {
-      const { error } = await supabase
-        .from("invitations")
-        .upsert(migratedList)
-      if (error) throw error
+    // مهم: لا نرسل Invitation كاملاً إلى Supabase.
+    // هذا يمنع أخطاء الأعمدة غير الموجودة مثل programItems.
+    const rows = migratedList.map(toDatabaseInvitation)
 
-      const ids = migratedList.map((inv) => inv.id)
+    if (rows.length > 0) {
+      const ids = rows.map((row) => row.id)
+
       const { error: deleteError } = await supabase
         .from("invitations")
         .delete()
         .not("id", "in", `(${ids.join(",")})`)
+
       if (deleteError) throw deleteError
     } else {
-      const { error } = await supabase.from("invitations").delete().neq("id", -1)
-      if (error) throw error
+      const { error: deleteError } = await supabase
+        .from("invitations")
+        .delete()
+        .neq("id", -1)
+
+      if (deleteError) throw deleteError
+    }
+
+    if (rows.length > 0) {
+      const { error: upsertError } = await supabase
+        .from("invitations")
+        .upsert(rows, { onConflict: "id" })
+
+      if (upsertError) throw upsertError
     }
 
     return true
