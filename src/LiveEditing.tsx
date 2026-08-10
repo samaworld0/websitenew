@@ -124,8 +124,24 @@ export function EditableText({
   const Tag = as as any
 
   if (!editable) {
+    const savedStyle = styles[id]
+    if (!savedStyle) {
+      return (
+        <Tag className={className} style={style}>
+          {children}
+        </Tag>
+      )
+    }
+    // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
+    // الحجم/الموضع المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية
+    const readOnlyStyle: React.CSSProperties = {
+      ...style,
+      ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
+      transform: `translate(${savedStyle.x || 0}px, ${savedStyle.y || 0}px)`,
+      display: "inline-block",
+    }
     return (
-      <Tag className={className} style={style}>
+      <Tag className={className} style={readOnlyStyle}>
         {children}
       </Tag>
     )
