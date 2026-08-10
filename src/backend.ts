@@ -122,10 +122,22 @@ async function migrateBase64Fields(inv: Invitation): Promise<Invitation> {
 }
 
 export async function persistInvitations(list: Invitation[]) {
+  // نرحّل أي حقول Base64 قديمة لـ Storage قبل الحفظ (انظر التعليق فوق).
+  // هذي خطوة منفصلة عن الحفظ بقاعدة البيانات حتى نقدر نميّز سبب الفشل.
+  let migratedList: Invitation[]
   try {
-    // نرحّل أي حقول Base64 قديمة لـ Storage قبل الحفظ (انظر التعليق فوق)
-    const migratedList = await Promise.all(list.map(migrateBase64Fields))
+    migratedList = await Promise.all(list.map(migrateBase64Fields))
+  } catch (err) {
+    console.error("Supabase migrateBase64Fields error:", err)
+    alert(
+      `فشل رفع أحد الملفات إلى Supabase Storage قبل الحفظ.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود أو غير مفعّل كـ Public في Storage.\n\nتفاصيل الخطأ التقنية: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    )
+    return
+  }
 
+  try {
     if (migratedList.length > 0) {
       const ids = migratedList.map((inv) => inv.id)
       await supabase.from("invitations").delete().not("id", "in", `(${ids.join(",")})`)
@@ -137,8 +149,12 @@ export async function persistInvitations(list: Invitation[]) {
       if (error) throw error
     }
   } catch (err) {
-    alert("حدث خطأ أثناء الحفظ. قد يكون حجم الملفات المرفوعة (مثل الفيديوهات) كبيراً جداً على قاعدة البيانات. يُفضل تقليل حجمها أو استخدام روابط مباشرة.")
     console.error("Supabase persistInvitations error:", err)
+    alert(
+      `حدث خطأ أثناء حفظ الدعوات بقاعدة البيانات.\n\nتفاصيل الخطأ التقنية: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    )
   }
 }
 
