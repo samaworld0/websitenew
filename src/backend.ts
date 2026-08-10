@@ -121,6 +121,25 @@ async function migrateBase64Fields(inv: Invitation): Promise<Invitation> {
   return updated
 }
 
+// أخطاء Supabase (PostgrestError مثلاً) مو دائماً من نوع Error القياسي، فـ
+// String(err) كانت تطلع "[object Object]" بدون أي فائدة. هذي الدالة تحاول
+// تطلع أوضح رسالة ممكنة من أي شكل خطأ (Error عادي، أو كائن فيه message/details/hint/code).
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>
+    const parts = [e.message, e.details, e.hint, e.code]
+      .filter((v) => typeof v === "string" && v.length > 0)
+    if (parts.length > 0) return parts.join(" | ")
+    try {
+      return JSON.stringify(err)
+    } catch {
+      return String(err)
+    }
+  }
+  return String(err)
+}
+
 export async function persistInvitations(list: Invitation[]) {
   // نرحّل أي حقول Base64 قديمة لـ Storage قبل الحفظ (انظر التعليق فوق).
   // هذي خطوة منفصلة عن الحفظ بقاعدة البيانات حتى نقدر نميّز سبب الفشل.
@@ -130,9 +149,7 @@ export async function persistInvitations(list: Invitation[]) {
   } catch (err) {
     console.error("Supabase migrateBase64Fields error:", err)
     alert(
-      `فشل رفع أحد الملفات إلى Supabase Storage قبل الحفظ.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود أو غير مفعّل كـ Public في Storage.\n\nتفاصيل الخطأ التقنية: ${
-        err instanceof Error ? err.message : String(err)
-      }`,
+      `فشل رفع أحد الملفات إلى Supabase Storage قبل الحفظ.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود أو غير مفعّل كـ Public في Storage.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
     )
     return
   }
@@ -151,9 +168,7 @@ export async function persistInvitations(list: Invitation[]) {
   } catch (err) {
     console.error("Supabase persistInvitations error:", err)
     alert(
-      `حدث خطأ أثناء حفظ الدعوات بقاعدة البيانات.\n\nتفاصيل الخطأ التقنية: ${
-        err instanceof Error ? err.message : String(err)
-      }`,
+      `حدث خطأ أثناء حفظ الدعوات بقاعدة البيانات.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
     )
   }
 }
