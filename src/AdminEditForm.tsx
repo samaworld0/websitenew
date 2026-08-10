@@ -111,7 +111,6 @@ export function AdminEditForm({
       <div>
         <label className="block text-sm font-bold mb-2">عنوان الدعوة</label>
         <input
-          required
           value={form.title}
           onChange={(e) => updateField("title", e.target.value)}
           className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
@@ -122,9 +121,19 @@ export function AdminEditForm({
           العنوان الفرعي (يظهر بالكارد)
         </label>
         <input
-          required
           value={form.subtitle}
           onChange={(e) => updateField("subtitle", e.target.value)}
+          className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-bold mb-2">
+          النص فوق الوردة (أعلى الشاشة الأولى)
+        </label>
+        <input
+          value={form.heroEyebrow ?? "دعوة زفاف"}
+          onChange={(e) => updateField("heroEyebrow", e.target.value)}
           className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
         />
       </div>
