@@ -149,12 +149,21 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     flash("تم حذف الدعوة 🗑️")
   }
 
-  const handleSaveEdit = (updated: Invitation) => {
+  const handleSaveEdit = async (updated: Invitation): Promise<boolean> => {
     const newList = list.map((inv) => (inv.id === updated.id ? updated : inv))
-    persistInvitations(newList)
+    const saved = await persistInvitations(newList)
+
+    if (!saved) {
+      flash("فشل حفظ التعديل ❌ — لم يتم تغيير البيانات")
+      return false
+    }
+
+    // نحدّث القائمة المحلية فقط بعد نجاح الحفظ في Supabase، حتى لا تظهر
+    // المعاينة وكأن التعديل محفوظ بينما قاعدة البيانات ما زالت على النسخة القديمة.
     setList(newList)
     setEditingId(null)
     flash("تم حفظ التعديل ✅")
+    return true
   }
 
   const buildShareLink = (inv: Invitation) =>
@@ -670,13 +679,13 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         <LiveTemplateEditor
           inv={designEditingInv}
           onClose={() => setDesignEditingInv(null)}
-          onSave={(updated) => {
-            handleSaveEdit(updated)
-            setDesignEditingInv(null)
+          onSave={async (updated) => {
+            const saved = await handleSaveEdit(updated)
+            if (saved) setDesignEditingInv(null)
+            return saved
           }}
         />
       )}
     </div>
   )
 }
-
