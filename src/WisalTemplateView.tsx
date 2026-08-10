@@ -401,7 +401,9 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               <div />
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow">
-                  <EditableText id="heroEyebrow">دعوة زفاف</EditableText>
+                  <EditableText id="heroEyebrow">
+                    {inv.heroEyebrow || "دعوة زفاف"}
+                  </EditableText>
                 </p>
                 <span className="text-[#D4AF37] text-xl mb-4">✿</span>
                 {inv.groom && (
