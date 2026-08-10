@@ -149,21 +149,37 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     flash("تم حذف الدعوة 🗑️")
   }
 
-  const handleSaveEdit = async (updated: Invitation): Promise<boolean> => {
-    const newList = list.map((inv) => (inv.id === updated.id ? updated : inv))
-    const saved = await persistInvitations(newList)
-
-    if (!saved) {
-      flash("فشل حفظ التعديل ❌ — لم يتم تغيير البيانات")
-      return false
-    }
-
-    // نحدّث القائمة المحلية فقط بعد نجاح الحفظ في Supabase، حتى لا تظهر
-    // المعاينة وكأن التعديل محفوظ بينما قاعدة البيانات ما زالت على النسخة القديمة.
+  // ملاحظة مهمة: فورم "تعديل" العادي (AdminEditForm) ياخذ نسخة من الدعوة
+  // لحظة ما ينفتح ويضلها مجمّدة طول ما هو مفتوح — يعني لو انفتح "تعديل
+  // التصميم مباشر" بنفس الوقت (أو بعده) وحفظ textStyles جديدة، وبعدين
+  // المستخدم حفظ فورم "تعديل" العادي، بيرجّع textStyles القديمة ويدهس
+  // (overwrite) التصميم الجديد لأنه شايل نسخة كاملة قديمة من الدعوة.
+  // الحل: فورم "تعديل" العادي ما يلمس أبداً textStyles — نرجّعها هنا من
+  // أحدث نسخة موجودة بالـ list وقت الحفظ، مو من الفورم نفسه.
+  const handleSaveEdit = (updated: Invitation) => {
+    const newList = list.map((inv) =>
+      inv.id === updated.id ? { ...updated, textStyles: inv.textStyles } : inv,
+    )
+    persistInvitations(newList)
     setList(newList)
     setEditingId(null)
     flash("تم حفظ التعديل ✅")
-    return true
+  }
+
+  // نفس الفكرة بالاتجاه المعاكس: "تعديل التصميم مباشر" لازم يلمس بس حقل
+  // textStyles، ويحافظ على أحدث نسخة من باقي الحقول (نص/بيانات/إعدادات)
+  // اللي ممكن تكون انحفظت من فورم "تعديل" العادي أثناء ما هو مفتوح —
+  // حتى لو الاثنين انفتحوا أو انحفظوا بنفس الفترة، ولا وحدة تدهس الثانية.
+  const handleSaveDesign = (updated: Invitation) => {
+    const newList = list.map((inv) =>
+      inv.id === updated.id
+        ? { ...inv, textStyles: updated.textStyles }
+        : inv,
+    )
+    persistInvitations(newList)
+    setList(newList)
+    setDesignEditingInv(null)
+    flash("تم حفظ التصميم ✅")
   }
 
   const buildShareLink = (inv: Invitation) =>
@@ -679,13 +695,10 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         <LiveTemplateEditor
           inv={designEditingInv}
           onClose={() => setDesignEditingInv(null)}
-          onSave={async (updated) => {
-            const saved = await handleSaveEdit(updated)
-            if (saved) setDesignEditingInv(null)
-            return saved
-          }}
+          onSave={handleSaveDesign}
         />
       )}
     </div>
   )
 }
+
