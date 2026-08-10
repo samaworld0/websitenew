@@ -140,7 +140,7 @@ function describeError(err: unknown): string {
   return String(err)
 }
 
-export async function persistInvitations(list: Invitation[]) {
+export async function persistInvitations(list: Invitation[]): Promise<boolean> {
   // نرحّل أي حقول Base64 قديمة لـ Storage قبل الحفظ (انظر التعليق فوق).
   // هذي خطوة منفصلة عن الحفظ بقاعدة البيانات حتى نقدر نميّز سبب الفشل.
   let migratedList: Invitation[]
@@ -151,25 +151,36 @@ export async function persistInvitations(list: Invitation[]) {
     alert(
       `فشل رفع أحد الملفات إلى Supabase Storage قبل الحفظ.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود أو غير مفعّل كـ Public في Storage.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
     )
-    return
+    return false
   }
 
   try {
+    // مهم: نعمل upsert أولاً، وبعد نجاحه فقط نحذف الدعوات التي لم تعد موجودة.
+    // بهذا الشكل إذا فشل الحفظ ما نخاطر بحذف البيانات القديمة من الجدول.
     if (migratedList.length > 0) {
+      const { error } = await supabase
+        .from("invitations")
+        .upsert(migratedList)
+      if (error) throw error
+
       const ids = migratedList.map((inv) => inv.id)
-      await supabase.from("invitations").delete().not("id", "in", `(${ids.join(",")})`)
+      const { error: deleteError } = await supabase
+        .from("invitations")
+        .delete()
+        .not("id", "in", `(${ids.join(",")})`)
+      if (deleteError) throw deleteError
     } else {
-      await supabase.from("invitations").delete().neq("id", -1)
-    }
-    if (migratedList.length > 0) {
-      const { error } = await supabase.from("invitations").upsert(migratedList)
+      const { error } = await supabase.from("invitations").delete().neq("id", -1)
       if (error) throw error
     }
+
+    return true
   } catch (err) {
     console.error("Supabase persistInvitations error:", err)
     alert(
       `حدث خطأ أثناء حفظ الدعوات بقاعدة البيانات.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
     )
+    return false
   }
 }
 
@@ -205,34 +216,29 @@ export function persistAssetCounter(n: number) {
 }
 
 // ============ إعدادات الواجهة (نصوص الصفحة الرئيسية + الألوان) ============
-// تنخزن بجدول "landing_page_settings" على Supabase — صف وحيد رقمه ثابت (id = 1)
-// يحمل كل الإعدادات كـ JSON بعمود "data". لازم يكون الجدول موجود مسبقاً
-// (شوف ملف SITE_SETTINGS_SETUP.md لتعليمات إنشائه)، ولو ما كان موجود أو
-// صار أي خطأ، نرجع للإعدادات الافتراضية حتى الموقع يضل يشتغل بدون مشاكل.
-const SITE_SETTINGS_ROW_ID = 1
+// تنخزن كملف JSON واحد داخل نفس Supabase Storage bucket المستخدم للصور
+// والفيديوهات (invitation-media) — بدل جدول قاعدة بيانات منفصل. هذا يعني
+// ما فيه أي إعداد يدوي إضافي مطلوب بقاعدة البيانات: بما إن الـ bucket نفسه
+// أصلاً لازم يكون موجود (يُستخدم لرفع صور/فيديوهات الدعوات)، إعدادات الواجهة
+// تشتغل تلقائياً بدون أي خطوة يدوية زيادة.
+const SITE_SETTINGS_STORAGE_PATH = "site-settings/settings.json"
 
 export async function loadSiteSettings(): Promise<SiteSettings> {
   try {
-    const { data, error } = await supabase
-      .from("landing_page_settings")
-      .select("data")
-      .eq("id", SITE_SETTINGS_ROW_ID)
-      .maybeSingle()
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .download(SITE_SETTINGS_STORAGE_PATH)
 
     if (error) throw error
 
-    if (!data) {
-      // أول مرة — نزرع الصف بالإعدادات الافتراضية
-      await supabase
-        .from("landing_page_settings")
-        .upsert({ id: SITE_SETTINGS_ROW_ID, data: DEFAULT_SITE_SETTINGS })
-      return DEFAULT_SITE_SETTINGS
-    }
-
+    const text = await data.text()
+    const parsed = JSON.parse(text) as SiteSettings
     // ندمج مع الافتراضي حتى لو انضافت حقول جديدة لاحقاً بالكود ما تكسر
     // الإعدادات القديمة المخزّنة (تحديثات مستقبلية على الموقع)
-    return { ...DEFAULT_SITE_SETTINGS, ...(data.data as SiteSettings) }
+    return { ...DEFAULT_SITE_SETTINGS, ...parsed }
   } catch (err) {
+    // أول مرة (الملف مو موجود بعد) أو أي خطأ ثاني — نرجع للإعدادات
+    // الافتراضية حتى الموقع يضل يشتغل بدون مشاكل
     console.error("Supabase loadSiteSettings error:", err)
     return DEFAULT_SITE_SETTINGS
   }
@@ -240,13 +246,22 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
 
 export async function persistSiteSettings(settings: SiteSettings) {
   try {
-    const { error } = await supabase
-      .from("landing_page_settings")
-      .upsert({ id: SITE_SETTINGS_ROW_ID, data: settings })
+    const blob = new Blob([JSON.stringify(settings)], {
+      type: "application/json",
+    })
+    const { error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(SITE_SETTINGS_STORAGE_PATH, blob, {
+        cacheControl: "60",
+        upsert: true,
+        contentType: "application/json",
+      })
     if (error) throw error
     return true
   } catch (err) {
-    alert("حدث خطأ أثناء حفظ إعدادات الواجهة. تأكد إن جدول landing_page_settings موجود بقاعدة البيانات.")
+    alert(
+      `حدث خطأ أثناء حفظ إعدادات الواجهة.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود أو غير مفعّل كـ Public في Storage.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
+    )
     console.error("Supabase persistSiteSettings error:", err)
     return false
   }
