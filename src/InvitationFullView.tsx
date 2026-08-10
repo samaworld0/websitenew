@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { Invitation } from "./types"
 import { WisalTemplateView } from "./WisalTemplateView"
 import { LamsaTemplateView } from "./LamsaTemplateView"
+import { EditModeProvider } from "./LiveEditing"
 
 export function InvitationFullView({
   inv,
@@ -40,9 +41,13 @@ export function InvitationFullView({
         </button>
       </div>
       {inv.templateType === "wisal" ? (
-        <WisalTemplateView inv={inv} />
+        <EditModeProvider editable={false} initialStyles={inv.textStyles || {}}>
+          <WisalTemplateView inv={inv} />
+        </EditModeProvider>
       ) : inv.templateType === "lamsa" ? (
-        <LamsaTemplateView inv={inv} />
+        <EditModeProvider editable={false} initialStyles={inv.textStyles || {}}>
+          <LamsaTemplateView inv={inv} />
+        </EditModeProvider>
       ) : (
         <div
           className="flex-1 w-full h-full overflow-y-auto p-12 text-center"
