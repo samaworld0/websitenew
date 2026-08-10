@@ -13,7 +13,7 @@ export function LiveTemplateEditor({
   onClose,
 }: {
   inv: Invitation
-  onSave: (updated: Invitation) => void
+  onSave: (updated: Invitation) => Promise<boolean> | void
   onClose: () => void
 }) {
   const stylesRef = useRef<Record<string, TextStyle>>(inv.textStyles || {})
@@ -26,8 +26,10 @@ export function LiveTemplateEditor({
     }
   }, [])
 
-  const handleSave = () => {
-    onSave({ ...inv, textStyles: stylesRef.current })
+  const handleSave = async () => {
+    const savedOk = await onSave({ ...inv, textStyles: { ...stylesRef.current } })
+    if (savedOk === false) return
+
     setSaved(true)
     setTimeout(() => setSaved(false), 1800)
   }
