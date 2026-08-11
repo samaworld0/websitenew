@@ -318,7 +318,9 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                 <p className="text-base md:text-lg tracking-widest text-[#EFD9C6] mb-2 lamsa-eyebrow">
                   <EditableText id="heroEyebrow">دعوة خطوبة</EditableText>
                 </p>
-                <span className="text-[#C9A227] text-xl mb-4">✦</span>
+                <EditableText id="heroStarIcon" as="span" className="text-[#C9A227] text-xl mb-4">
+                  ✦
+                </EditableText>
                 {inv.groom && (
                   <EditableText
                     id="groomName"
@@ -329,9 +331,13 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                   </EditableText>
                 )}
                 {inv.groom && inv.bride && (
-                  <span className="text-3xl text-[#C9A227] my-3 lamsa-ruqaa">
+                  <EditableText
+                    id="namesConjunction"
+                    as="span"
+                    className="text-3xl text-[#C9A227] my-3 lamsa-ruqaa"
+                  >
                     و
-                  </span>
+                  </EditableText>
                 )}
                 {inv.bride && (
                   <EditableText
