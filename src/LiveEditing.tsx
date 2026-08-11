@@ -443,6 +443,7 @@ export function EditableBackground({
   style,
   children,
   dir,
+  attrs,
 }: {
   id: string
   as?: string
@@ -452,6 +453,11 @@ export function EditableBackground({
   // تمرير اختياري لخاصية dir (مثل dir="rtl") حتى تنعكس صح على أقسام تعتمد
   // عليها لباقي التصميم (مثال: العنصر الجذر لكل قالب)
   dir?: string
+  // خصائص DOM إضافية غير قابلة للتمرير عبر style أو dir (مثال: type="submit"
+  // أو disabled لزر). بوضع التعديل تُستثنى منها onClick الأصلي (نستبدله
+  // بمنطق التحديد) حتى ما يصير إرسال فورم أو أي فعل حقيقي وأنت تحاول تختار
+  // العنصر بس؛ برّه وضع التعديل تُطبَّق كاملة عادي لأنها تخص تجربة الضيف
+  attrs?: Record<string, any>
 }) {
   const { editable, styles, selectedId, setSelectedId } = useEditMode()
   const Tag = as as any
@@ -467,7 +473,7 @@ export function EditableBackground({
         : null),
     }
     return (
-      <Tag className={className} style={mergedStyle} {...extraProps}>
+      <Tag className={className} style={mergedStyle} {...extraProps} {...attrs}>
         {children}
       </Tag>
     )
@@ -491,6 +497,7 @@ export function EditableBackground({
       style={mergedStyle}
       data-editable-bg-id={id}
       {...extraProps}
+      {...attrs}
       onClick={(e: React.MouseEvent) => {
         e.stopPropagation()
         setSelectedId(key)
