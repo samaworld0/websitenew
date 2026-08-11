@@ -3,15 +3,20 @@ import { uploadInvitationFile } from "./backend"
 
 // ============================================================================
 // نظام تعديل مباشر شبيه بفيغما: يلف أي نص داخل قوالب الدعوة (وصال/لمسة)
-// بمكوّن EditableText، يخليك تضغط على النص فتحدد، وبعدها:
-//   - تسحب مقبض ⇕ لتكبيره أو تصغيره
-//   - تسحب مقبض ✥ لتحريكه لأي مكان بالشاشة
-//   - تضغط زر 🔤 لرفع ملف خط من جهازك (ttf/otf/woff/woff2) وتطبيقه على
-//     هذا النص بالذات
+// بمكوّن EditableText، أو أي قسم خلفية بمكوّن EditableBackground، يخليك
+// تضغط عليه فيتحدد، وبعدها تتحكم فيه من لوحة خصائص ثابتة على جانب الشاشة
+// (نفس فكرة لوحة الخصائص بفيغما):
+//   - إخفاء/إظهار النص
+//   - تغيير لون النص أو لون الخلفية
+//   - تكبير/تصغير حجم الخط
+//   - تغيير الخط (من قائمة جاهزة أو رفع ملف خط)
+//   - تحريك النص لأي مكان (سحب مقبض ✥ على العنصر نفسه بالتصميم)
+//   - استرجاع الوضع الأصلي
 // كل هذا فوق المعاينة الحقيقية للدعوة — بدون ما يغيّر أي شي بالتصميم
 // الأصلي إذا الوضع مو "تعديل" (editable=false، وهو وضع كل صفحات الموقع
-// العادية). القياسات والمواضع والخط تتخزّن بـ inv.textStyles وتُحفظ مع باقي
-// بيانات الدعوة.
+// العادية). كل القيم تتخزّن بـ inv.textStyles وتُحفظ مع باقي بيانات الدعوة.
+// خلفيات الأقسام (EditableBackground) تتخزّن بنفس الكائن، بس بمفتاح مسبوق
+// بـ"bg:" حتى ما تتعارض مع مفاتيح النصوص ولا نحتاج عمود قاعدة بيانات جديد.
 // ============================================================================
 
 export interface TextStyle {
@@ -23,7 +28,14 @@ export interface TextStyle {
   // بالمعاينة النهائية (خارج وضع التعديل) مو بس بالمحرر
   font?: string
   fontUrl?: string
+  // لون مخصص — يُستخدم للنص (color) وللخلفيات (نفس الحقل، background)
+  color?: string
+  // إخفاء العنصر بالكامل من المعاينة النهائية (يبقى ظاهر بوضع التعديل
+  // بشفافية أقل حتى يقدر الأدمن يلقاه ويرجّعه)
+  hidden?: boolean
 }
+
+const BG_PREFIX = "bg:"
 
 interface EditModeValue {
   editable: boolean
@@ -76,6 +88,26 @@ export const FONT_OPTIONS: { label: string; family: string }[] = [
   { label: "ريم كوفي", family: "Reem Kufi, sans-serif" },
   { label: "IBM بلكس", family: "IBM Plex Sans, sans-serif" },
   { label: "شيريش", family: "Cherish, cursive" },
+]
+
+// لوحة ألوان جاهزة تطلع بلوحة الخصائص — نفس عائلة ألوان قوالب الدعوة
+// (نبيتي/عنابي، ذهبي، كريمي) حتى يقدر الأدمن يطبّق نفس هوية التصميم
+// بضغطة وحدة، مع خيار لون حر بجانبها لأي لون ثاني.
+export const COLOR_PRESETS: string[] = [
+  "#5C2A38",
+  "#4E1019",
+  "#7A3546",
+  "#3D2B2E",
+  "#2A211D",
+  "#B8862F",
+  "#C9A227",
+  "#D4AF37",
+  "#F1D4B8",
+  "#F5E9E4",
+  "#FBF3EF",
+  "#FAF7F2",
+  "#FFFFFF",
+  "#000000",
 ]
 
 export function EditModeProvider({
@@ -169,19 +201,9 @@ export function EditableText({
   target?: string
   rel?: string
 }) {
-  const {
-    editable,
-    styles,
-    selectedId,
-    invitationId,
-    setSelectedId,
-    updateStyle,
-    resetStyle,
-  } = useEditMode()
+  const { editable, styles, selectedId, setSelectedId, updateStyle } =
+    useEditMode()
   const ref = useRef<HTMLElement | null>(null)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [uploadingFont, setUploadingFont] = useState(false)
-  const [showFontList, setShowFontList] = useState(false)
   const dragRef = useRef<{
     mode: "resize" | "move"
     startY: number
@@ -206,6 +228,9 @@ export function EditableText({
 
   if (!editable) {
     const savedStyle = styles[id]
+    // العنصر مخفي من الأدمن — ما ينعرض إطلاقاً عند الضيف، وما ياخذ أي
+    // مساحة بالتصميم
+    if (savedStyle?.hidden) return null
     if (!savedStyle) {
       return (
         <Tag className={className} style={style} {...linkProps}>
@@ -214,15 +239,16 @@ export function EditableText({
       )
     }
     // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
-    // الحجم/الموضع/الخط المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية — مع حد
-    // أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد) ما تطلع
-    // النص برّه حدود الشاشة
+    // الحجم/الموضع/الخط/اللون المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية —
+    // مع حد أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد)
+    // ما تطلع النص برّه حدود الشاشة
     const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
     const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
       ...(savedStyle.font ? { fontFamily: savedStyle.font } : null),
+      ...(savedStyle.color ? { color: savedStyle.color } : null),
       transform: `translate(${clampedX}px, ${clampedY}px)`,
       display: "inline-block",
     }
@@ -238,46 +264,6 @@ export function EditableText({
   const px = st.size
   const offX = st.x || 0
   const offY = st.y || 0
-
-  const ALLOWED_FONT_EXT = [".ttf", ".otf", ".woff", ".woff2"]
-
-  const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ""
-    if (!file) return
-
-    const lowerName = file.name.toLowerCase()
-    const isAllowed = ALLOWED_FONT_EXT.some((ext) => lowerName.endsWith(ext))
-    if (!isAllowed) {
-      alert("صيغة الخط غير مدعومة. الصيغ المقبولة: ttf, otf, woff, woff2")
-      return
-    }
-
-    setUploadingFont(true)
-    try {
-      const url = await uploadInvitationFile(
-        file,
-        invitationId || "shared",
-        `font-${id}-${Date.now()}`,
-      )
-      // اسم عائلة فريد مبني على معرف النص والوقت، حتى ما يتعارض مع أي خط
-      // ثاني مرفوع بنفس الصفحة
-      const family = `uploaded-${id}-${Date.now()}`.replace(
-        /[^a-zA-Z0-9_-]/g,
-        "-",
-      )
-      injectFontFace(family, url)
-      updateStyle(id, { font: family, fontUrl: url })
-    } catch (err) {
-      alert(
-        `تعذّر رفع ملف الخط.\n\nتفاصيل الخطأ: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      )
-    } finally {
-      setUploadingFont(false)
-    }
-  }
 
   const startResize = (e: React.PointerEvent) => {
     e.preventDefault()
@@ -333,49 +319,35 @@ export function EditableText({
     window.removeEventListener("pointerup", handleUp)
   }
 
-  const step = (delta: number) => {
-    const el = ref.current
-    const currentPx =
-      px ?? (el ? parseFloat(getComputedStyle(el).fontSize) : 24)
-    updateStyle(id, {
-      size: Math.max(MIN_PX, Math.min(MAX_PX, currentPx + delta)),
-    })
-  }
+  const isHidden = !!st.hidden
 
   const mergedStyle: React.CSSProperties = {
     ...style,
     ...(px ? { fontSize: `${px}px` } : null),
     ...(st.font ? { fontFamily: st.font } : null),
+    ...(st.color ? { color: st.color } : null),
     transform: `translate(${offX}px, ${offY}px)`,
     display: "inline-block",
     position: "relative",
     cursor: "pointer",
+    opacity: isHidden ? 0.35 : 1,
     outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
     outlineOffset: 4,
     borderRadius: 4,
-    transition: "outline-color .15s ease",
+    transition: "outline-color .15s ease, opacity .15s ease",
     zIndex: isSelected ? 350 : undefined,
   }
 
-  const btnStyle: React.CSSProperties = {
-    width: 20,
-    height: 20,
+  const handleBtnStyle: React.CSSProperties = {
+    width: 22,
+    height: 22,
     borderRadius: "50%",
-    background: "#2A211D",
+    background: "#1A1210",
+    border: "1px solid #B8862F",
     color: "#F1D989",
-    fontSize: 13,
-    lineHeight: "20px",
-    fontWeight: 700,
-  }
-
-  const fontListItemStyle: React.CSSProperties = {
-    textAlign: "center",
-    color: "#F5EBE0",
     fontSize: 12,
-    padding: "6px 8px",
-    borderRadius: 8,
-    background: "transparent",
-    whiteSpace: "nowrap",
+    lineHeight: "20px",
+    userSelect: "none",
   }
 
   return (
@@ -395,162 +367,491 @@ export function EditableText({
       }}
     >
       {children}
-      {isSelected && (
+      {isHidden && (
+        <span
+          contentEditable={false}
+          title="عنصر مخفي"
+          style={{
+            position: "absolute",
+            top: -8,
+            insetInlineEnd: -8,
+            width: 16,
+            height: 16,
+            borderRadius: "50%",
+            background: "#1A1210",
+            border: "1px solid #B8862F",
+            color: "#F1D989",
+            fontSize: 9,
+            lineHeight: "14px",
+            textAlign: "center",
+            zIndex: 360,
+          }}
+        >
+          ⊘
+        </span>
+      )}
+      {isSelected && !isHidden && (
         <span
           contentEditable={false}
           style={{
             position: "absolute",
             insetInlineStart: "50%",
             transform: "translateX(50%)",
-            bottom: -34,
+            bottom: -30,
             display: "flex",
             alignItems: "center",
-            gap: 4,
+            gap: 5,
             background: "#1A1210",
             border: "1px solid #B8862F",
             borderRadius: 999,
-            padding: "3px 6px",
+            padding: "3px 5px",
             zIndex: 400,
             whiteSpace: "nowrap",
             boxShadow: "0 4px 14px rgba(0,0,0,.35)",
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button type="button" onClick={() => step(-2)} style={btnStyle}>
-            −
-          </button>
-          <span
-            style={{
-              color: "#F5EBE0",
-              fontSize: 11,
-              fontFamily: "Cairo, sans-serif",
-              minWidth: 30,
-              textAlign: "center",
-            }}
-          >
-            {Math.round(
-              px ??
-                (ref.current
-                  ? parseFloat(getComputedStyle(ref.current).fontSize)
-                  : 0),
-            )}
-            px
-          </span>
-          <button type="button" onClick={() => step(2)} style={btnStyle}>
-            +
-          </button>
           <span
             onPointerDown={startResize}
-            title="اسحب للتكبير/التصغير"
-            style={{
-              cursor: "ns-resize",
-              color: "#B8862F",
-              fontSize: 13,
-              padding: "0 3px",
-              userSelect: "none",
-            }}
+            title="اسحب للتكبير/التصغير — أو استخدم لوحة الخصائص"
+            style={handleBtnStyle}
           >
-            ⇕
+            <span style={{ display: "block", textAlign: "center" }}>⇕</span>
           </span>
           <span
             onPointerDown={startMove}
             title="اسحب لتحريك النص لأي مكان"
-            style={{
-              cursor: "move",
-              color: "#B8862F",
-              fontSize: 13,
-              padding: "0 3px",
-              userSelect: "none",
-            }}
+            style={handleBtnStyle}
           >
-            ✥
+            <span style={{ display: "block", textAlign: "center" }}>✥</span>
           </span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".ttf,.otf,.woff,.woff2"
-            onChange={handleFontUpload}
-            style={{ display: "none" }}
-          />
-          <span style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => setShowFontList((v) => !v)}
-              disabled={uploadingFont}
-              title="اختيار الخط"
-              style={{ ...btnStyle, fontSize: 11, opacity: uploadingFont ? 0.5 : 1 }}
-            >
-              {uploadingFont ? "…" : "🔤"}
-            </button>
-            {showFontList && (
-              <div
-                contentEditable={false}
-                style={{
-                  position: "absolute",
-                  bottom: 28,
-                  insetInlineStart: "50%",
-                  transform: "translateX(50%)",
-                  background: "#1A1210",
-                  border: "1px solid #B8862F",
-                  borderRadius: 12,
-                  padding: 6,
-                  zIndex: 410,
-                  width: 150,
-                  maxHeight: 220,
-                  overflowY: "auto",
-                  boxShadow: "0 4px 14px rgba(0,0,0,.35)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateStyle(id, { font: undefined, fontUrl: undefined })
-                    setShowFontList(false)
-                  }}
-                  style={fontListItemStyle}
-                >
-                  الخط الأصلي
-                </button>
-                {FONT_OPTIONS.map((f) => (
-                  <button
-                    key={f.family}
-                    type="button"
-                    onClick={() => {
-                      updateStyle(id, { font: f.family, fontUrl: undefined })
-                      setShowFontList(false)
-                    }}
-                    style={{ ...fontListItemStyle, fontFamily: f.family }}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-                <div style={{ height: 1, background: "#B8862F55", margin: "4px 0" }} />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowFontList(false)
-                    fileInputRef.current?.click()
-                  }}
-                  style={{ ...fontListItemStyle, color: "#B8862F" }}
-                >
-                  ⬆ رفع خط من جهازك
-                </button>
-              </div>
-            )}
-          </span>
-          <button
-            type="button"
-            onClick={() => resetStyle(id)}
-            title="استرجاع الوضع الأصلي"
-            style={{ ...btnStyle, fontSize: 11 }}
-          >
-            ↺
-          </button>
         </span>
       )}
     </Tag>
+  )
+}
+
+// يلف أي قسم/خلفية بالتصميم (مثال: قسم "برنامج الحفل" العنابي، قسم تأكيد
+// الحضور الكريمي) ويخليها قابلة للتحديد وتغيير اللون من لوحة الخصائص، بنفس
+// طريقة EditableText بالضبط. تُخزَّن قيمتها بنفس كائن الأنماط لكن بمفتاح
+// مسبوق بـ"bg:" حتى ما تتعارض مع مفاتيح النصوص.
+export function EditableBackground({
+  id,
+  as = "div",
+  className,
+  style,
+  children,
+  dir,
+}: {
+  id: string
+  as?: string
+  className?: string
+  style?: React.CSSProperties
+  children: ReactNode
+  // تمرير اختياري لخاصية dir (مثل dir="rtl") حتى تنعكس صح على أقسام تعتمد
+  // عليها لباقي التصميم (مثال: العنصر الجذر لكل قالب)
+  dir?: string
+}) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const Tag = as as any
+  const key = BG_PREFIX + id
+  const saved = styles[key]
+  const extraProps = dir ? { dir } : {}
+
+  if (!editable) {
+    const mergedStyle: React.CSSProperties = {
+      ...style,
+      ...(saved?.color
+        ? { backgroundColor: saved.color, backgroundImage: "none" }
+        : null),
+    }
+    return (
+      <Tag className={className} style={mergedStyle} {...extraProps}>
+        {children}
+      </Tag>
+    )
+  }
+
+  const isSelected = selectedId === key
+  const mergedStyle: React.CSSProperties = {
+    ...style,
+    ...(saved?.color
+      ? { backgroundColor: saved.color, backgroundImage: "none" }
+      : null),
+    position: style?.position ?? "relative",
+    cursor: "pointer",
+    boxShadow: isSelected ? "inset 0 0 0 3px #3B82F6" : "inset 0 0 0 0px transparent",
+    transition: "box-shadow .15s ease",
+  }
+
+  return (
+    <Tag
+      className={className}
+      style={mergedStyle}
+      data-editable-bg-id={id}
+      {...extraProps}
+      onClick={(e: React.MouseEvent) => {
+        e.stopPropagation()
+        setSelectedId(key)
+      }}
+    >
+      {children}
+    </Tag>
+  )
+}
+
+// ============================================================================
+// لوحة الخصائص — ثابتة على جانب الشاشة بوضع التعديل، شبيهة بلوحة فيغما.
+// تعرض عناصر التحكم المناسبة حسب نوع العنصر المحدد حاليًا (نص أو خلفية).
+// ============================================================================
+
+export const PANEL_WIDTH = 268
+
+function swatchStyle(color: string, active: boolean): React.CSSProperties {
+  return {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    background: color,
+    border: active ? "2px solid #3B82F6" : "1px solid rgba(255,255,255,.25)",
+    cursor: "pointer",
+    boxShadow: active ? "0 0 0 2px rgba(59,130,246,.35)" : "none",
+    flexShrink: 0,
+  }
+}
+
+function PanelSection({
+  title,
+  children,
+}: {
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: "#B8862F",
+          fontFamily: "Cairo, sans-serif",
+          fontWeight: 700,
+          marginBottom: 8,
+        }}
+      >
+        {title}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+export function EditPanel() {
+  const { editable, styles, selectedId, setSelectedId, invitationId, updateStyle, resetStyle } =
+    useEditMode()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [uploadingFont, setUploadingFont] = useState(false)
+  const [customColor, setCustomColor] = useState("#B8862F")
+
+  if (!editable) return null
+
+  const isBg = !!selectedId?.startsWith(BG_PREFIX)
+  const plainId = isBg ? selectedId!.slice(BG_PREFIX.length) : selectedId
+  const st = selectedId ? styles[selectedId] || {} : {}
+
+  const ALLOWED_FONT_EXT = [".ttf", ".otf", ".woff", ".woff2"]
+
+  const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file || !selectedId) return
+
+    const lowerName = file.name.toLowerCase()
+    const isAllowed = ALLOWED_FONT_EXT.some((ext) => lowerName.endsWith(ext))
+    if (!isAllowed) {
+      alert("صيغة الخط غير مدعومة. الصيغ المقبولة: ttf, otf, woff, woff2")
+      return
+    }
+
+    setUploadingFont(true)
+    try {
+      const url = await uploadInvitationFile(
+        file,
+        invitationId || "shared",
+        `font-${selectedId}-${Date.now()}`,
+      )
+      const family = `uploaded-${selectedId}-${Date.now()}`.replace(
+        /[^a-zA-Z0-9_-]/g,
+        "-",
+      )
+      injectFontFace(family, url)
+      updateStyle(selectedId, { font: family, fontUrl: url })
+    } catch (err) {
+      alert(
+        `تعذّر رفع ملف الخط.\n\nتفاصيل الخطأ: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
+    } finally {
+      setUploadingFont(false)
+    }
+  }
+
+  const rowLabelStyle: React.CSSProperties = {
+    fontSize: 12,
+    color: "#F5EBE0",
+    fontFamily: "Cairo, sans-serif",
+    marginBottom: 6,
+  }
+
+  const smallBtnStyle: React.CSSProperties = {
+    padding: "6px 10px",
+    borderRadius: 8,
+    background: "#2A211D",
+    border: "1px solid #B8862F55",
+    color: "#F5EBE0",
+    fontSize: 11,
+    fontFamily: "Cairo, sans-serif",
+    cursor: "pointer",
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        insetInlineStart: 0,
+        height: "100%",
+        width: PANEL_WIDTH,
+        background: "#1A1210",
+        borderInlineEnd: "1px solid #B8862F3D",
+        zIndex: 520,
+        overflowY: "auto",
+        padding: "70px 16px 24px",
+        boxShadow: "4px 0 24px rgba(0,0,0,.35)",
+        fontFamily: "Cairo, sans-serif",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: "#F1D989",
+          marginBottom: 4,
+        }}
+      >
+        خصائص العنصر
+      </div>
+
+      {!selectedId ? (
+        <div style={{ fontSize: 12, color: "#B8A99A", lineHeight: 1.8, marginTop: 12 }}>
+          اضغط على أي نص أو خلفية بالتصميم حتى تظهر خصائصه هنا — تقدر تغيّر
+          لونه، تخفيه، تكبّره، أو تغيّر خطه.
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              fontSize: 10,
+              color: "#8C6B6F",
+              marginBottom: 18,
+              wordBreak: "break-all",
+            }}
+          >
+            {isBg ? "خلفية: " : "نص: "}
+            {plainId}
+          </div>
+
+          {!isBg && (
+            <PanelSection title="الإظهار">
+              <button
+                type="button"
+                onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
+                style={{
+                  ...smallBtnStyle,
+                  width: "100%",
+                  background: st.hidden ? "#B8862F" : "#2A211D",
+                  color: st.hidden ? "#1A1210" : "#F5EBE0",
+                  fontWeight: 700,
+                }}
+              >
+                {st.hidden ? "⊘ العنصر مخفي — اضغط لإظهاره" : "👁 إخفاء هذا العنصر"}
+              </button>
+            </PanelSection>
+          )}
+
+          <PanelSection title={isBg ? "لون الخلفية" : "لون النص"}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              {COLOR_PRESETS.map((c) => (
+                <span
+                  key={c}
+                  onClick={() => updateStyle(selectedId, { color: c })}
+                  style={swatchStyle(c, st.color === c)}
+                  title={c}
+                />
+              ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="color"
+                value={st.color || customColor}
+                onChange={(e) => {
+                  setCustomColor(e.target.value)
+                  updateStyle(selectedId, { color: e.target.value })
+                }}
+                style={{
+                  width: 34,
+                  height: 30,
+                  border: "1px solid #B8862F55",
+                  borderRadius: 6,
+                  background: "transparent",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              />
+              <span style={{ fontSize: 11, color: "#B8A99A" }}>لون حر</span>
+              {st.color && (
+                <button
+                  type="button"
+                  onClick={() => updateStyle(selectedId, { color: undefined })}
+                  style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
+                >
+                  ↺ الأصلي
+                </button>
+              )}
+            </div>
+          </PanelSection>
+
+          {!isBg && (
+            <>
+              <PanelSection title="حجم الخط">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    style={smallBtnStyle}
+                    onClick={() =>
+                      updateStyle(selectedId, {
+                        size: Math.max(MIN_PX, (st.size ?? 24) - 2),
+                      })
+                    }
+                  >
+                    −
+                  </button>
+                  <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 46, textAlign: "center" }}>
+                    {Math.round(st.size ?? 24)}px
+                  </span>
+                  <button
+                    type="button"
+                    style={smallBtnStyle}
+                    onClick={() =>
+                      updateStyle(selectedId, {
+                        size: Math.min(MAX_PX, (st.size ?? 24) + 2),
+                      })
+                    }
+                  >
+                    +
+                  </button>
+                </div>
+                <div style={rowLabelStyle} />
+                <div style={{ fontSize: 10, color: "#8C6B6F", marginTop: 4 }}>
+                  أو اسحب مقبض ⇕ فوق العنصر بالتصميم مباشرة
+                </div>
+              </PanelSection>
+
+              <PanelSection title="الخط">
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                    maxHeight: 170,
+                    overflowY: "auto",
+                    border: "1px solid #B8862F33",
+                    borderRadius: 10,
+                    padding: 6,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => updateStyle(selectedId, { font: undefined, fontUrl: undefined })}
+                    style={{
+                      ...smallBtnStyle,
+                      textAlign: "center",
+                      background: !st.font ? "#B8862F" : "#2A211D",
+                      color: !st.font ? "#1A1210" : "#F5EBE0",
+                    }}
+                  >
+                    الخط الأصلي
+                  </button>
+                  {FONT_OPTIONS.map((f) => (
+                    <button
+                      key={f.family}
+                      type="button"
+                      onClick={() => updateStyle(selectedId, { font: f.family, fontUrl: undefined })}
+                      style={{
+                        ...smallBtnStyle,
+                        textAlign: "center",
+                        fontFamily: f.family,
+                        background: st.font === f.family ? "#B8862F" : "#2A211D",
+                        color: st.font === f.family ? "#1A1210" : "#F5EBE0",
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".ttf,.otf,.woff,.woff2"
+                  onChange={handleFontUpload}
+                  style={{ display: "none" }}
+                />
+                <button
+                  type="button"
+                  disabled={uploadingFont}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    ...smallBtnStyle,
+                    width: "100%",
+                    marginTop: 6,
+                    opacity: uploadingFont ? 0.6 : 1,
+                  }}
+                >
+                  {uploadingFont ? "⬆ جارِ الرفع…" : "⬆ رفع خط من جهازك"}
+                </button>
+              </PanelSection>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={() => resetStyle(selectedId)}
+            style={{
+              ...smallBtnStyle,
+              width: "100%",
+              background: "#5C2A38",
+              color: "#F5E9E4",
+              fontWeight: 700,
+            }}
+          >
+            ↺ استرجاع الوضع الأصلي لهذا العنصر
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedId(null)}
+            style={{
+              ...smallBtnStyle,
+              width: "100%",
+              marginTop: 8,
+              background: "transparent",
+            }}
+          >
+            إلغاء التحديد
+          </button>
+        </>
+      )}
+    </div>
   )
 }
