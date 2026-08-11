@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_LAMSA_PROGRAM } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon } from "./LiveEditing"
 
 interface SoftParticle {
   id: number
@@ -450,18 +450,26 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                   >
                     <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#C9A227]/40" />
                     {[0, 50, 100].map((pos) => (
-                      <span
+                      <EditableIcon
                         key={pos}
-                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#C9A227]"
-                        style={{ top: `${pos}%` }}
+                        id="programTimelineDots"
+                        as="span"
+                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        style={{ top: `${pos}%`, backgroundColor: "#C9A227", width: 6, height: 6 }}
+                        getSizeStyle={(pct) => ({ width: (6 * pct) / 100, height: (6 * pct) / 100 })}
+                        getColorStyle={(color) => ({ backgroundColor: color })}
                       />
                     ))}
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 transition-[top] duration-150 ease-out drop-shadow"
-                      style={{ top: `${programTimeline.progress}%` }}
+                    <EditableIcon
+                      id="programTimelineFlower"
+                      as="svg"
+                      attrs={{ viewBox: "0 0 24 24" }}
+                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 transition-[top] duration-150 ease-out drop-shadow"
+                      style={{ top: `${programTimeline.progress}%`, color: "#D0342C", width: 24, height: 24 }}
+                      getSizeStyle={(pct) => ({ width: (24 * pct) / 100, height: (24 * pct) / 100 })}
+                      getColorStyle={(color) => ({ color })}
                     >
-                      <g fill="#D0342C">
+                      <g fill="currentColor">
                         {[0, 72, 144, 216, 288].map((angle) => (
                           <ellipse
                             key={angle}
@@ -474,7 +482,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                         ))}
                       </g>
                       <circle cx="12" cy="12" r="2" fill="#F1C40F" />
-                    </svg>
+                    </EditableIcon>
                   </div>
 
                   {(inv.programItems && inv.programItems.length === 3
