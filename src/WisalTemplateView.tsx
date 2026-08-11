@@ -436,9 +436,13 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   </EditableText>
                 )}
                 {inv.groom && inv.bride && (
-                  <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
+                  <EditableText
+                    id="namesConjunction"
+                    as="span"
+                    className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa"
+                  >
                     و
-                  </span>
+                  </EditableText>
                 )}
                 {inv.bride && (
                   <EditableText
