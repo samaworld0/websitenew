@@ -87,6 +87,7 @@ function useScrollProgress(active: boolean) {
 // التنازلي وتأكيد الحضور والخريطة المستخدم بقالب "وصال".
 export function LamsaTemplateView({ inv }: { inv: Invitation }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
   const [showFlash, setShowFlash] = useState(false)
   const [overlayMounted, setOverlayMounted] = useState(true)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -140,6 +141,13 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
     audioRef.current?.play().catch(() => {})
     setTimeout(() => setShowFlash(false), 800)
     setTimeout(() => setOverlayMounted(false), 900)
+  }
+
+  // زر كتم/تشغيل الصوت — يبدّل خاصية muted على عنصر الصوت مباشرة، بدون
+  // ما يوقف التشغيل نفسه (الموسيقى تستمر بالخلفية، بس بدون صوت مسموع)
+  const toggleMute = () => {
+    if (audioRef.current) audioRef.current.muted = !isMuted
+    setIsMuted((v) => !v)
   }
 
   const handleRSVP = async (e: React.FormEvent) => {
@@ -238,6 +246,17 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
       `}</style>
 
       {inv.musicUrl && <audio ref={audioRef} src={inv.musicUrl} loop />}
+
+      {isOpen && inv.musicUrl && (
+        <button
+          type="button"
+          onClick={toggleMute}
+          title={isMuted ? "تشغيل الصوت" : "كتم الصوت"}
+          className="fixed top-6 right-6 z-[90] w-11 h-11 rounded-full flex items-center justify-center bg-black/60 text-white backdrop-blur-md border border-white/20 shadow-lg text-lg"
+        >
+          {isMuted ? "🔇" : "🔊"}
+        </button>
+      )}
 
       {/* لمعة وردية لحظة فتح الدعوة (بديل لمعة "وصال" الذهبية، بدون فيديو) */}
       {showFlash && (
