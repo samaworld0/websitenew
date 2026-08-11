@@ -37,7 +37,7 @@ export function LiveTemplateEditor({
   return (
     <div className="fixed inset-0 z-[500] flex flex-col w-full h-full bg-[#0D0706]">
       <div
-        className="absolute top-4 z-[510] max-w-[92%] text-center bg-black/70 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 text-white text-[11px] md:text-sm"
+        className="absolute top-3 z-[510] max-w-[90%] text-center bg-black/70 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 text-white text-[11px] md:text-sm"
         style={{
           fontFamily: "Cairo, sans-serif",
           insetInlineStart: `calc(50% + ${PANEL_WIDTH / 2}px)`,
@@ -48,24 +48,27 @@ export function LiveTemplateEditor({
         — وزر ✥ يحرّكه لأي مكان
       </div>
 
-      {/* مهم: هذا الشريط لازم يكون بالجهة المقابلة للوحة الخصائص (اللي
-          تتثبّت بـ insetInlineStart)، وبطبقة (z-index) أعلى منها — الصفحة
-          كلها dir="rtl"، فلو استخدمنا "right" الفيزيائي بالخطأ بدل الخاصية
-          المنطقية، الشريط يطلع بنفس جهة اللوحة ويختفي وراها فعليًا */}
+      {/* شريط الأزرار — مثبّت بمنتصف المساحة المتاحة (نفس منطق تمركز شريط
+          التعليمات فوقه: نطرح نص عرض لوحة الخصائص من نقطة المنتصف حتى
+          يتمركز بمعزل عنها مو بمنتصف الشاشة كاملة)، تحت شريط التعليمات
+          مباشرة حتى ما يتراكبوا فوق بعض */}
       <div
-        className="absolute top-4 z-[530] flex items-center gap-2"
-        style={{ insetInlineEnd: 16 }}
+        className="absolute top-14 z-[530] flex items-center gap-2"
+        style={{
+          insetInlineStart: `calc(50% + ${PANEL_WIDTH / 2}px)`,
+          transform: "translateX(-50%)",
+        }}
       >
         <button
           onClick={onClose}
-          className="px-4 py-2 rounded-full text-xs font-bold bg-black/60 text-white border border-white/20"
+          className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-black/60 text-white border border-white/20"
           style={{ fontFamily: "Cairo, sans-serif" }}
         >
           إغلاق
         </button>
         <button
           onClick={handleSave}
-          className="px-5 py-2 rounded-full text-xs font-bold bg-[#B8862F] text-white shadow-lg"
+          className="px-4 py-1.5 rounded-full text-[11px] font-bold bg-[#B8862F] text-white shadow-lg"
           style={{ fontFamily: "Cairo, sans-serif" }}
         >
           {saved ? "✅ تم الحفظ" : "💾 حفظ التصميم"}
