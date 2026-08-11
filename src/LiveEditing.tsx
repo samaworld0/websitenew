@@ -36,6 +36,7 @@ export interface TextStyle {
 }
 
 const BG_PREFIX = "bg:"
+const ICON_PREFIX = "icon:"
 
 interface EditModeValue {
   editable: boolean
@@ -500,6 +501,86 @@ export function EditableBackground({
   )
 }
 
+// يلف أي عنصر زخرفي/رسومي بالتصميم (زهرة، نقطة، أيقونة SVG أو حرف
+// زخرفي) ويخليه قابل للتحديد وتغيير لونه وحجمه وحذفه (إخفاؤه)، بنفس فكرة
+// EditableText/EditableBackground. تُخزَّن قيمته بنفس كائن الأنماط بمفتاح
+// مسبوق بـ"icon:". الحجم يتخزّن كنسبة مئوية (100 = الحجم الأصلي) لأن
+// العناصر الزخرفية تختلف بوحدة قياسها (px لنقطة، viewBox لـ SVG...)، فكل
+// عنصر يمرر getSizeStyle/getColorStyle حتى يحدد بنفسه كيف يترجم النسبة
+// والّلون المختارين إلى خصائص CSS فعلية (width/height، fontSize، color،
+// backgroundColor...) بدل ما نفرض عليه transform موحّد قد يكسر أي
+// position/transform موجود مسبقًا على نفس العنصر (مثال: النقاط اللي
+// تتوسّط بـ -translate-x-1/2 -translate-y-1/2).
+// أكثر من عنصر ممكن يستخدموا نفس id (مثال: النقاط الثلاث بخط برنامج
+// الحفل) حتى يتحكم فيهم الأدمن كمجموعة وحدة من لوحة خصائص واحدة.
+export function EditableIcon({
+  id,
+  as = "span",
+  className,
+  style,
+  children,
+  attrs,
+  getSizeStyle,
+  getColorStyle,
+}: {
+  id: string
+  as?: string
+  className?: string
+  style?: React.CSSProperties
+  children?: ReactNode
+  // خصائص DOM إضافية غير قابلة للتمرير عبر style (مثال: viewBox لعنصر svg)
+  attrs?: Record<string, any>
+  getSizeStyle?: (percent: number) => React.CSSProperties
+  getColorStyle?: (color: string) => React.CSSProperties
+}) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const Tag = as as any
+  const key = ICON_PREFIX + id
+  const st = styles[key] || {}
+  const percent = st.size ?? 100
+  const extraStyle: React.CSSProperties = {
+    ...(getSizeStyle ? getSizeStyle(percent) : null),
+    ...(st.color && getColorStyle ? getColorStyle(st.color) : null),
+  }
+
+  if (!editable) {
+    if (st.hidden) return null
+    return (
+      <Tag className={className} style={{ ...style, ...extraStyle }} {...attrs}>
+        {children}
+      </Tag>
+    )
+  }
+
+  const isSelected = selectedId === key
+  const isHidden = !!st.hidden
+  const mergedStyle: React.CSSProperties = {
+    ...style,
+    ...extraStyle,
+    cursor: "pointer",
+    opacity: isHidden ? 0.35 : 1,
+    outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+    outlineOffset: 3,
+    borderRadius: 4,
+    transition: "outline-color .15s ease, opacity .15s ease",
+  }
+
+  return (
+    <Tag
+      className={className}
+      style={mergedStyle}
+      data-editable-icon-id={id}
+      {...attrs}
+      onClick={(e: React.MouseEvent) => {
+        e.stopPropagation()
+        setSelectedId(key)
+      }}
+    >
+      {children}
+    </Tag>
+  )
+}
+
 // ============================================================================
 // لوحة الخصائص — ثابتة على جانب الشاشة بوضع التعديل، شبيهة بلوحة فيغما.
 // تعرض عناصر التحكم المناسبة حسب نوع العنصر المحدد حاليًا (نص أو خلفية).
@@ -555,8 +636,15 @@ export function EditPanel() {
   if (!editable) return null
 
   const isBg = !!selectedId?.startsWith(BG_PREFIX)
-  const plainId = isBg ? selectedId!.slice(BG_PREFIX.length) : selectedId
+  const isIcon = !!selectedId?.startsWith(ICON_PREFIX)
+  const plainId = isBg
+    ? selectedId!.slice(BG_PREFIX.length)
+    : isIcon
+      ? selectedId!.slice(ICON_PREFIX.length)
+      : selectedId
   const st = selectedId ? styles[selectedId] || {} : {}
+  const ICON_MIN_PCT = 40
+  const ICON_MAX_PCT = 220
 
   const ALLOWED_FONT_EXT = [".ttf", ".otf", ".woff", ".woff2"]
 
@@ -658,11 +746,11 @@ export function EditPanel() {
               wordBreak: "break-all",
             }}
           >
-            {isBg ? "خلفية: " : "نص: "}
+            {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : "نص: "}
             {plainId}
           </div>
 
-          {!isBg && (
+          {(!isBg) && (
             <PanelSection title="الإظهار">
               <button
                 type="button"
@@ -680,7 +768,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          <PanelSection title={isBg ? "لون الخلفية" : "لون النص"}>
+          <PanelSection title={isBg ? "لون الخلفية" : isIcon ? "اللون" : "لون النص"}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
               {COLOR_PRESETS.map((c) => (
                 <span
@@ -722,7 +810,39 @@ export function EditPanel() {
             </div>
           </PanelSection>
 
-          {!isBg && (
+          {isIcon && (
+            <PanelSection title="الحجم">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      size: Math.max(ICON_MIN_PCT, (st.size ?? 100) - 10),
+                    })
+                  }
+                >
+                  −
+                </button>
+                <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 46, textAlign: "center" }}>
+                  {Math.round(st.size ?? 100)}٪
+                </span>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      size: Math.min(ICON_MAX_PCT, (st.size ?? 100) + 10),
+                    })
+                  }
+                >
+                  +
+                </button>
+              </div>
+            </PanelSection>
+          )}
+
+          {!isBg && !isIcon && (
             <>
               <PanelSection title="حجم الخط">
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
