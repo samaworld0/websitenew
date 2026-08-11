@@ -419,13 +419,11 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div />
               <div className="my-auto flex flex-col items-center text-center">
-                {inv.heroEyebrow && (
-                  <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow">
-                    <EditableText id="heroEyebrow">
-                      {inv.heroEyebrow}
-                    </EditableText>
-                  </p>
-                )}
+                <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow">
+                  <EditableText id="heroEyebrow">
+                    {inv.heroEyebrow || "دعوة زفاف"}
+                  </EditableText>
+                </p>
                 {inv.groom && (
                   <EditableText
                     id="groomName"
@@ -676,14 +674,16 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                 >
                   {inv.venue}
                 </EditableText>
-                <a
+                <EditableText
+                  id="mapButton"
+                  as="a"
                   href={mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white bg-[#B8862F] hover:bg-[#9E7024] shadow-md custom-font-tajawal"
                 >
-                  <EditableText id="mapButtonText">📍 الموقع على الخريطة</EditableText>
-                </a>
+                  📍 الموقع على الخريطة
+                </EditableText>
               </div>
             </section>
 
