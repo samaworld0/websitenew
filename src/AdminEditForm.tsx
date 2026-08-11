@@ -446,6 +446,38 @@ export function AdminEditForm({
         </p>
       </div>
 
+      <div className="md:col-span-2">
+        <label className="block text-sm font-bold mb-2">
+          الموسيقى الخلفية (رابط أو رفع ملف)
+        </label>
+        <div className="flex gap-2">
+          <input
+            value={form.musicUrl || ""}
+            onChange={(e) => updateField("musicUrl", e.target.value)}
+            placeholder="/music/background-3.mp3"
+            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-left"
+            dir="ltr"
+          />
+          <label className="shrink-0 px-6 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold cursor-pointer transition flex items-center gap-2 aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
+            <span>{uploadingField === "musicUrl" ? "⏳ جارِ الرفع..." : "🎵 رفع صوت"}</span>
+            <input
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              disabled={uploadingField !== null}
+              onChange={(e) => handleFileUpload("musicUrl", e.target.files?.[0] || null)}
+            />
+          </label>
+        </div>
+        {form.musicUrl && (
+          <audio
+            src={form.musicUrl}
+            controls
+            className="w-full mt-2 h-9"
+          />
+        )}
+      </div>
+
       <div className="md:col-span-2 flex items-center gap-3 bg-[#FFF8E8] border border-[#D4AF37]/30 rounded-2xl px-5 py-4">
         <input
           type="checkbox"
