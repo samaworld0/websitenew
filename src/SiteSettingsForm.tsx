@@ -1,5 +1,6 @@
-import { useState } from "react"
-import { SiteSettings } from "./siteSettings"
+import { useState, useRef } from "react"
+import { SiteSettings, SITE_FONT_OPTIONS } from "./siteSettings"
+import { uploadInvitationFile } from "./backend"
 
 // حقل نص عادي (سطر واحد)
 function TextField({
@@ -77,6 +78,96 @@ function ColorField({
   )
 }
 
+// حقل اختيار خط: قائمة منسدلة بخطوط جاهزة، أو رفع خط مخصص من الجهاز
+// (ttf/otf/woff/woff2) يترفع لـ Supabase Storage ويتحقن كـ @font-face
+function FontField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: SiteSettings["typography"]
+  onChange: (v: SiteSettings["typography"]) => void
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const ALLOWED_EXT = [".ttf", ".otf", ".woff", ".woff2"]
+  const CUSTOM_VALUE = "__custom__"
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+
+    const lowerName = file.name.toLowerCase()
+    if (!ALLOWED_EXT.some((ext) => lowerName.endsWith(ext))) {
+      alert("صيغة الخط غير مدعومة. الصيغ المقبولة: ttf, otf, woff, woff2")
+      return
+    }
+
+    setUploading(true)
+    try {
+      const url = await uploadInvitationFile(
+        file,
+        "site-settings",
+        `site-font-${Date.now()}`,
+      )
+      const family = `site-uploaded-font-${Date.now()}`
+      onChange({ fontFamily: family, customFontUrl: url })
+    } catch (err) {
+      alert(
+        `تعذّر رفع ملف الخط.\n\nتفاصيل الخطأ: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-bold mb-2">{label}</label>
+      <div className="flex gap-2">
+        <select
+          value={value.customFontUrl ? CUSTOM_VALUE : value.fontFamily}
+          onChange={(e) => {
+            if (e.target.value === CUSTOM_VALUE) return
+            onChange({ fontFamily: e.target.value })
+          }}
+          className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white"
+        >
+          {value.customFontUrl && (
+            <option value={CUSTOM_VALUE}>🎨 خط مرفوع من الجهاز</option>
+          )}
+          {SITE_FONT_OPTIONS.map((f) => (
+            <option key={f.family} value={f.family} style={{ fontFamily: f.family }}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".ttf,.otf,.woff,.woff2"
+          onChange={handleUpload}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="shrink-0 px-5 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold transition disabled:opacity-60"
+        >
+          {uploading ? "⏳ جارِ الرفع..." : "⬆ رفع خط"}
+        </button>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+        تقدر تختار من الخطوط الجاهزة، أو ترفع ملف خط من جهازك (ttf, otf, woff, woff2) ليستخدم كخط الواجهة.
+      </p>
+    </div>
+  )
+}
 function SectionCard({
   title,
   description,
@@ -108,11 +199,13 @@ export function SiteSettingsForm({
   initial,
   onSave,
   onPreviewColors,
+  onPreviewFont,
   saving,
 }: {
   initial: SiteSettings
   onSave: (settings: SiteSettings) => void
   onPreviewColors: (colors: SiteSettings["colors"]) => void
+  onPreviewFont: (typography: SiteSettings["typography"]) => void
   saving: boolean
 }) {
   const [form, setForm] = useState<SiteSettings>(initial)
@@ -145,6 +238,14 @@ export function SiteSettingsForm({
     })
   }
 
+  const updateFont = (typography: SiteSettings["typography"]) => {
+    setForm((f) => {
+      // معاينة حية فورية بدون حفظ
+      onPreviewFont(typography)
+      return { ...f, typography }
+    })
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSave(form)
@@ -170,6 +271,17 @@ export function SiteSettingsForm({
           label="خلفية الفوتر (القسم السفلي الغامق)"
           value={form.colors.footerBg}
           onChange={(v) => updateColor("footerBg", v)}
+        />
+      </SectionCard>
+
+      <SectionCard
+        title="الخط"
+        description="خط نصوص الواجهة العامة (الصفحة الرئيسية ولوحة التحكم) — ما يغيّر خطوط تصميم الدعوات نفسها."
+      >
+        <FontField
+          label="خط الواجهة"
+          value={form.typography}
+          onChange={updateFont}
         />
       </SectionCard>
 
