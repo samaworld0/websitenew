@@ -15,7 +15,21 @@ export interface TextStyle {
   size?: number
   x?: number
   y?: number
+  font?: string
 }
+
+// الخطوط العربية المحمّلة أصلاً بالموقع (index.css) — آمنة نستخدمها هنا
+// بدون ما نحمّل أي شي إضافي
+export const FONT_OPTIONS: { label: string; value: string }[] = [
+  { label: "الخط الأصلي", value: "" },
+  { label: "Cairo", value: "'Cairo', sans-serif" },
+  { label: "Aref Ruqaa", value: "'Aref Ruqaa', serif" },
+  { label: "Amiri", value: "'Amiri', serif" },
+  { label: "Noto Naskh", value: "'Noto Naskh Arabic', serif" },
+  { label: "Noto Sans", value: "'Noto Sans Arabic', sans-serif" },
+  { label: "El Messiri", value: "'El Messiri', sans-serif" },
+  { label: "Reem Kufi", value: "'Reem Kufi', sans-serif" },
+]
 
 interface EditModeValue {
   editable: boolean
@@ -144,6 +158,7 @@ export function EditableText({
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
+      ...(savedStyle.font ? { fontFamily: savedStyle.font } : null),
       transform: `translate(${clampedX}px, ${clampedY}px)`,
       display: "inline-block",
     }
@@ -159,6 +174,7 @@ export function EditableText({
   const px = st.size
   const offX = st.x || 0
   const offY = st.y || 0
+  const fontFamily = st.font
 
   const startResize = (e: React.PointerEvent) => {
     e.preventDefault()
@@ -226,6 +242,7 @@ export function EditableText({
   const mergedStyle: React.CSSProperties = {
     ...style,
     ...(px ? { fontSize: `${px}px` } : null),
+    ...(fontFamily ? { fontFamily } : null),
     transform: `translate(${offX}px, ${offY}px)`,
     display: "inline-block",
     position: "relative",
@@ -338,6 +355,32 @@ export function EditableText({
           >
             ↺
           </button>
+          <select
+            value={fontFamily || ""}
+            onChange={(e) =>
+              updateStyle(id, { font: e.target.value || undefined })
+            }
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            title="اختر خط للنص"
+            style={{
+              background: "#2A211D",
+              color: "#F1D989",
+              fontSize: 10,
+              fontFamily: "Cairo, sans-serif",
+              border: "1px solid #B8862F55",
+              borderRadius: 8,
+              padding: "2px 4px",
+              maxWidth: 78,
+              outline: "none",
+            }}
+          >
+            {FONT_OPTIONS.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
         </span>
       )}
     </Tag>
