@@ -223,7 +223,7 @@ export default function App() {
               style={{ aspectRatio: "3/4" }}
             >
               <img
-                src="/mnbra/wedding-01.jpg"
+                src={siteSettings.hero.imageRightUrl || "/mnbra/wedding-01.jpg"}
                 alt="معاينة دعوة"
                 className="w-full h-full object-cover"
               />
@@ -258,7 +258,7 @@ export default function App() {
               style={{ aspectRatio: "3/4" }}
             >
               <img
-                src="/mnbra/wedding-02.jpg"
+                src={siteSettings.hero.imageLeftUrl || "/mnbra/wedding-02.jpg"}
                 alt="معاينة دعوة"
                 className="w-full h-full object-cover"
               />
