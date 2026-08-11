@@ -48,7 +48,14 @@ export function LiveTemplateEditor({
         — وزر ✥ يحرّكه لأي مكان
       </div>
 
-      <div className="absolute top-4 right-4 z-[510] flex items-center gap-2">
+      {/* مهم: هذا الشريط لازم يكون بالجهة المقابلة للوحة الخصائص (اللي
+          تتثبّت بـ insetInlineStart)، وبطبقة (z-index) أعلى منها — الصفحة
+          كلها dir="rtl"، فلو استخدمنا "right" الفيزيائي بالخطأ بدل الخاصية
+          المنطقية، الشريط يطلع بنفس جهة اللوحة ويختفي وراها فعليًا */}
+      <div
+        className="absolute top-4 z-[530] flex items-center gap-2"
+        style={{ insetInlineEnd: 16 }}
+      >
         <button
           onClick={onClose}
           className="px-4 py-2 rounded-full text-xs font-bold bg-black/60 text-white border border-white/20"
