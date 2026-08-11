@@ -84,6 +84,7 @@ function useScrollProgress(active: boolean) {
 export function WisalTemplateView({ inv }: { inv: Invitation }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -231,6 +232,13 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
     }
   }
 
+  // زر كتم/تشغيل الصوت — يبدّل خاصية muted على عنصر الصوت مباشرة، بدون
+  // ما يوقف التشغيل نفسه (الموسيقى تستمر بالخلفية، بس بدون صوت مسموع)
+  const toggleMute = () => {
+    if (audioRef.current) audioRef.current.muted = !isMuted
+    setIsMuted((v) => !v)
+  }
+
   // إرسال تأكيد الحضور: يترسل فعلياً للشيت بس لو الدعوة عندها sheetId
   // (يعني دعوة خاصة اتنشأت من لوحة التحكم). الدعوات العامة أو "جرّب دعوتك"
   // ما عندها sheetId، فبتبقى معاينة محلية فقط بدون أي إرسال.
@@ -330,6 +338,17 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         src={inv.musicUrl || "/music/background.mp3"}
         loop
       />
+
+      {isOpen && (
+        <button
+          type="button"
+          onClick={toggleMute}
+          title={isMuted ? "تشغيل الصوت" : "كتم الصوت"}
+          className="fixed top-6 right-6 z-[90] w-11 h-11 rounded-full flex items-center justify-center bg-black/60 text-white backdrop-blur-md border border-white/20 shadow-lg text-lg"
+        >
+          {isMuted ? "🔇" : "🔊"}
+        </button>
+      )}
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && (
