@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon } from "./LiveEditing"
 
 interface GoldenParticle {
   id: number
@@ -484,15 +484,21 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               {/* بطاقة احفظ الموعد */}
               <div className="text-center w-full max-w-sm mb-20 reveal-on-scroll">
                 <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-8 custom-font-heading flex items-center justify-center gap-2">
-                  <span className="text-[#D4AF37]">✿</span>
+                  <EditableText id="saveDateIcon" as="span" className="text-[#D4AF37]">
+                    ✿
+                  </EditableText>
                   <EditableText id="saveDateHeading">احفظ الموعد</EditableText>
                 </h3>
                 <div className="rounded-3xl overflow-hidden border border-[#D4AF37]/30 shadow-lg bg-white">
-                  <div className="bg-[#4E1019] text-[#F1D989] py-3 px-4 font-bold text-lg custom-font-heading">
+                  <EditableBackground
+                    id="saveDateCardHeader"
+                    className="text-[#F1D989] py-3 px-4 font-bold text-lg custom-font-heading"
+                    style={{ backgroundColor: "#4E1019" }}
+                  >
                     <EditableText id="saveDateMonthYear">
                       {saveDateMonthName} {saveDateYear}
                     </EditableText>
-                  </div>
+                  </EditableBackground>
                   <div className="px-6 py-8">
                     <p className="text-[#8C7A6B] text-sm mb-2 custom-font-tajawal">
                       <EditableText id="saveDateDayName">
@@ -612,18 +618,26 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   >
                     <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#D4AF37]/40" />
                     {[0, 50, 100].map((pos) => (
-                      <span
+                      <EditableIcon
                         key={pos}
-                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#D4AF37]"
-                        style={{ top: `${pos}%` }}
+                        id="programTimelineDots"
+                        as="span"
+                        className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        style={{ top: `${pos}%`, backgroundColor: "#D4AF37", width: 6, height: 6 }}
+                        getSizeStyle={(pct) => ({ width: (6 * pct) / 100, height: (6 * pct) / 100 })}
+                        getColorStyle={(color) => ({ backgroundColor: color })}
                       />
                     ))}
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 transition-[top] duration-150 ease-out drop-shadow"
-                      style={{ top: `${programTimeline.progress}%` }}
+                    <EditableIcon
+                      id="programTimelineFlower"
+                      as="svg"
+                      attrs={{ viewBox: "0 0 24 24" }}
+                      className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 transition-[top] duration-150 ease-out drop-shadow"
+                      style={{ top: `${programTimeline.progress}%`, color: "#D0342C", width: 24, height: 24 }}
+                      getSizeStyle={(pct) => ({ width: (24 * pct) / 100, height: (24 * pct) / 100 })}
+                      getColorStyle={(color) => ({ color })}
                     >
-                      <g fill="#D0342C">
+                      <g fill="currentColor">
                         {[0, 72, 144, 216, 288].map((angle) => (
                           <ellipse
                             key={angle}
@@ -636,7 +650,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                         ))}
                       </g>
                       <circle cx="12" cy="12" r="2" fill="#F1C40F" />
-                    </svg>
+                    </EditableIcon>
                   </div>
 
                   {(inv.programItems && inv.programItems.length === 3
