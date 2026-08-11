@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_LAMSA_PROGRAM } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText } from "./LiveEditing"
+import { EditableText, EditableBackground } from "./LiveEditing"
 
 interface SoftParticle {
   id: number
@@ -188,7 +188,9 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
   }
 
   return (
-    <div
+    <EditableBackground
+      id="pageBg"
+      as="div"
       className="relative h-full w-full bg-[#FBF3EF] text-[#3D2B2E] font-sans overflow-hidden"
       dir="rtl"
     >
@@ -425,7 +427,11 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
 
             {/* برنامج الحفل والمكان — خلفية عنّابية مع خط ذهبي فاصل،
                 والزهرة الحمراء بالمنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A227]">
+            <EditableBackground
+              id="programSectionBg"
+              as="section"
+              className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A227]"
+            >
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
                 <h3 className="text-3xl font-bold text-[#F1D4B8] mb-12 lamsa-heading">
                   <EditableText id="programHeading">برنامج الحفل</EditableText>
@@ -531,10 +537,14 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                   📍 الموقع على الخريطة
                 </EditableText>
               </div>
-            </section>
+            </EditableBackground>
 
             {/* قسم تأكيد الحضور */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#FBF3EF] border-t-2 border-[#C9A227]">
+            <EditableBackground
+              id="rsvpSectionBg"
+              as="section"
+              className="py-20 px-6 flex flex-col items-center bg-[#FBF3EF] border-t-2 border-[#C9A227]"
+            >
               <div className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg lamsa-tajawal lamsa-reveal">
                 <div className="text-center mb-10">
                   <span className="text-lg">✦</span>
@@ -658,7 +668,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                   </form>
                 )}
               </div>
-            </section>
+            </EditableBackground>
           </div>
         </div>
       </div>
@@ -681,6 +691,6 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
           </p>
         </div>
       )}
-    </div>
+    </EditableBackground>
   )
 }
