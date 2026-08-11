@@ -419,11 +419,13 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div />
               <div className="my-auto flex flex-col items-center text-center">
-                <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow">
-                  <EditableText id="heroEyebrow">
-                    {inv.heroEyebrow || "دعوة زفاف"}
-                  </EditableText>
-                </p>
+                {inv.heroEyebrow && (
+                  <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow">
+                    <EditableText id="heroEyebrow">
+                      {inv.heroEyebrow}
+                    </EditableText>
+                  </p>
+                )}
                 {inv.groom && (
                   <EditableText
                     id="groomName"
