@@ -132,8 +132,9 @@ export function AdminEditForm({
           النص فوق الوردة (أعلى الشاشة الأولى)
         </label>
         <input
-          value={form.heroEyebrow ?? "دعوة زفاف"}
+          value={form.heroEyebrow ?? ""}
           onChange={(e) => updateField("heroEyebrow", e.target.value)}
+          placeholder="مثال: دعوة زفاف — لو تركته فاضي ما يطلع أي نص"
           className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
         />
       </div>
@@ -510,4 +511,3 @@ export function AdminEditForm({
     </form>
   )
 }
-
