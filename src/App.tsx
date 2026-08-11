@@ -6,6 +6,7 @@ import {
   decodeInvitationFromUrl,
   loadSiteSettings,
   applyThemeColors,
+  applySiteFont,
 } from "./backend"
 import { SiteSettings, DEFAULT_SITE_SETTINGS } from "./siteSettings"
 import { InvitationCard } from "./InvitationCard"
@@ -35,6 +36,7 @@ export default function App() {
     loadSiteSettings().then((settings) => {
       setSiteSettings(settings)
       applyThemeColors(settings.colors)
+      applySiteFont(settings.typography)
     })
   }, [])
 
