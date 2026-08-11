@@ -23,6 +23,13 @@ export interface TextStyle {
   // بالمعاينة النهائية (خارج وضع التعديل) مو بس بالمحرر
   font?: string
   fontUrl?: string
+  // لون النص المخصّص — لو غير محدد، يستخدم اللون الأصلي بالتصميم
+  color?: string
+  // لو true، النص هذا مخفي تماماً بالمعاينة النهائية (عند الضيف). بوضع
+  // التعديل نفسه يضل يظهر بشفافية خافتة وإطار متقطع أحمر حتى الأدمن يقدر
+  // يضغط عليه ويرجّعه يظهر مرة ثانية بدون ما يخسر أي تعديل تاني سواه
+  // (حجم/موضع/خط/لون)
+  hidden?: boolean
 }
 
 interface EditModeValue {
@@ -172,6 +179,7 @@ export function EditableText({
   } = useEditMode()
   const ref = useRef<HTMLElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const colorInputRef = useRef<HTMLInputElement | null>(null)
   const [uploadingFont, setUploadingFont] = useState(false)
   const [showFontList, setShowFontList] = useState(false)
   const dragRef = useRef<{
@@ -204,16 +212,20 @@ export function EditableText({
         </Tag>
       )
     }
+    // "حذف" النص فعلياً يعني إخفاءه تماماً عند الضيف — ما نرندر أي شي
+    // إطلاقاً (مو بس opacity:0)، حتى ما يترك فراغ أو مساحة فاضية بالتصميم
+    if (savedStyle.hidden) return null
     // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
-    // الحجم/الموضع/الخط المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية — مع حد
-    // أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد) ما تطلع
-    // النص برّه حدود الشاشة
+    // الحجم/الموضع/الخط/اللون المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية —
+    // مع حد أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد)
+    // ما تطلع النص برّه حدود الشاشة
     const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
     const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
       ...(savedStyle.font ? { fontFamily: savedStyle.font } : null),
+      ...(savedStyle.color ? { color: savedStyle.color } : null),
       transform: `translate(${clampedX}px, ${clampedY}px)`,
       display: "inline-block",
     }
@@ -229,6 +241,7 @@ export function EditableText({
   const px = st.size
   const offX = st.x || 0
   const offY = st.y || 0
+  const isHidden = !!st.hidden
 
   const ALLOWED_FONT_EXT = [".ttf", ".otf", ".woff", ".woff2"]
 
@@ -337,14 +350,18 @@ export function EditableText({
     ...style,
     ...(px ? { fontSize: `${px}px` } : null),
     ...(st.font ? { fontFamily: st.font } : null),
+    ...(st.color ? { color: st.color } : null),
     transform: `translate(${offX}px, ${offY}px)`,
     display: "inline-block",
     position: "relative",
     cursor: "pointer",
-    outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+    opacity: isHidden ? 0.35 : 1,
+    outline: isSelected
+      ? `2px dashed ${isHidden ? "#E05353" : "#B8862F"}`
+      : "2px dashed transparent",
     outlineOffset: 4,
     borderRadius: 4,
-    transition: "outline-color .15s ease",
+    transition: "outline-color .15s ease, opacity .15s ease",
     zIndex: isSelected ? 350 : undefined,
   }
 
@@ -534,6 +551,47 @@ export function EditableText({
             style={{ ...btnStyle, fontSize: 11 }}
           >
             ↺
+          </button>
+          <span style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => colorInputRef.current?.click()}
+              title="تغيير لون النص"
+              style={{
+                ...btnStyle,
+                fontSize: 11,
+                background: st.color || "#2A211D",
+                border: "1px solid #F1D989",
+              }}
+            >
+              🎨
+            </button>
+            <input
+              ref={colorInputRef}
+              type="color"
+              value={st.color || "#ffffff"}
+              onChange={(e) => updateStyle(id, { color: e.target.value })}
+              style={{
+                position: "absolute",
+                width: 1,
+                height: 1,
+                opacity: 0,
+                pointerEvents: "none",
+              }}
+            />
+          </span>
+          <button
+            type="button"
+            onClick={() => updateStyle(id, { hidden: !isHidden })}
+            title={isHidden ? "إظهار النص مرة ثانية" : "حذف/إخفاء هذا النص"}
+            style={{
+              ...btnStyle,
+              fontSize: 11,
+              background: isHidden ? "#E05353" : "#2A211D",
+              color: isHidden ? "#fff" : "#F1D989",
+            }}
+          >
+            {isHidden ? "👁" : "🗑"}
           </button>
         </span>
       )}
