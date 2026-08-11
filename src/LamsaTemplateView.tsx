@@ -520,14 +520,16 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                 >
                   {inv.venue}
                 </EditableText>
-                <a
+                <EditableText
+                  id="mapButton"
+                  as="a"
                   href={mapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white bg-[#B8862F] hover:bg-[#9E7024] shadow-md lamsa-tajawal"
                 >
-                  <EditableText id="mapButtonText">📍 الموقع على الخريطة</EditableText>
-                </a>
+                  📍 الموقع على الخريطة
+                </EditableText>
               </div>
             </section>
 
