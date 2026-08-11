@@ -717,7 +717,11 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               as="section"
               className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#D4AF37]"
             >
-              <div className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg custom-font-tajawal reveal-on-scroll">
+              <EditableBackground
+                id="rsvpCardBg"
+                className="max-w-md w-full border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg custom-font-tajawal reveal-on-scroll"
+                style={{ backgroundColor: "#FFFFFF" }}
+              >
                 <div className="text-center mb-10">
                   <span className="text-lg">⚙️</span>
                   <h3 className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-heading">
@@ -757,22 +761,30 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                         <EditableText id="rsvpAttendanceLabel">هل ستحضر؟</EditableText>
                       </label>
                       <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setAttendance(opt)}
-                            className={`py-3 rounded-xl text-base font-medium transition ${
-                              attendance === opt
-                                ? "bg-[#B8862F] text-white shadow"
-                                : "bg-[#FAF7F2] border border-[#D4AF37]/30 text-[#3D312A]"
-                            }`}
-                          >
-                            <EditableText id={`rsvpOption-${opt}`}>
-                              {opt}
-                            </EditableText>
-                          </button>
-                        ))}
+                        {["نعم", "لا", "ربما"].map((opt) => {
+                          const isActive = attendance === opt
+                          return (
+                            <EditableIcon
+                              key={opt}
+                              id="rsvpOptionAccent"
+                              as="button"
+                              attrs={{ type: "button", onClick: () => setAttendance(opt) }}
+                              className={`py-3 rounded-xl text-base font-medium transition ${
+                                isActive
+                                  ? "text-white shadow"
+                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
+                              }`}
+                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
+                              getColorStyle={(color) =>
+                                isActive ? { backgroundColor: color } : {}
+                              }
+                            >
+                              <EditableText id={`rsvpOption-${opt}`}>
+                                {opt}
+                              </EditableText>
+                            </EditableIcon>
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -828,18 +840,20 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                       </p>
                     )}
 
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full py-4 bg-[#B8862F] hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md disabled:opacity-60"
+                    <EditableBackground
+                      id="rsvpSubmitBtn"
+                      as="button"
+                      attrs={{ type: "submit", disabled: submitting }}
+                      className="w-full py-4 hover:opacity-90 text-white font-bold rounded-2xl text-base transition shadow-md disabled:opacity-60"
+                      style={{ backgroundColor: "#B8862F" }}
                     >
                       <EditableText id="rsvpSubmitButton">
                         {submitting ? "جارٍ الإرسال..." : "إرسال التأكيد"}
                       </EditableText>
-                    </button>
+                    </EditableBackground>
                   </form>
                 )}
-              </div>
+              </EditableBackground>
             </EditableBackground>
           </div>
         </div>
