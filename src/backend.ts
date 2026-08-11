@@ -347,3 +347,29 @@ export function applyThemeColors(colors: SiteSettings["colors"]) {
   root.setProperty("--cta-grad-to", shadeColor(secondary, 25))
   root.setProperty("--footer-bg", footerBg)
 }
+
+// يطبّق خط الواجهة العام فعلياً عن طريق تغيير متغيّر --font-body بجذر
+// الصفحة — نفس المتغيّر اللي يعتمد عليه body{} بـ index.css، فيتغيّر خط
+// كل نصوص الواجهة العادية فوراً بدون إعادة تحميل (بدون ما يمس خطوط
+// قوالب الدعوات نفسها، تلك ثابتة بتصميم كل قالب على حدة). لو الخط مرفوع
+// من الجهاز (customFontUrl موجود) نحقن قاعدة @font-face أول شي حتى
+// يشتغل حتى بعد تحديث الصفحة أو من جهاز ثاني.
+const injectedSiteFonts = new Set<string>()
+
+export function applySiteFont(typography: SiteSettings["typography"]) {
+  if (typeof document === "undefined" || !typography?.fontFamily) return
+  const { fontFamily, customFontUrl } = typography
+
+  if (customFontUrl && !injectedSiteFonts.has(fontFamily)) {
+    injectedSiteFonts.add(fontFamily)
+    const styleEl = document.createElement("style")
+    styleEl.setAttribute("data-uploaded-site-font", fontFamily)
+    styleEl.textContent = `@font-face { font-family: '${fontFamily}'; src: url('${customFontUrl}'); font-display: swap; }`
+    document.head.appendChild(styleEl)
+  }
+
+  document.documentElement.style.setProperty(
+    "--font-body",
+    customFontUrl ? `'${fontFamily}'` : fontFamily,
+  )
+}
