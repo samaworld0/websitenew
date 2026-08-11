@@ -64,6 +64,7 @@ export function LiveTemplateEditor({
       <EditModeProvider
         editable
         initialStyles={inv.textStyles || {}}
+        invitationId={inv.id}
         onStylesChange={(styles) => {
           stylesRef.current = styles
         }}
