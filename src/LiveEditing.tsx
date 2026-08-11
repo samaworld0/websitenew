@@ -62,6 +62,22 @@ function injectFontFace(family: string, url: string) {
   document.head.appendChild(styleEl)
 }
 
+// قائمة الخطوط الجاهزة اللي تطلع بزر 🔤 — كلها محمّلة مسبقًا من Google
+// Fonts بـ src/index.css فتشتغل فورًا بدون رفع أي ملف. لإضافة خط جديد:
+// 1) ضيفه بسطر @import بأول index.css، 2) ضيف عنصر جديد هنا بنفس اسم
+// عائلة الخط (family) بالضبط.
+export const FONT_OPTIONS: { label: string; family: string }[] = [
+  { label: "نسخ سنس", family: "Noto Sans Arabic, sans-serif" },
+  { label: "نسخ نسخي", family: "Noto Naskh Arabic, serif" },
+  { label: "قاهرة", family: "Cairo, sans-serif" },
+  { label: "عارف رقعة", family: "Aref Ruqaa, serif" },
+  { label: "أميري", family: "Amiri, serif" },
+  { label: "المسيري", family: "El Messiri, sans-serif" },
+  { label: "ريم كوفي", family: "Reem Kufi, sans-serif" },
+  { label: "IBM بلكس", family: "IBM Plex Sans, sans-serif" },
+  { label: "شيريش", family: "Cherish, cursive" },
+]
+
 export function EditModeProvider({
   editable,
   initialStyles,
@@ -157,6 +173,7 @@ export function EditableText({
   const ref = useRef<HTMLElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [uploadingFont, setUploadingFont] = useState(false)
+  const [showFontList, setShowFontList] = useState(false)
   const dragRef = useRef<{
     mode: "resize" | "move"
     startY: number
@@ -342,6 +359,16 @@ export function EditableText({
     fontWeight: 700,
   }
 
+  const fontListItemStyle: React.CSSProperties = {
+    textAlign: "center",
+    color: "#F5EBE0",
+    fontSize: 12,
+    padding: "6px 8px",
+    borderRadius: 8,
+    background: "transparent",
+    whiteSpace: "nowrap",
+  }
+
   return (
     <Tag
       ref={ref}
@@ -431,15 +458,75 @@ export function EditableText({
             onChange={handleFontUpload}
             style={{ display: "none" }}
           />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingFont}
-            title="رفع خط من جهازك (ttf, otf, woff, woff2)"
-            style={{ ...btnStyle, fontSize: 11, opacity: uploadingFont ? 0.5 : 1 }}
-          >
-            {uploadingFont ? "…" : "🔤"}
-          </button>
+          <span style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => setShowFontList((v) => !v)}
+              disabled={uploadingFont}
+              title="اختيار الخط"
+              style={{ ...btnStyle, fontSize: 11, opacity: uploadingFont ? 0.5 : 1 }}
+            >
+              {uploadingFont ? "…" : "🔤"}
+            </button>
+            {showFontList && (
+              <div
+                contentEditable={false}
+                style={{
+                  position: "absolute",
+                  bottom: 28,
+                  insetInlineStart: "50%",
+                  transform: "translateX(50%)",
+                  background: "#1A1210",
+                  border: "1px solid #B8862F",
+                  borderRadius: 12,
+                  padding: 6,
+                  zIndex: 410,
+                  width: 150,
+                  maxHeight: 220,
+                  overflowY: "auto",
+                  boxShadow: "0 4px 14px rgba(0,0,0,.35)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateStyle(id, { font: undefined, fontUrl: undefined })
+                    setShowFontList(false)
+                  }}
+                  style={fontListItemStyle}
+                >
+                  الخط الأصلي
+                </button>
+                {FONT_OPTIONS.map((f) => (
+                  <button
+                    key={f.family}
+                    type="button"
+                    onClick={() => {
+                      updateStyle(id, { font: f.family, fontUrl: undefined })
+                      setShowFontList(false)
+                    }}
+                    style={{ ...fontListItemStyle, fontFamily: f.family }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+                <div style={{ height: 1, background: "#B8862F55", margin: "4px 0" }} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFontList(false)
+                    fileInputRef.current?.click()
+                  }}
+                  style={{ ...fontListItemStyle, color: "#B8862F" }}
+                >
+                  ⬆ رفع خط من جهازك
+                </button>
+              </div>
+            )}
+          </span>
           <button
             type="button"
             onClick={() => resetStyle(id)}
