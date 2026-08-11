@@ -9,6 +9,10 @@ export interface SiteSettings {
     titleLine2: string
     subtitle: string
     ctaButton: string
+    // صورتا المعاينة الجانبيتان بأعلى الصفحة الرئيسية (اليمنى واليسرى) —
+    // لو فاضيتين نستخدم الصورتين الافتراضيتين بمجلد public/mnbra
+    imageLeftUrl?: string
+    imageRightUrl?: string
   }
   templatesSection: {
     title: string
