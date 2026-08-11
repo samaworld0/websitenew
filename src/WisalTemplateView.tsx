@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText } from "./LiveEditing"
+import { EditableText, EditableBackground } from "./LiveEditing"
 
 interface GoldenParticle {
   id: number
@@ -280,7 +280,9 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
   }
 
   return (
-    <div
+    <EditableBackground
+      id="pageBg"
+      as="div"
       className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
       dir="rtl"
     >
@@ -587,7 +589,11 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
 
             {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل،
                 والزهرة الحمراء بالمنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]">
+            <EditableBackground
+              id="programSectionBg"
+              as="section"
+              className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+            >
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-12 custom-font-heading">
                   <EditableText id="programHeading">برنامج الحفل</EditableText>
@@ -685,10 +691,14 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   📍 الموقع على الخريطة
                 </EditableText>
               </div>
-            </section>
+            </EditableBackground>
 
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#D4AF37]">
+            <EditableBackground
+              id="rsvpSectionBg"
+              as="section"
+              className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#D4AF37]"
+            >
               <div className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg custom-font-tajawal reveal-on-scroll">
                 <div className="text-center mb-10">
                   <span className="text-lg">⚙️</span>
@@ -812,7 +822,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   </form>
                 )}
               </div>
-            </section>
+            </EditableBackground>
           </div>
         </div>
       </div>
@@ -843,6 +853,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           </p>
         </div>
       )}
-    </div>
+    </EditableBackground>
   )
 }
