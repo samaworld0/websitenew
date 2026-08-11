@@ -41,7 +41,31 @@ export interface SiteSettings {
     // خلفية الفوتر الغامقة بالأسفل
     footerBg: string
   }
+  // الخط العام المستخدم بنصوص الواجهة (الصفحة الرئيسية ولوحة التحكم) — لا
+  // يشمل خطوط قوالب الدعوات نفسها (وصال/لمسة)، تلك ثابتة بتصميم كل قالب
+  typography: {
+    fontFamily: string
+    // رابط ملف خط مرفوع من الجهاز (لو الأدمن رفع خط بدل ما يختار من
+    // القائمة الجاهزة) — لازم يكون موجود مع fontFamily حتى نقدر نعيد حقن
+    // قاعدة @font-face بالصفحة من جديد بعد أي تحديث (F5) أو بأي جهاز ثاني
+    customFontUrl?: string
+  }
 }
+
+// قائمة الخطوط الجاهزة لاختيار خط الواجهة — كلها محمّلة مسبقًا من Google
+// Fonts بـ src/index.css فتشتغل فورًا بدون إعداد إضافي. لإضافة خط جديد:
+// 1) ضيفه بسطر @import بأول index.css، 2) ضيف عنصر جديد هنا بنفس اسم
+// عائلة الخط (family) بالضبط.
+export const SITE_FONT_OPTIONS: { label: string; family: string }[] = [
+  { label: "نسخ سنس (افتراضي)", family: "'Noto Sans Arabic', sans-serif" },
+  { label: "نسخ نسخي", family: "'Noto Naskh Arabic', serif" },
+  { label: "قاهرة", family: "'Cairo', sans-serif" },
+  { label: "عارف رقعة", family: "'Aref Ruqaa', serif" },
+  { label: "أميري", family: "'Amiri', serif" },
+  { label: "المسيري", family: "'El Messiri', sans-serif" },
+  { label: "ريم كوفي", family: "'Reem Kufi', sans-serif" },
+  { label: "IBM بلكس", family: "'IBM Plex Sans', sans-serif" },
+]
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   hero: {
@@ -94,5 +118,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     primary: "#d4a035",
     secondary: "#e8487a",
     footerBg: "#241b2e",
+  },
+  typography: {
+    fontFamily: "'Noto Sans Arabic', sans-serif",
   },
 }
