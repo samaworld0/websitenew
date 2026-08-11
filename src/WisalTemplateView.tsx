@@ -405,7 +405,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                     {inv.heroEyebrow || "دعوة زفاف"}
                   </EditableText>
                 </p>
-                <span className="text-[#D4AF37] text-xl mb-4">✿</span>
                 {inv.groom && (
                   <EditableText
                     id="groomName"
