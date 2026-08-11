@@ -1,13 +1,16 @@
-import { createContext, useContext, useRef, useState, ReactNode } from "react"
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react"
+import { uploadInvitationFile } from "./backend"
 
 // ============================================================================
 // نظام تعديل مباشر شبيه بفيغما: يلف أي نص داخل قوالب الدعوة (وصال/لمسة)
 // بمكوّن EditableText، يخليك تضغط على النص فتحدد، وبعدها:
 //   - تسحب مقبض ⇕ لتكبيره أو تصغيره
 //   - تسحب مقبض ✥ لتحريكه لأي مكان بالشاشة
+//   - تضغط زر 🔤 لرفع ملف خط من جهازك (ttf/otf/woff/woff2) وتطبيقه على
+//     هذا النص بالذات
 // كل هذا فوق المعاينة الحقيقية للدعوة — بدون ما يغيّر أي شي بالتصميم
 // الأصلي إذا الوضع مو "تعديل" (editable=false، وهو وضع كل صفحات الموقع
-// العادية). القياسات والمواضع تتخزّن بـ inv.textStyles وتُحفظ مع باقي
+// العادية). القياسات والمواضع والخط تتخزّن بـ inv.textStyles وتُحفظ مع باقي
 // بيانات الدعوة.
 // ============================================================================
 
@@ -15,26 +18,18 @@ export interface TextStyle {
   size?: number
   x?: number
   y?: number
+  // اسم عائلة الخط المرفوع (يتولّد تلقائياً) ورابط ملف الخط بعد رفعه لـ
+  // Supabase Storage — لازم الاثنين مع بعض حتى نقدر نطبّق @font-face
+  // بالمعاينة النهائية (خارج وضع التعديل) مو بس بالمحرر
   font?: string
+  fontUrl?: string
 }
-
-// الخطوط العربية المحمّلة أصلاً بالموقع (index.css) — آمنة نستخدمها هنا
-// بدون ما نحمّل أي شي إضافي
-export const FONT_OPTIONS: { label: string; value: string }[] = [
-  { label: "الخط الأصلي", value: "" },
-  { label: "Cairo", value: "'Cairo', sans-serif" },
-  { label: "Aref Ruqaa", value: "'Aref Ruqaa', serif" },
-  { label: "Amiri", value: "'Amiri', serif" },
-  { label: "Noto Naskh", value: "'Noto Naskh Arabic', serif" },
-  { label: "Noto Sans", value: "'Noto Sans Arabic', sans-serif" },
-  { label: "El Messiri", value: "'El Messiri', sans-serif" },
-  { label: "Reem Kufi", value: "'Reem Kufi', sans-serif" },
-]
 
 interface EditModeValue {
   editable: boolean
   styles: Record<string, TextStyle>
   selectedId: string | null
+  invitationId: string | number
   setSelectedId: (id: string | null) => void
   updateStyle: (id: string, patch: Partial<TextStyle>) => void
   resetStyle: (id: string) => void
@@ -44,6 +39,7 @@ const EditModeContext = createContext<EditModeValue>({
   editable: false,
   styles: {},
   selectedId: null,
+  invitationId: "",
   setSelectedId: () => {},
   updateStyle: () => {},
   resetStyle: () => {},
@@ -53,14 +49,29 @@ export function useEditMode() {
   return useContext(EditModeContext)
 }
 
+// نخزن أسماء عائلات الخطوط اللي انحقنت بـ @font-face حتى الآن، حتى ما نضيف
+// نفس القاعدة أكثر من مرة إذا تكرر نفس الخط لأكثر من نص بنفس الدعوة
+const injectedFonts = new Set<string>()
+
+function injectFontFace(family: string, url: string) {
+  if (!family || !url || injectedFonts.has(family)) return
+  injectedFonts.add(family)
+  const styleEl = document.createElement("style")
+  styleEl.setAttribute("data-uploaded-font", family)
+  styleEl.textContent = `@font-face { font-family: '${family}'; src: url('${url}'); font-display: swap; }`
+  document.head.appendChild(styleEl)
+}
+
 export function EditModeProvider({
   editable,
   initialStyles,
+  invitationId = "",
   onStylesChange,
   children,
 }: {
   editable: boolean
   initialStyles: Record<string, TextStyle>
+  invitationId?: string | number
   onStylesChange?: (styles: Record<string, TextStyle>) => void
   children: ReactNode
 }) {
@@ -88,7 +99,15 @@ export function EditModeProvider({
 
   return (
     <EditModeContext.Provider
-      value={{ editable, styles, selectedId, setSelectedId, updateStyle, resetStyle }}
+      value={{
+        editable,
+        styles,
+        selectedId,
+        invitationId,
+        setSelectedId,
+        updateStyle,
+        resetStyle,
+      }}
     >
       {children}
     </EditModeContext.Provider>
@@ -126,9 +145,18 @@ export function EditableText({
   style?: React.CSSProperties
   children: ReactNode
 }) {
-  const { editable, styles, selectedId, setSelectedId, updateStyle, resetStyle } =
-    useEditMode()
+  const {
+    editable,
+    styles,
+    selectedId,
+    invitationId,
+    setSelectedId,
+    updateStyle,
+    resetStyle,
+  } = useEditMode()
   const ref = useRef<HTMLElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [uploadingFont, setUploadingFont] = useState(false)
   const dragRef = useRef<{
     mode: "resize" | "move"
     startY: number
@@ -137,6 +165,16 @@ export function EditableText({
     startX0: number
     startY0: number
   } | null>(null)
+
+  // إذا هالنص عنده خط مرفوع (بوضع التعديل أو بالمعاينة النهائية للضيف)،
+  // نحقن قاعدة @font-face بالصفحة أول ما تتوفر بياناته — هذا الـ effect
+  // لازم ينفّذ دائماً (حتى برّه وضع التعديل) عشان يشتغل الخط عند الضيوف
+  const currentStyle = styles[id]
+  useEffect(() => {
+    if (currentStyle?.font && currentStyle?.fontUrl) {
+      injectFontFace(currentStyle.font, currentStyle.fontUrl)
+    }
+  }, [currentStyle?.font, currentStyle?.fontUrl])
 
   const Tag = as as any
 
@@ -150,8 +188,8 @@ export function EditableText({
       )
     }
     // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
-    // الحجم/الموضع المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية — مع حد أقصى
-    // احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد) ما تطلع
+    // الحجم/الموضع/الخط المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية — مع حد
+    // أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد) ما تطلع
     // النص برّه حدود الشاشة
     const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
     const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
@@ -174,7 +212,46 @@ export function EditableText({
   const px = st.size
   const offX = st.x || 0
   const offY = st.y || 0
-  const fontFamily = st.font
+
+  const ALLOWED_FONT_EXT = [".ttf", ".otf", ".woff", ".woff2"]
+
+  const handleFontUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+
+    const lowerName = file.name.toLowerCase()
+    const isAllowed = ALLOWED_FONT_EXT.some((ext) => lowerName.endsWith(ext))
+    if (!isAllowed) {
+      alert("صيغة الخط غير مدعومة. الصيغ المقبولة: ttf, otf, woff, woff2")
+      return
+    }
+
+    setUploadingFont(true)
+    try {
+      const url = await uploadInvitationFile(
+        file,
+        invitationId || "shared",
+        `font-${id}-${Date.now()}`,
+      )
+      // اسم عائلة فريد مبني على معرف النص والوقت، حتى ما يتعارض مع أي خط
+      // ثاني مرفوع بنفس الصفحة
+      const family = `uploaded-${id}-${Date.now()}`.replace(
+        /[^a-zA-Z0-9_-]/g,
+        "-",
+      )
+      injectFontFace(family, url)
+      updateStyle(id, { font: family, fontUrl: url })
+    } catch (err) {
+      alert(
+        `تعذّر رفع ملف الخط.\n\nتفاصيل الخطأ: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
+    } finally {
+      setUploadingFont(false)
+    }
+  }
 
   const startResize = (e: React.PointerEvent) => {
     e.preventDefault()
@@ -242,7 +319,7 @@ export function EditableText({
   const mergedStyle: React.CSSProperties = {
     ...style,
     ...(px ? { fontSize: `${px}px` } : null),
-    ...(fontFamily ? { fontFamily } : null),
+    ...(st.font ? { fontFamily: st.font } : null),
     transform: `translate(${offX}px, ${offY}px)`,
     display: "inline-block",
     position: "relative",
@@ -347,6 +424,22 @@ export function EditableText({
           >
             ✥
           </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".ttf,.otf,.woff,.woff2"
+            onChange={handleFontUpload}
+            style={{ display: "none" }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFont}
+            title="رفع خط من جهازك (ttf, otf, woff, woff2)"
+            style={{ ...btnStyle, fontSize: 11, opacity: uploadingFont ? 0.5 : 1 }}
+          >
+            {uploadingFont ? "…" : "🔤"}
+          </button>
           <button
             type="button"
             onClick={() => resetStyle(id)}
@@ -355,32 +448,6 @@ export function EditableText({
           >
             ↺
           </button>
-          <select
-            value={fontFamily || ""}
-            onChange={(e) =>
-              updateStyle(id, { font: e.target.value || undefined })
-            }
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            title="اختر خط للنص"
-            style={{
-              background: "#2A211D",
-              color: "#F1D989",
-              fontSize: 10,
-              fontFamily: "Cairo, sans-serif",
-              border: "1px solid #B8862F55",
-              borderRadius: 8,
-              padding: "2px 4px",
-              maxWidth: 78,
-              outline: "none",
-            }}
-          >
-            {FONT_OPTIONS.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
         </span>
       )}
     </Tag>
