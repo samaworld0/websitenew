@@ -182,6 +182,7 @@ function toDatabaseInvitation(inv: Invitation) {
     countdownDate: inv.countdownDate ?? null,
     mapUrl: inv.mapUrl ?? null,
     textStyles: inv.textStyles ?? null,
+    heroEyebrow: inv.heroEyebrow ?? null,
   }
 }
 
