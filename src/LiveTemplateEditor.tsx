@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Invitation } from "./types"
 import { WisalTemplateView } from "./WisalTemplateView"
 import { LamsaTemplateView } from "./LamsaTemplateView"
-import { EditModeProvider, DeselectSurface, TextStyle } from "./LiveEditing"
+import { EditModeProvider, DeselectSurface, EditPanel, TextStyle, PANEL_WIDTH } from "./LiveEditing"
 
 // محرر التصميم المباشر — يفتح المعاينة الحقيقية للدعوة (نفس المكوّن اللي
 // يشوفه الضيف) بس بوضع "تعديل" مفعّل، حتى يضغط الأدمن على أي نص بالصفحة
@@ -37,11 +37,15 @@ export function LiveTemplateEditor({
   return (
     <div className="fixed inset-0 z-[500] flex flex-col w-full h-full bg-[#0D0706]">
       <div
-        className="absolute top-4 left-1/2 -translate-x-1/2 z-[510] max-w-[92%] text-center bg-black/70 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 text-white text-[11px] md:text-sm"
-        style={{ fontFamily: "Cairo, sans-serif" }}
+        className="absolute top-4 z-[510] max-w-[92%] text-center bg-black/70 backdrop-blur-md border border-white/15 rounded-full px-4 py-2 text-white text-[11px] md:text-sm"
+        style={{
+          fontFamily: "Cairo, sans-serif",
+          insetInlineStart: `calc(50% + ${PANEL_WIDTH / 2}px)`,
+          transform: "translateX(-50%)",
+        }}
       >
-        ✏️ اضغط على أي نص، وبعدين اسحب ⇕ لتكبيره/تصغيره أو ✥ لتحريكه —
-        وزر ↺ يرجّعه لوضعه الأصلي
+        ✏️ اضغط على أي نص أو خلفية، وعدّل خصائصه من اللوحة على يسار الشاشة
+        — وزر ✥ يحرّكه لأي مكان
       </div>
 
       <div className="absolute top-4 right-4 z-[510] flex items-center gap-2">
@@ -70,7 +74,7 @@ export function LiveTemplateEditor({
         }}
       >
         <DeselectSurface>
-          <div className="w-full h-full">
+          <div className="w-full h-full" style={{ paddingInlineStart: PANEL_WIDTH }}>
             {inv.templateType === "wisal" ? (
               <WisalTemplateView inv={inv} />
             ) : (
@@ -78,6 +82,7 @@ export function LiveTemplateEditor({
             )}
           </div>
         </DeselectSurface>
+        <EditPanel />
       </EditModeProvider>
     </div>
   )
