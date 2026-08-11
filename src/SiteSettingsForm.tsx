@@ -168,6 +168,89 @@ function FontField({
     </div>
   )
 }
+// حقل صورة: رابط مباشر أو رفع ملف من الجهاز، مع معاينة مصغّرة وزر
+// استرجاع الصورة الافتراضية
+function ImageField({
+  label,
+  value,
+  defaultPreview,
+  onChange,
+}: {
+  label: string
+  value: string
+  // الصورة الافتراضية الثابتة اللي تنعرض لو ما فيه رابط مخصص محفوظ —
+  // تُستخدم للمعاينة فقط حتى يشوف الأدمن شكلها الحالي
+  defaultPreview: string
+  onChange: (v: string) => void
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const url = await uploadInvitationFile(
+        file,
+        "site-settings",
+        `hero-image-${Date.now()}`,
+      )
+      onChange(url)
+    } catch (err) {
+      alert(
+        `تعذّر رفع الصورة.\n\nتفاصيل الخطأ: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-bold mb-2">{label}</label>
+      <div className="flex items-center gap-3">
+        <img
+          src={value || defaultPreview}
+          alt={label}
+          className="w-14 h-14 rounded-xl object-cover border border-border shrink-0 bg-white"
+        />
+        <div className="flex-1 flex gap-2">
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="رابط الصورة (اختياري لو رح ترفع ملف)"
+            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-sm text-left"
+            dir="ltr"
+          />
+          <label className="shrink-0 px-4 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold cursor-pointer transition text-sm aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
+            <span>{uploading ? "⏳ جارِ الرفع..." : "📎 رفع"}</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={handleUpload}
+            />
+          </label>
+        </div>
+      </div>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="text-[11px] text-muted-foreground mt-2 underline"
+        >
+          ↺ استرجاع الصورة الافتراضية
+        </button>
+      )}
+    </div>
+  )
+}
 function SectionCard({
   title,
   description,
@@ -310,6 +393,22 @@ export function SiteSettingsForm({
           label="الوصف تحت العنوان"
           value={form.hero.subtitle}
           onChange={(v) => update("hero", { ...form.hero, subtitle: v })}
+        />
+        <ImageField
+          label="الصورة اليمنى (بجانب بطاقة الدعوة)"
+          value={form.hero.imageRightUrl || ""}
+          defaultPreview="/mnbra/wedding-01.jpg"
+          onChange={(v) =>
+            update("hero", { ...form.hero, imageRightUrl: v || undefined })
+          }
+        />
+        <ImageField
+          label="الصورة اليسرى (بجانب بطاقة الدعوة)"
+          value={form.hero.imageLeftUrl || ""}
+          defaultPreview="/mnbra/wedding-02.jpg"
+          onChange={(v) =>
+            update("hero", { ...form.hero, imageLeftUrl: v || undefined })
+          }
         />
       </SectionCard>
 
