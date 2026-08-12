@@ -279,7 +279,6 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                 <source src={inv.doorBgVideo} type="video/mp4" />
               </video>
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none z-0" />
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div className="text-center px-2">
