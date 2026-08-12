@@ -201,19 +201,6 @@ export function AdminEditForm({
         </p>
       </div>
 
-      <div>
-        <label className="block text-sm font-bold mb-2">وسم الكارد</label>
-        <select
-          value={form.tag}
-          onChange={(e) => updateField("tag", e.target.value)}
-          className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
-        >
-          <option value="جديد">جديد</option>
-          <option value="مميز">مميز</option>
-          <option value="الأكثر طلباً">الأكثر طلباً</option>
-        </select>
-      </div>
-
       <div className="md:col-span-2 bg-[#FFF8E8] border border-[#D4AF37]/30 rounded-2xl px-5 py-4">
         <label className="block text-sm font-bold mb-2">
           تاريخ ووقت العد التنازلي "باقي على فرحنا"
@@ -291,56 +278,6 @@ export function AdminEditForm({
             )}
           </div>
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-bold mb-2">
-          لون مميز (Accent)
-        </label>
-        <div className="flex items-center gap-3">
-          <input
-            type="color"
-            value={form.accentColor}
-            onChange={(e) => updateField("accentColor", e.target.value)}
-            className="w-12 h-10 rounded-lg border border-border"
-          />
-          <input
-            value={form.accentColor}
-            onChange={(e) => updateField("accentColor", e.target.value)}
-            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-2">السعر</label>
-        <input
-          value={form.price}
-          onChange={(e) => updateField("price", e.target.value)}
-          className="w-full border border-border rounded-xl px-4 py-2.5 bg-white"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-bold mb-2">
-          تدرج الخلفية — من
-        </label>
-        <input
-          type="color"
-          value={form.gradientFrom}
-          onChange={(e) => updateField("gradientFrom", e.target.value)}
-          className="w-full h-10 rounded-lg border border-border"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-bold mb-2">
-          تدرج الخلفية — إلى
-        </label>
-        <input
-          type="color"
-          value={form.gradientTo}
-          onChange={(e) => updateField("gradientTo", e.target.value)}
-          className="w-full h-10 rounded-lg border border-border"
-        />
       </div>
 
       {/* --- حقول الرفع الجديدة المدمجة --- */}
