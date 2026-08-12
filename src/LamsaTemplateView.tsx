@@ -344,6 +344,19 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
             </div>
           </section>
 
+          {/* قسم فاصل بين الشاشة الأولى وقسم العداد التنازلي — بدون محتوى
+              ثابت، لونه يتحكم فيه الأدمن بالكامل من لوحة التصميم المباشر
+              (EditableBackground). افتراضياً شفاف حتى ما يبين إذا الأدمن
+              ما لوّنه بعد. */}
+          <EditableBackground
+            id="dividerSectionOne"
+            as="section"
+            className="w-full min-h-[80px] relative z-20"
+            style={{ backgroundColor: "transparent" }}
+          >
+            <div className="h-[80px]" />
+          </EditableBackground>
+
           <div className="w-full bg-[#FBF3EF] text-[#3D2B2E] relative z-20">
             <section className="py-24 px-6 flex flex-col items-center">
               <div className="text-center w-full max-w-lg mb-16 lamsa-reveal">
