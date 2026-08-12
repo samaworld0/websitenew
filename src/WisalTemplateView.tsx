@@ -351,7 +351,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               واحد (doorBgVideo)، وإلا يعرض صورة الخلفية (heroBg) فقط.
               الاثنين ما يظهروا مع بعض أبداً — خيار واحد بس. */}
           <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
+            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center bg-black"
             style={{
               backgroundImage: inv.doorBgVideo
                 ? undefined
@@ -368,7 +368,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                 loop
                 muted
                 playsInline
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
               >
                 <source src={inv.doorBgVideo} type="video/mp4" />
               </video>
@@ -818,7 +818,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
       {overlayMounted && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 ${
+          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
