@@ -253,10 +253,10 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
 
           {/* القسم الأول — خلفية متدرجة (صورة اختيارية + تدرج وردي/ذهبي CSS)، مع فيديو خلفية اختياري فوقها لو الأدمن رفع واحد */}
           <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDF6F2] animate-[lamsaFadeInUp_1s] bg-cover bg-center"
+            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDF6F2] animate-[lamsaFadeInUp_1s] bg-cover bg-center bg-black"
             style={{
               backgroundImage: inv.heroBg
-                ? `linear-gradient(180deg, rgba(74,30,40,0.55), rgba(74,30,40,0.75)), url("${inv.heroBg}")`
+                ? `url("${inv.heroBg}")`
                 : "linear-gradient(160deg, #5C2A38 0%, #7A3546 45%, #5C2A38 100%)",
             }}
           >
@@ -274,7 +274,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                 loop
                 muted
                 playsInline
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-60"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
               >
                 <source src={inv.doorBgVideo} type="video/mp4" />
               </video>
