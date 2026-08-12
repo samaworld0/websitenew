@@ -280,6 +280,31 @@ export function AdminEditForm({
         </div>
       </div>
 
+      <div>
+        <label className="block text-sm font-bold mb-2">
+          لون وميض فتح الدعوة
+        </label>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={form.flashColor || "#FFFFFF"}
+            onChange={(e) => updateField("flashColor", e.target.value)}
+            className="w-12 h-10 rounded-lg border border-border"
+          />
+          <input
+            value={form.flashColor || ""}
+            onChange={(e) => updateField("flashColor", e.target.value)}
+            placeholder="#FFFFFF (أبيض افتراضياً)"
+            dir="ltr"
+            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-left"
+          />
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+          هذا هو لون اللمعة/الوميض اللي تطلع لحظة ما الضيف يضغط لفتح الدعوة.
+          اتركه فاضي عشان يضل أبيض زي الأصل.
+        </p>
+      </div>
+
       {/* --- حقول الرفع الجديدة المدمجة --- */}
       <div className="md:col-span-2">
         <label className="block text-sm font-bold mb-2">
