@@ -347,29 +347,32 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               ينسحب برّا حدوده) */}
           <CustomTextLayer />
 
-          {/* القسم الأول مع الخلفية والزهور */}
+          {/* القسم الأول مع الخلفية والزهور — يعرض الفيديو لو الأدمن رفع
+              واحد (doorBgVideo)، وإلا يعرض صورة الخلفية (heroBg) فقط.
+              الاثنين ما يظهروا مع بعض أبداً — خيار واحد بس. */}
           <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={{
-              backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
+              backgroundImage: inv.doorBgVideo
+                ? undefined
+                : `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
             }}
           >
             <div className="absolute inset-0 opacity-20 pointer-events-none">
               <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
               <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
             </div>
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
-            >
-              <source
-                src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                type="video/mp4"
-              />
-            </video>
+            {inv.doorBgVideo && (
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
+              >
+                <source src={inv.doorBgVideo} type="video/mp4" />
+              </video>
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
