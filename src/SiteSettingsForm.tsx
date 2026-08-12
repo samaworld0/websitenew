@@ -251,6 +251,92 @@ function ImageField({
     </div>
   )
 }
+// حقل أيقونة النافذة (Favicon): رابط مباشر أو رفع ملف من الجهاز، مع
+// معاينة مصغّرة دائرية — يشبه ImageField لكن بدون صورة افتراضية ثابتة
+// (لو فاضي يبين رمز عام بدل صورة مكسورة)
+function FaviconField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const url = await uploadInvitationFile(
+        file,
+        "site-settings",
+        `favicon-${Date.now()}`,
+      )
+      onChange(url)
+    } catch (err) {
+      alert(
+        `تعذّر رفع الأيقونة.\n\nتفاصيل الخطأ: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      )
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-bold mb-2">{label}</label>
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-lg border border-border shrink-0 bg-white flex items-center justify-center overflow-hidden text-lg">
+          {value ? (
+            <img src={value} alt={label} className="w-full h-full object-cover" />
+          ) : (
+            "🌐"
+          )}
+        </div>
+        <div className="flex-1 flex gap-2">
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="رابط الأيقونة (اختياري لو رح ترفع ملف)"
+            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-sm text-left"
+            dir="ltr"
+          />
+          <label className="shrink-0 px-4 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold cursor-pointer transition text-sm aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
+            <span>{uploading ? "⏳ جارِ الرفع..." : "📎 رفع"}</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={handleUpload}
+            />
+          </label>
+        </div>
+      </div>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="text-[11px] text-muted-foreground mt-2 underline"
+        >
+          ↺ استخدام أيقونة المتصفح الافتراضية
+        </button>
+      )}
+      <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+        يفضّل رفع صورة مربعة (مثال: 512×512) بصيغة PNG أو ICO.
+      </p>
+    </div>
+  )
+}
+
 function SectionCard({
   title,
   description,
@@ -283,12 +369,14 @@ export function SiteSettingsForm({
   onSave,
   onPreviewColors,
   onPreviewFont,
+  onPreviewMeta,
   saving,
 }: {
   initial: SiteSettings
   onSave: (settings: SiteSettings) => void
   onPreviewColors: (colors: SiteSettings["colors"]) => void
   onPreviewFont: (typography: SiteSettings["typography"]) => void
+  onPreviewMeta: (meta: SiteSettings["meta"]) => void
   saving: boolean
 }) {
   const [form, setForm] = useState<SiteSettings>(initial)
@@ -298,6 +386,14 @@ export function SiteSettingsForm({
     value: SiteSettings[K],
   ) => {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  const updateMeta = (meta: SiteSettings["meta"]) => {
+    setForm((f) => {
+      // معاينة حية فورية بدون حفظ
+      onPreviewMeta(meta)
+      return { ...f, meta }
+    })
   }
 
   const updateStep = (
@@ -336,6 +432,24 @@ export function SiteSettingsForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <SectionCard
+        title="اسم النافذة والأيقونة"
+        description="اللي يظهر بعلامة تبويب المتصفح فوق (اسم الموقع وأيقونته الصغيرة) — يتغيّر فوراً بالمعاينة."
+      >
+        <TextField
+          label="اسم النافذة (Tab)"
+          value={form.meta.siteTitle}
+          onChange={(v) => updateMeta({ ...form.meta, siteTitle: v })}
+        />
+        <FaviconField
+          label="أيقونة النافذة (Favicon)"
+          value={form.meta.faviconUrl || ""}
+          onChange={(v) =>
+            updateMeta({ ...form.meta, faviconUrl: v || undefined })
+          }
+        />
+      </SectionCard>
+
       <SectionCard
         title="الألوان"
         description="تتغيّر بكل مكان بالموقع فوراً — الأزرار، الشارات، النافذة الحمراء، والفوتر."
