@@ -816,7 +816,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
       {overlayMounted && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black/85 ${
+          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
@@ -826,7 +826,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             playsInline
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           >
             <source
               src={inv.introVideo || "/videos/intro.mp4"}
