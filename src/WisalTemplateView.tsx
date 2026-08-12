@@ -4,15 +4,6 @@ import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM } from "./util
 import { SHEETS_SCRIPT_URL } from "./backend"
 import { EditableText, EditableBackground, EditableIcon } from "./LiveEditing"
 
-interface GoldenParticle {
-  id: number
-  type: "heart" | "star"
-  left: number
-  size: number
-  duration: number
-  delay: number
-}
-
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
 // لما يوصله السكرول — أنيميشن خفيف ولطيف بدون أي مكتبات خارجية.
 function useRevealOnScroll(active: boolean) {
@@ -88,7 +79,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [particles, setParticles] = useState<GoldenParticle[]>([])
 
   // العداد التنازلي محسوب فعلياً من inv.countdownDate (يتحدث الأدمن عليه من
   // لوحة التحكم) بدل أرقام ثابتة — ويعاد حسابه كل ثانية.
@@ -174,21 +164,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
   useRevealOnScroll(isOpen)
   const programTimeline = useScrollProgress(isOpen)
 
-  const generateGoldenParticles = () => {
-    const items: GoldenParticle[] = []
-    for (let i = 0; i < 25; i++) {
-      items.push({
-        id: i,
-        type: i % 2 === 0 ? "heart" : "star",
-        left: Math.random() * 92 + 4,
-        size: Math.random() * 8 + 8,
-        duration: Math.random() * 8 + 10,
-        delay: Math.random() * 5,
-      })
-    }
-    setParticles(items)
-  }
-
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(getTimeLeft(inv.countdownDate))
@@ -199,7 +174,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
   const completeOpening = () => {
     setIsOpen((prev) => {
       if (!prev) {
-        generateGoldenParticles()
         setShowFlash(true)
         setTimeout(() => setShowFlash(false), 900)
         // نشيل طبقة الفتح نهائياً من الـ DOM بعد ما يخلص تلاشيها (1 ثانية)
@@ -288,24 +262,10 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=El+Messiri:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Cairo:wght@300;400;500;600;700;800&display=swap');
-        @keyframes goldenParticle {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-          15% { opacity: 0.6; }
-          85% { opacity: 0.6; }
-          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes goldLine{
-0%{transform:translateX(-120%)}
-100%{transform:translateX(350%)}
-}
 @keyframes fadeInUp{
 0%{opacity:0;transform:translateY(60px)}
 100%{opacity:1;transform:translateY(0)}
 }
-        @keyframes bounceDown {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
         @keyframes goldFlash {
           0% { opacity: 0; }
           20% { opacity: 1; }
@@ -380,9 +340,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
             }}
           >
-            <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
-              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
-            </div>
             <div className="absolute inset-0 opacity-20 pointer-events-none">
               <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
               <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
@@ -400,23 +357,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               />
             </video>
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
-
-            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-              {particles.map((p) => (
-                <div
-                  key={p.id}
-                  className="absolute bottom-0 text-[#F1D989] opacity-70"
-                  style={{
-                    left: `${p.left}%`,
-                    fontSize: `${p.size}px`,
-                    animation: `goldenParticle ${p.duration}s linear infinite`,
-                    animationDelay: `-${p.delay}s`,
-                  }}
-                >
-                  ✿
-                </div>
-              ))}
-            </div>
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div />
@@ -467,17 +407,6 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                     </EditableText>
                   </p>
                 </div>
-              </div>
-              <div className="mb-4 flex flex-col items-center opacity-80">
-                <p className="text-sm tracking-widest text-[#E8DCC4] mb-1 custom-font-eyebrow">
-                  <EditableText id="scrollHint">مرر للأسفل</EditableText>
-                </p>
-                <span
-                  className="text-xl text-[#D4AF37]"
-                  style={{ animation: "bounceDown 2s ease-in-out infinite" }}
-                >
-                  ↓
-                </span>
               </div>
             </div>
           </section>
