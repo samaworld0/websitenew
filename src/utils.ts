@@ -12,6 +12,26 @@ export function getTimeLeft(targetIso?: string) {
   return { days, hours, minutes, seconds }
 }
 
+// يحوّل لون Hex (مثال: "#FFC400") إلى صيغة rgba() بنفس درجة الشفافية
+// المطلوبة — نستخدمها حتى نبني تدرّج اللمعة (الفلاش) بأي لون يختاره الأدمن
+// بدل ما يكون أبيض ثابت دائماً.
+export function hexToRgba(hex: string, alpha: number): string {
+  const clean = (hex || "").replace("#", "")
+  const full =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean
+  const num = parseInt(full, 16)
+  if (Number.isNaN(num) || full.length !== 6) return `rgba(255,255,255,${alpha})`
+  const r = (num >> 16) & 255
+  const g = (num >> 8) & 255
+  const b = num & 255
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
 // يفتّح أو يغمّق أي لون Hex بنسبة معيّنة — نستخدمها حتى نولّد درجات لون
 // كاملة (فاتح/غامق) من لون واحد يختاره الأدمن من لوحة التحكم، بدل ما نطلب
 // منه يحدد كل درجة يدوياً.
