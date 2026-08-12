@@ -246,6 +246,10 @@ export function EditableText({
     // ما تطلع النص برّه حدود الشاشة
     const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
     const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
+    // لو النص انسحب لمكان بعيد عن موضعه الأصلي، نرفع طبقته (z-index) حتى
+    // ما يختفي وراء القسم اللي بعده لما يتداخل بصرياً معه (القسم التالي له
+    // خلفية خاصة تُرسم فوقه بترتيب DOM العادي وإلا)
+    const isMoved = clampedX !== 0 || clampedY !== 0
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
@@ -253,6 +257,8 @@ export function EditableText({
       ...(savedStyle.color ? { color: savedStyle.color } : null),
       transform: `translate(${clampedX}px, ${clampedY}px)`,
       display: "inline-block",
+      position: "relative",
+      ...(isMoved ? { zIndex: 40 } : null),
     }
     return (
       <Tag className={className} style={readOnlyStyle} {...linkProps}>
@@ -337,7 +343,7 @@ export function EditableText({
     outlineOffset: 4,
     borderRadius: 4,
     transition: "outline-color .15s ease, opacity .15s ease",
-    zIndex: isSelected ? 350 : undefined,
+    zIndex: isSelected ? 350 : offX !== 0 || offY !== 0 ? 40 : undefined,
   }
 
   const handleBtnStyle: React.CSSProperties = {
