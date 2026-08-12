@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import { Invitation } from "./types"
-import { invitations } from "./data"
 import {
   loadInvitations,
   decodeInvitationFromUrl,
@@ -20,8 +19,12 @@ import Footer from "./components/Footer"
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("all")
-  const [allInvitations, setAllInvitations] =
-    useState<Invitation[]>(invitations)
+  // نبدأ بمصفوفة فاضية بدل بيانات data.ts الثابتة — لو بدأنا بالبيانات
+  // الثابتة تنعرض فوراً كـ"ومضة" (Flash) قبل ما ترجع بيانات Supabase
+  // الحقيقية بعد جزء من الثانية، فيبان وكأن دعوة تظهر ثم تختفي فجأة.
+  // البيانات الثابتة تستخدم فقط لزرع قاعدة البيانات أول مرة (بـ backend.ts)
+  const [allInvitations, setAllInvitations] = useState<Invitation[]>([])
+  const [invitationsLoaded, setInvitationsLoaded] = useState(false)
   const [tryStep, setTryStep] = useState<"form" | "preview" | null>(null)
   const [tryInv, setTryInv] = useState<Invitation | null>(null)
   const [tryBase, setTryBase] = useState<Invitation | null>(null)
@@ -29,7 +32,10 @@ export default function App() {
     useState<SiteSettings>(DEFAULT_SITE_SETTINGS)
 
   useEffect(() => {
-    loadInvitations().then(setAllInvitations)
+    loadInvitations().then((data) => {
+      setAllInvitations(data)
+      setInvitationsLoaded(true)
+    })
   }, [])
 
   // نحمّل إعدادات الواجهة (النصوص + الألوان) ونطبّق الألوان فوراً على الصفحة
@@ -280,14 +286,20 @@ export default function App() {
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
-          {filtered.map((inv) => (
-            <InvitationCard
-              key={inv.id}
-              inv={inv}
-              onPreview={handlePreview}
-              onTry={handleTry}
-            />
-          ))}
+          {!invitationsLoaded ? (
+            <p className="col-span-full text-center text-sm text-muted-foreground py-10">
+              جاري تحميل القوالب...
+            </p>
+          ) : (
+            filtered.map((inv) => (
+              <InvitationCard
+                key={inv.id}
+                inv={inv}
+                onPreview={handlePreview}
+                onTry={handleTry}
+              />
+            ))
+          )}
         </div>
       </section>
 
