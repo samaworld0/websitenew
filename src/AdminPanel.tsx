@@ -122,7 +122,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   // كل تكرار ياخذ رقم أصول جديد (hero-bg-N.jpg / weeding-N.jpg / intro-poster-N.jpg / intro-N.mp4)
   // حتى ما تشتبك ملفات الدعوة المكررة مع أي دعوة ثانية. الملفات نفسها لازم تنرفع
   // يدوياً بنفس الاسم داخل public/images، public/mnbra، public/videos.
-  const handleDuplicate = (id: number) => {
+  const handleDuplicate = async (id: number) => {
     const src = list.find((inv) => inv.id === id)
     if (!src) return
 
@@ -142,16 +142,24 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
 
     const idx = list.findIndex((inv) => inv.id === id)
     const updated = [...list.slice(0, idx + 1), clone, ...list.slice(idx + 1)]
-    persistInvitations(updated)
+    const ok = await persistInvitations(updated)
+    if (!ok) {
+      flash("تعذّر تكرار الدعوة — راجع رسالة الخطأ اللي طلعت وحاول مرة ثانية", true)
+      return
+    }
     setList(updated)
     flash(
       `تم تكرار الدعوة ✅ — ارفع هالملفات: hero-bg-${n}.jpg (public/images) · weeding-${nn}.jpg (public/mnbra) · intro-poster-${n}.jpg و intro-${n}.mp4 (public/videos)`,
     )
   }
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     const updated = list.filter((inv) => inv.id !== id)
-    persistInvitations(updated)
+    const ok = await persistInvitations(updated)
+    if (!ok) {
+      flash("تعذّر حذف الدعوة — راجع رسالة الخطأ اللي طلعت وحاول مرة ثانية", true)
+      return
+    }
     setList(updated)
     setConfirmDeleteId(null)
     flash("تم حذف الدعوة 🗑️")
@@ -164,11 +172,17 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   // (overwrite) التصميم الجديد لأنه شايل نسخة كاملة قديمة من الدعوة.
   // الحل: فورم "تعديل" العادي ما يلمس أبداً textStyles — نرجّعها هنا من
   // أحدث نسخة موجودة بالـ list وقت الحفظ، مو من الفورم نفسه.
-  const handleSaveEdit = (updated: Invitation) => {
+  const handleSaveEdit = async (updated: Invitation) => {
     const newList = list.map((inv) =>
       inv.id === updated.id ? { ...updated, textStyles: inv.textStyles } : inv,
     )
-    persistInvitations(newList)
+    const ok = await persistInvitations(newList)
+    if (!ok) {
+      // نسيب الفورم مفتوح بنفس القيم اللي كتبها الأدمن (ما نفقدها)، ونعرض
+      // خطأ واضح بدل ما نقول "تم الحفظ" وهو أصلاً ما انحفظ بقاعدة البيانات
+      flash("تعذّر حفظ التعديل — راجع رسالة الخطأ اللي طلعت وحاول مرة ثانية", true)
+      return
+    }
     setList(newList)
     setEditingId(null)
     flash("تم حفظ التعديل ✅")
@@ -178,16 +192,21 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   // textStyles، ويحافظ على أحدث نسخة من باقي الحقول (نص/بيانات/إعدادات)
   // اللي ممكن تكون انحفظت من فورم "تعديل" العادي أثناء ما هو مفتوح —
   // حتى لو الاثنين انفتحوا أو انحفظوا بنفس الفترة، ولا وحدة تدهس الثانية.
-  const handleSaveDesign = (updated: Invitation) => {
+  const handleSaveDesign = async (updated: Invitation) => {
     const newList = list.map((inv) =>
       inv.id === updated.id
         ? { ...inv, textStyles: updated.textStyles }
         : inv,
     )
-    persistInvitations(newList)
+    const ok = await persistInvitations(newList)
+    if (!ok) {
+      flash("تعذّر حفظ التصميم — راجع رسالة الخطأ اللي طلعت وحاول مرة ثانية", true)
+      return false
+    }
     setList(newList)
     setDesignEditingInv(null)
     flash("تم حفظ التصميم ✅")
+    return true
   }
 
   const buildShareLink = (inv: Invitation) =>
