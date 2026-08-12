@@ -193,6 +193,14 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
       completeOpening()
       return
     }
+    // لو الدعوة مضبوطة على تخطي فيديو الفتح، ندخل مباشرة للمحتوى مع
+    // نفس ومضة الفتح المعتادة — بدون تشغيل فيديو الباب/الظرف إطلاقاً
+    // (نشغّل الموسيقى بالخلفية زي العادة، بس بدون فيديو)
+    if (inv.skipIntroVideo) {
+      audioRef.current?.play().catch(() => {})
+      completeOpening()
+      return
+    }
     setIsPlaying(true)
     audioRef.current?.play().catch(() => {})
     if (videoRef.current) {
