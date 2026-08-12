@@ -23,6 +23,10 @@ export interface TextStyle {
   size?: number
   x?: number
   y?: number
+  // زاوية الدوران بالدرجات (0-360) — نطبّقها بخاصية CSS المستقلة "rotate"
+  // (وليس ضمن transform) حتى ما تتعارض مع أي transform ثاني موجود على نفس
+  // العنصر أصلاً (مثال: أيقونات النقاط اللي تستخدم translate للتوسيط)
+  rotation?: number
   // اسم عائلة الخط المرفوع (يتولّد تلقائياً) ورابط ملف الخط بعد رفعه لـ
   // Supabase Storage — لازم الاثنين مع بعض حتى نقدر نطبّق @font-face
   // بالمعاينة النهائية (خارج وضع التعديل) مو بس بالمحرر
@@ -257,12 +261,17 @@ export function EditableText({
     useEditMode()
   const ref = useRef<HTMLElement | null>(null)
   const dragRef = useRef<{
-    mode: "resize" | "move"
+    mode: "resize" | "move" | "rotate"
     startY: number
     startX: number
     startSize: number
     startX0: number
     startY0: number
+    // مركز العنصر بإحداثيات الشاشة وقت بدء السحب + زاويته الحالية —
+    // نحتاجهم بس بوضع الدوران، لحساب الزاوية بين المركز والمؤشر
+    centerX: number
+    centerY: number
+    startRotation: number
   } | null>(null)
 
   // إذا هالنص عنده خط مرفوع (بوضع التعديل أو بالمعاينة النهائية للضيف)،
@@ -319,6 +328,10 @@ export function EditableText({
       ...(savedStyle.font ? { fontFamily: savedStyle.font } : null),
       ...(savedStyle.color ? { color: savedStyle.color } : null),
       transform: `translate(${clampedX}px, ${clampedY}px)`,
+      // خاصية CSS مستقلة عن transform حتى تشتغل مع الـ translate اللي فوق
+      // بدون ما تلغيه (المتصفحات الحديثة تدعم rotate/scale/translate
+      // كخصائص منفصلة تتركّب فوق بعض تلقائياً)
+      ...(savedStyle.rotation ? { rotate: `${savedStyle.rotation}deg` } : null),
       display: "inline-block",
       position: "relative",
       ...(isMoved ? { zIndex: 40 } : null),
@@ -335,6 +348,7 @@ export function EditableText({
   const px = st.size
   const offX = st.x || 0
   const offY = st.y || 0
+  const rotation = st.rotation || 0
 
   const startResize = (e: React.PointerEvent) => {
     e.preventDefault()
@@ -349,6 +363,9 @@ export function EditableText({
       startSize: currentPx,
       startX0: offX,
       startY0: offY,
+      centerX: 0,
+      centerY: 0,
+      startRotation: rotation,
     }
     window.addEventListener("pointermove", handleMove)
     window.addEventListener("pointerup", handleUp)
@@ -364,6 +381,33 @@ export function EditableText({
       startSize: px ?? 24,
       startX0: offX,
       startY0: offY,
+      centerX: 0,
+      centerY: 0,
+      startRotation: rotation,
+    }
+    window.addEventListener("pointermove", handleMove)
+    window.addEventListener("pointerup", handleUp)
+  }
+
+  // يبدأ سحب مقبض الدوران ⟳ — نحسب مركز العنصر فعليًا بالشاشة (getBoundingClientRect)
+  // حتى نقدر نحسب زاوية المؤشر بالنسبة له بأي لحظة أثناء السحب
+  const startRotate = (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const el = ref.current
+    const rect = el?.getBoundingClientRect()
+    const centerX = rect ? rect.left + rect.width / 2 : e.clientX
+    const centerY = rect ? rect.top + rect.height / 2 : e.clientY
+    dragRef.current = {
+      mode: "rotate",
+      startY: e.clientY,
+      startX: e.clientX,
+      startSize: px ?? 24,
+      startX0: offX,
+      startY0: offY,
+      centerX,
+      centerY,
+      startRotation: rotation,
     }
     window.addEventListener("pointermove", handleMove)
     window.addEventListener("pointerup", handleUp)
@@ -376,6 +420,22 @@ export function EditableText({
       const delta = ev.clientY - d.startY
       const next = Math.max(MIN_PX, Math.min(MAX_PX, d.startSize + delta * 0.6))
       updateStyle(id, { size: next })
+    } else if (d.mode === "rotate") {
+      // زاوية المؤشر الحالية بالنسبة لمركز العنصر، ناقص زاويته وقت بدء
+      // السحب، تعطينا مقدار الدوران الإضافي — نضيفه لزاوية البداية
+      const startAngle =
+        (Math.atan2(d.startY - d.centerY, d.startX - d.centerX) * 180) / Math.PI
+      const currentAngle =
+        (Math.atan2(ev.clientY - d.centerY, ev.clientX - d.centerX) * 180) / Math.PI
+      let next = d.startRotation + (currentAngle - startAngle)
+      // نلفّها لتبقى بين 0 و360 حتى ما تتراكم أرقام كبيرة بلا داعي
+      next = ((next % 360) + 360) % 360
+      // تثبيت تلقائي قريب من زوايا شائعة (0/45/90/135/180...) يسهّل
+      // محاذاة العنصر بدقة، بس لو المؤشر مو قريب منها فعلاً يطبّق القيمة
+      // الحرة بدون أي تثبيت
+      const snapped = Math.round(next / 15) * 15
+      if (Math.abs(snapped - next) < 4) next = snapped % 360
+      updateStyle(id, { rotation: next })
     } else {
       const dx = ev.clientX - d.startX
       const dy = ev.clientY - d.startY
@@ -398,6 +458,7 @@ export function EditableText({
     ...(st.font ? { fontFamily: st.font } : null),
     ...(st.color ? { color: st.color } : null),
     transform: `translate(${offX}px, ${offY}px)`,
+    ...(rotation ? { rotate: `${rotation}deg` } : null),
     display: "inline-block",
     position: "relative",
     cursor: "pointer",
@@ -495,6 +556,13 @@ export function EditableText({
             style={handleBtnStyle}
           >
             <span style={{ display: "block", textAlign: "center" }}>✥</span>
+          </span>
+          <span
+            onPointerDown={startRotate}
+            title="اسحب لتدوير النص"
+            style={handleBtnStyle}
+          >
+            <span style={{ display: "block", textAlign: "center" }}>⟳</span>
           </span>
         </span>
       )}
@@ -618,6 +686,9 @@ export function EditableIcon({
   const extraStyle: React.CSSProperties = {
     ...(getSizeStyle ? getSizeStyle(percent) : null),
     ...(st.color && getColorStyle ? getColorStyle(st.color) : null),
+    // "rotate" خاصية CSS مستقلة عن transform، فما تتعارض مع أي transform
+    // موجود مسبقًا بكلاسات العنصر (مثال: translate-x/y لتوسيط النقاط)
+    ...(st.rotation ? { rotate: `${st.rotation}deg` } : null),
   }
 
   if (!editable) {
@@ -886,6 +957,52 @@ export function EditPanel() {
               >
                 {st.hidden ? "⊘ العنصر مخفي — اضغط لإظهاره" : "👁 إخفاء هذا العنصر"}
               </button>
+            </PanelSection>
+          )}
+
+          {!isBg && (
+            <PanelSection title="الدوران">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      rotation: (((st.rotation ?? 0) - 15) % 360 + 360) % 360,
+                    })
+                  }
+                >
+                  ⟲
+                </button>
+                <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 46, textAlign: "center" }}>
+                  {Math.round(st.rotation ?? 0)}°
+                </span>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      rotation: ((st.rotation ?? 0) + 15) % 360,
+                    })
+                  }
+                >
+                  ⟳
+                </button>
+                {!!st.rotation && (
+                  <button
+                    type="button"
+                    style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
+                    onClick={() => updateStyle(selectedId, { rotation: undefined })}
+                  >
+                    ↺ الأصلي
+                  </button>
+                )}
+              </div>
+              {!isBg && !isIcon && (
+                <div style={{ fontSize: 10, color: "#8C6B6F", marginTop: 4 }}>
+                  أو اسحب مقبض ⟳ فوق العنصر بالتصميم مباشرة
+                </div>
+              )}
             </PanelSection>
           )}
 
