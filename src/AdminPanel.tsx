@@ -39,6 +39,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   )
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [toastIsError, setToastIsError] = useState(false)
 
   const [siteSettings, setSiteSettings] =
     useState<SiteSettings>(DEFAULT_SITE_SETTINGS)
@@ -77,17 +78,22 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
 
   const handleSaveSiteSettings = async (settings: SiteSettings) => {
     setSavingSettings(true)
-    const ok = await persistSiteSettings(settings)
+    const result = await persistSiteSettings(settings)
     setSavingSettings(false)
     setSiteSettings(settings)
     applyThemeColors(settings.colors)
     applySiteFont(settings.typography)
-    if (ok) flash("تم حفظ إعدادات الواجهة ✅ — التغييرات ظاهرة الآن بالصفحة الرئيسية")
+    if (result.ok) {
+      flash("تم حفظ إعدادات الواجهة ✅ — التغييرات ظاهرة الآن بالصفحة الرئيسية")
+    } else {
+      flash(result.error || "تعذّر حفظ إعدادات الواجهة", true)
+    }
   }
 
-  const flash = (msg: string) => {
+  const flash = (msg: string, isError = false) => {
     setToastMsg(msg)
-    setTimeout(() => setToastMsg(null), 4500)
+    setToastIsError(isError)
+    setTimeout(() => setToastMsg(null), isError ? 9000 : 4500)
   }
 
   // تسجيل الدخول الآن حقيقي عبر Supabase Auth بالإيميل والباسورد
@@ -653,7 +659,11 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         })()}
 
         {toastMsg && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] max-w-lg px-6 py-3 rounded-2xl text-sm font-bold shadow-xl bg-[#1F2A20] text-white text-center leading-relaxed">
+          <div
+            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] max-w-lg px-6 py-3 rounded-2xl text-sm font-bold shadow-xl text-white text-center leading-relaxed whitespace-pre-line ${
+              toastIsError ? "bg-red-800" : "bg-[#1F2A20]"
+            }`}
+          >
             {toastMsg}
           </div>
         )}
