@@ -90,6 +90,40 @@ export function AdminEditForm({
     }
   }
 
+  // خلفية القسم الأول صارت خيار واحد بس (صورة أو فيديو، مو الاثنين):
+  // heroBg و doorBgVideo يبقوا حقلين بالبيانات، بس نتعامل معهم بالنموذج
+  // كحقل واحد — أي قيمة تنكتب/تترفع تروح للحقل المناسب حسب نوعها، ونصفّر
+  // الحقل الثاني تلقائياً حتى ما يضلوا الاثنين معبّين بنفس الوقت.
+  const heroMediaValue = form.heroBg || form.doorBgVideo || ""
+  const isVideoUrl = (value: string) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(value.trim())
+
+  const updateHeroMediaUrl = (value: string) => {
+    if (isVideoUrl(value)) {
+      setForm((f) => ({ ...f, doorBgVideo: value, heroBg: "" }))
+    } else {
+      setForm((f) => ({ ...f, heroBg: value, doorBgVideo: "" }))
+    }
+  }
+
+  const handleHeroMediaUpload = async (file: File | null) => {
+    if (!file) return
+    const isVideo = file.type.startsWith("video/")
+    const key = isVideo ? "doorBgVideo" : "heroBg"
+    const otherKey = isVideo ? "heroBg" : "doorBgVideo"
+    setUploadingField(key)
+    try {
+      const url = await uploadInvitationFile(file, form.id, key)
+      setForm((f) => ({ ...f, [key]: url, [otherKey]: "" }))
+    } catch (err) {
+      console.error("File upload error:", err)
+      alert(
+        "فشل رفع الملف. تأكد من إنشاء bucket عام باسم \"invitation-media\" داخل Supabase Storage، أو استخدم رابط مباشر بدل الرفع.",
+      )
+    } finally {
+      setUploadingField(null)
+    }
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -353,58 +387,8 @@ export function AdminEditForm({
             />
           </label>
         </div>
-      </div>
-
-      <div className="md:col-span-2">
-        <label className="block text-sm font-bold mb-2">
-          خلفية القسم الأول (رابط أو رفع ملف)
-        </label>
-        <div className="flex gap-2">
-          <input
-            value={form.heroBg || ""}
-            onChange={(e) => updateField("heroBg", e.target.value)}
-            placeholder="/images/hero-bg-3.jpg"
-            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-left"
-            dir="ltr"
-          />
-          <label className="shrink-0 px-6 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold cursor-pointer transition flex items-center gap-2 aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
-            <span>{uploadingField === "heroBg" ? "⏳ جارِ الرفع..." : "📎 رفع صورة"}</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              disabled={uploadingField !== null}
-              onChange={(e) => handleFileUpload("heroBg", e.target.files?.[0] || null)}
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="md:col-span-2">
-        <label className="block text-sm font-bold mb-2">
-          فيديو خلفية القسم الأول (اختياري — رابط أو رفع ملف)
-        </label>
-        <div className="flex gap-2">
-          <input
-            value={form.doorBgVideo || ""}
-            onChange={(e) => updateField("doorBgVideo", e.target.value)}
-            placeholder="/videos/door-bg-3.mp4"
-            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-left"
-            dir="ltr"
-          />
-          <label className="shrink-0 px-6 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold cursor-pointer transition flex items-center gap-2 aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
-            <span>{uploadingField === "doorBgVideo" ? "⏳ جارِ الرفع..." : "🎥 رفع فيديو"}</span>
-            <input
-              type="file"
-              accept="video/*"
-              className="hidden"
-              disabled={uploadingField !== null}
-              onChange={(e) => handleFileUpload("doorBgVideo", e.target.files?.[0] || null)}
-            />
-          </label>
-        </div>
         <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-          فيديو متحرك يشتغل بالخلفية فوق صورة/تدرج القسم الأول (خفيف الشفافية). لو تركته فاضي، القسم الأول يضل بصورته أو تدرجه العادي بدون فيديو.
+          هذي الصورة تظهر بشبكة الدعوات بالصفحة الرئيسية، قبل ما الضيف يضغط لفتح الدعوة.
         </p>
       </div>
 
@@ -431,6 +415,9 @@ export function AdminEditForm({
             />
           </label>
         </div>
+        <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+          هذي الصورة تظهر بشاشة الفتح قبل ما يضغط الضيف عليها (وقبل تشغيل فيديو الفتح).
+        </p>
       </div>
 
       <div className="md:col-span-2">
@@ -457,7 +444,41 @@ export function AdminEditForm({
           </label>
         </div>
         <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-          ملاحظة: الملفات الآن تترفع مباشرة إلى Supabase Storage (bucket: invitation-media) بدل تخزينها Base64 داخل قاعدة البيانات، فما راح تواجه مشكلة الحفظ حتى مع فيديوهات أكبر. لازم تتأكد إن الـ bucket موجود ومفعّل كـ Public من لوحة تحكم Supabase.
+          يشتغل لما الضيف يضغط "اضغط لفتح الدعوة". ملاحظة: الملفات الآن تترفع مباشرة إلى Supabase Storage (bucket: invitation-media) بدل تخزينها Base64 داخل قاعدة البيانات، فما راح تواجه مشكلة الحفظ حتى مع فيديوهات أكبر. لازم تتأكد إن الـ bucket موجود ومفعّل كـ Public من لوحة تحكم Supabase.
+        </p>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-bold mb-2">
+          خلفية القسم الأول (صورة أو فيديو — رابط أو رفع ملف)
+        </label>
+        <div className="flex gap-2">
+          <input
+            value={heroMediaValue}
+            onChange={(e) => updateHeroMediaUrl(e.target.value)}
+            placeholder="/images/hero-bg-3.jpg أو /videos/door-bg-3.mp4"
+            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-left"
+            dir="ltr"
+          />
+          <label className="shrink-0 px-6 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold cursor-pointer transition flex items-center gap-2 aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
+            <span>
+              {uploadingField === "heroBg" || uploadingField === "doorBgVideo"
+                ? "⏳ جارِ الرفع..."
+                : "📎 رفع صورة أو فيديو"}
+            </span>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              className="hidden"
+              disabled={uploadingField !== null}
+              onChange={(e) => handleHeroMediaUpload(e.target.files?.[0] || null)}
+            />
+          </label>
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+          هذي خلفية القسم الأول اللي يظهر بعد ما ينفتح الدعوة (بعد شاشة/فيديو
+          الفتح). اختر صورة واحدة أو فيديو واحد بس — لو رفعت فيديو يشتغل هو
+          بدل الصورة تلقائياً، ولو رجعت لصورة يوقف الفيديو.
         </p>
       </div>
 
