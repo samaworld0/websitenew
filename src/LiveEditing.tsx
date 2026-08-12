@@ -33,19 +33,48 @@ export interface TextStyle {
   // إخفاء العنصر بالكامل من المعاينة النهائية (يبقى ظاهر بوضع التعديل
   // بشفافية أقل حتى يقدر الأدمن يلقاه ويرجّعه)
   hidden?: boolean
+  // نص مخصّص يحل محل النص الأصلي المكتوب بالقالب. لو undefined نستخدم
+  // النص الأصلي كما هو. للنصوص المُضافة يدويًا (custom:) هذا الحقل هو
+  // مصدر النص الوحيد (ما فيه نص أصلي أصلاً)
+  text?: string
 }
 
 const BG_PREFIX = "bg:"
 const ICON_PREFIX = "icon:"
+// نصوص يضيفها الأدمن يدويًا فوق التصميم (زر "✚ إضافة نص") — ما تقابل أي
+// عنصر مكتوب مسبقًا بالقالب، فكل معلوماتها (النص نفسه، موضعها، لونها...)
+// تتخزّن بالكامل تحت مفتاح مسبوق بـ"custom:"، وتُعرض عبر CustomTextLayer
+export const CUSTOM_PREFIX = "custom:"
+
+// يحوّل شجرة children لنص عادي (يهتم بالنصوص الفعلية بس، يتجاهل أي عنصر
+// زخرفي متداخل) — نستخدمه حتى نعرف "النص الأصلي" الحالي لأي EditableText
+// ونعرضه كقيمة ابتدائية بمربع تحرير النص بلوحة الخصائص
+function childrenToPlainText(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === "boolean") return ""
+  if (typeof node === "string" || typeof node === "number") return String(node)
+  if (Array.isArray(node)) return node.map(childrenToPlainText).join("")
+  if (typeof node === "object" && "props" in (node as any)) {
+    return childrenToPlainText((node as any).props?.children)
+  }
+  return ""
+}
 
 interface EditModeValue {
   editable: boolean
   styles: Record<string, TextStyle>
   selectedId: string | null
   invitationId: string | number
+  // "النص الأصلي" الحالي لكل EditableText (قبل أي تعديل) — يتسجّل تلقائيًا
+  // من كل عنصر عند رسمه بوضع التعديل، ونستخدمه كقيمة ابتدائية بمربع تحرير
+  // النص بلوحة الخصائص
+  defaultTexts: Record<string, string>
   setSelectedId: (id: string | null) => void
   updateStyle: (id: string, patch: Partial<TextStyle>) => void
   resetStyle: (id: string) => void
+  registerDefaultText: (id: string, text: string) => void
+  // يضيف مربع نص جديد فوق التصميم ويحدده فورًا حتى يقدر الأدمن يكتب فيه
+  // ويسحبه لأي مكان
+  addCustomText: () => void
 }
 
 const EditModeContext = createContext<EditModeValue>({
@@ -53,9 +82,12 @@ const EditModeContext = createContext<EditModeValue>({
   styles: {},
   selectedId: null,
   invitationId: "",
+  defaultTexts: {},
   setSelectedId: () => {},
   updateStyle: () => {},
   resetStyle: () => {},
+  registerDefaultText: () => {},
+  addCustomText: () => {},
 })
 
 export function useEditMode() {
@@ -128,6 +160,7 @@ export function EditModeProvider({
     initialStyles,
   )
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [defaultTexts, setDefaultTexts] = useState<Record<string, string>>({})
 
   const updateStyle = (id: string, patch: Partial<TextStyle>) => {
     setStyles((prev) => {
@@ -146,6 +179,20 @@ export function EditModeProvider({
     })
   }
 
+  const registerDefaultText = (id: string, text: string) => {
+    setDefaultTexts((prev) => (prev[id] === text ? prev : { ...prev, [id]: text }))
+  }
+
+  // معرّف فريد للنص الجديد + قيم ابتدائية بسيطة (حجم متوسط، بدون لون
+  // مخصص حتى ياخذ اللون الافتراضي المكتوب بـ CustomTextLayer) — ونحدده
+  // فورًا حتى تفتح لوحة الخصائص عليه ويكتب الأدمن نصه مباشرة
+  const addCustomText = () => {
+    const id =
+      CUSTOM_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+    updateStyle(id, { text: "نص جديد", size: 22 })
+    setSelectedId(id)
+  }
+
   return (
     <EditModeContext.Provider
       value={{
@@ -153,9 +200,12 @@ export function EditModeProvider({
         styles,
         selectedId,
         invitationId,
+        defaultTexts,
         setSelectedId,
         updateStyle,
         resetStyle,
+        registerDefaultText,
+        addCustomText,
       }}
     >
       {children}
@@ -203,7 +253,7 @@ export function EditableText({
   target?: string
   rel?: string
 }) {
-  const { editable, styles, selectedId, setSelectedId, updateStyle } =
+  const { editable, styles, selectedId, setSelectedId, updateStyle, registerDefaultText } =
     useEditMode()
   const ref = useRef<HTMLElement | null>(null)
   const dragRef = useRef<{
@@ -225,8 +275,21 @@ export function EditableText({
     }
   }, [currentStyle?.font, currentStyle?.fontUrl])
 
+  // نسجّل "النص الأصلي" الحالي بوضع التعديل بس (ما فيه داعي نحسبه عند
+  // الضيف)، حتى تقدر لوحة الخصائص تعرضه كقيمة ابتدائية بمربع تحرير النص
+  useEffect(() => {
+    if (editable && !id.startsWith(CUSTOM_PREFIX)) {
+      registerDefaultText(id, childrenToPlainText(children))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable, id, children])
+
   const Tag = as as any
   const linkProps = as === "a" ? { href, target, rel } : {}
+  // لو الأدمن كتب نص مخصص من لوحة الخصائص نعرضه بدل النص الأصلي المكتوب
+  // بالقالب — بدون ما يغيّر أي شي إذا ما فيه تعديل (undefined = النص
+  // الأصلي كما هو)
+  const displayChildren = currentStyle?.text !== undefined ? currentStyle.text : children
 
   if (!editable) {
     const savedStyle = styles[id]
@@ -262,7 +325,7 @@ export function EditableText({
     }
     return (
       <Tag className={className} style={readOnlyStyle} {...linkProps}>
-        {children}
+        {displayChildren}
       </Tag>
     )
   }
@@ -374,7 +437,7 @@ export function EditableText({
         setSelectedId(id)
       }}
     >
-      {children}
+      {displayChildren}
       {isHidden && (
         <span
           contentEditable={false}
@@ -641,8 +704,16 @@ function PanelSection({
 }
 
 export function EditPanel() {
-  const { editable, styles, selectedId, setSelectedId, invitationId, updateStyle, resetStyle } =
-    useEditMode()
+  const {
+    editable,
+    styles,
+    selectedId,
+    setSelectedId,
+    invitationId,
+    defaultTexts,
+    updateStyle,
+    resetStyle,
+  } = useEditMode()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [uploadingFont, setUploadingFont] = useState(false)
   const [customColor, setCustomColor] = useState("#B8862F")
@@ -651,11 +722,14 @@ export function EditPanel() {
 
   const isBg = !!selectedId?.startsWith(BG_PREFIX)
   const isIcon = !!selectedId?.startsWith(ICON_PREFIX)
+  const isCustom = !!selectedId?.startsWith(CUSTOM_PREFIX)
   const plainId = isBg
     ? selectedId!.slice(BG_PREFIX.length)
     : isIcon
       ? selectedId!.slice(ICON_PREFIX.length)
-      : selectedId
+      : isCustom
+        ? "نص مُضاف يدويًا"
+        : selectedId
   const st = selectedId ? styles[selectedId] || {} : {}
   const ICON_MIN_PCT = 40
   const ICON_MAX_PCT = 220
@@ -760,9 +834,42 @@ export function EditPanel() {
               wordBreak: "break-all",
             }}
           >
-            {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : "نص: "}
+            {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : isCustom ? "" : "نص: "}
             {plainId}
           </div>
+
+          {!isBg && !isIcon && (
+            <PanelSection title="النص">
+              <textarea
+                value={st.text ?? defaultTexts[selectedId] ?? ""}
+                onChange={(e) => updateStyle(selectedId, { text: e.target.value })}
+                rows={isCustom ? 2 : 3}
+                dir="rtl"
+                placeholder="اكتب النص هنا"
+                style={{
+                  width: "100%",
+                  resize: "vertical",
+                  background: "#2A211D",
+                  border: "1px solid #B8862F55",
+                  borderRadius: 8,
+                  color: "#F5EBE0",
+                  fontSize: 12,
+                  fontFamily: "Cairo, sans-serif",
+                  padding: 8,
+                  lineHeight: 1.6,
+                }}
+              />
+              {!isCustom && st.text !== undefined && (
+                <button
+                  type="button"
+                  onClick={() => updateStyle(selectedId, { text: undefined })}
+                  style={{ ...smallBtnStyle, marginTop: 6 }}
+                >
+                  ↺ النص الأصلي
+                </button>
+              )}
+            </PanelSection>
+          )}
 
           {(!isBg) && (
             <PanelSection title="الإظهار">
@@ -960,7 +1067,12 @@ export function EditPanel() {
 
           <button
             type="button"
-            onClick={() => resetStyle(selectedId)}
+            onClick={() => {
+              resetStyle(selectedId)
+              // النص المُضاف ما له "وضع أصلي" يرجع له — رجوعه هو حذفه
+              // بالكامل، فنلغي تحديده لأنه ما عاد موجود
+              if (isCustom) setSelectedId(null)
+            }}
             style={{
               ...smallBtnStyle,
               width: "100%",
@@ -969,7 +1081,7 @@ export function EditPanel() {
               fontWeight: 700,
             }}
           >
-            ↺ استرجاع الوضع الأصلي لهذا العنصر
+            {isCustom ? "🗑 حذف هذا النص" : "↺ استرجاع الوضع الأصلي لهذا العنصر"}
           </button>
 
           <button
@@ -986,6 +1098,61 @@ export function EditPanel() {
           </button>
         </>
       )}
+    </div>
+  )
+}
+
+// ============================================================================
+// إضافة نص جديد فوق التصميم — زر بسيط بشريط الأدوات، وطبقة تعرض كل النصوص
+// المُضافة يدويًا فوق قسم الافتتاحية (الشاشة الأولى) لكل قالب.
+// ============================================================================
+
+// زر "✚ إضافة نص" — يوضع بشريط أدوات محرر التصميم (LiveTemplateEditor)
+export function AddTextButton() {
+  const { editable, addCustomText } = useEditMode()
+  if (!editable) return null
+  return (
+    <button
+      type="button"
+      onClick={addCustomText}
+      className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#2A211D] text-[#F1D989] border border-[#B8862F]"
+      style={{ fontFamily: "Cairo, sans-serif" }}
+    >
+      ✚ إضافة نص
+    </button>
+  )
+}
+
+// طبقة النصوص المُضافة يدويًا — تُوضع مرة وحدة داخل حاوية الشاشة الأولى
+// (قسم الافتتاحية) بكل قالب، وهي الحاوية اللي يقدر الأدمن يسحب أي نص
+// مُضاف بداخلها لأي مكان (بنفس مقبض ✥ العادي، بدون حد أقصى عملي للمسافة)
+export function CustomTextLayer() {
+  const { styles } = useEditMode()
+  const ids = Object.keys(styles).filter((k) => k.startsWith(CUSTOM_PREFIX))
+  if (ids.length === 0) return null
+  return (
+    <div className="absolute inset-0 z-30 pointer-events-none">
+      {ids.map((key, i) => (
+        <div
+          key={key}
+          className="absolute pointer-events-auto"
+          style={{
+            top: `${10 + i * 7}%`,
+            insetInlineStart: "50%",
+            transform: "translateX(-50%)",
+            maxWidth: "90%",
+          }}
+        >
+          <EditableText
+            id={key}
+            as="div"
+            className="whitespace-pre-wrap text-center px-3"
+            style={{ fontSize: 22, color: "#2A211D", fontFamily: "Cairo, sans-serif" }}
+          >
+            {styles[key]?.text || "نص جديد"}
+          </EditableText>
+        </div>
+      ))}
     </div>
   )
 }
