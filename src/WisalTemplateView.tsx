@@ -461,7 +461,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   </EditableText>
                   <EditableText id="saveDateHeading">احفظ الموعد</EditableText>
                 </h3>
-                <div className="rounded-3xl overflow-hidden border border-[#D4AF37]/30 shadow-lg bg-white">
+                <div className="rounded-3xl overflow-hidden border border-[#8C7A6B]/30 shadow-lg bg-white">
                   <EditableBackground
                     id="saveDateCardHeader"
                     className="text-[#F1D989] py-3 px-4 font-bold text-lg custom-font-heading"
@@ -492,19 +492,19 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                       {inv.time}
                     </EditableText>
                   </div>
-                  <div className="border-t border-[#D4AF37]/20 px-6 py-5 flex items-center justify-center gap-3">
+                  <div className="border-t border-[#8C7A6B]/20 px-6 py-5 flex items-center justify-center gap-3">
                     <a
                       href={googleCalendarUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-5 py-2.5 rounded-full text-sm font-bold border border-[#D4AF37]/40 text-[#4A3B2C] hover:bg-[#FAF7F2] custom-font-tajawal"
+                      className="px-5 py-2.5 rounded-full text-sm font-bold border border-[#8C7A6B]/40 text-[#4A3B2C] hover:bg-[#FAF7F2] custom-font-tajawal"
                     >
                       <EditableText id="calendarGoogleBtn">تقويم جوجل</EditableText>
                     </a>
                     <button
                       type="button"
                       onClick={handleDownloadIcs}
-                      className="px-5 py-2.5 rounded-full text-sm font-bold border border-[#D4AF37]/40 text-[#4A3B2C] hover:bg-[#FAF7F2] custom-font-tajawal"
+                      className="px-5 py-2.5 rounded-full text-sm font-bold border border-[#8C7A6B]/40 text-[#4A3B2C] hover:bg-[#FAF7F2] custom-font-tajawal"
                     >
                       <EditableText id="calendarIcsBtn">تقويم آيفون</EditableText>
                     </button>
@@ -521,7 +521,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   className="flex justify-center items-center gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownSecondsValue">
                         {String(timeLeft.seconds).padStart(2, "0")}
@@ -531,7 +531,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                       <EditableText id="countdownSecondsLabel">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownMinutesValue">
                         {String(timeLeft.minutes).padStart(2, "0")}
@@ -541,7 +541,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                       <EditableText id="countdownMinutesLabel">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownHoursValue">
                         {String(timeLeft.hours).padStart(2, "0")}
@@ -551,7 +551,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                       <EditableText id="countdownHoursLabel">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownDaysValue">
                         {timeLeft.days}
@@ -570,7 +570,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <EditableBackground
               id="programSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#8C7A6B]"
             >
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-12 custom-font-heading">
@@ -588,14 +588,14 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                     className="relative"
                     style={{ gridColumn: 2, gridRow: "1 / span 3" }}
                   >
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#D4AF37]/40" />
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#8C7A6B]/40" />
                     {[0, 50, 100].map((pos) => (
                       <EditableIcon
                         key={pos}
                         id="programTimelineDots"
                         as="span"
                         className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                        style={{ top: `${pos}%`, backgroundColor: "#D4AF37", width: 6, height: 6 }}
+                        style={{ top: `${pos}%`, backgroundColor: "#8C7A6B", width: 6, height: 6 }}
                         getSizeStyle={(pct) => ({ width: (6 * pct) / 100, height: (6 * pct) / 100 })}
                         getColorStyle={(color) => ({ backgroundColor: color })}
                       />
@@ -683,11 +683,11 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <EditableBackground
               id="rsvpSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#8C7A6B]"
             >
               <EditableBackground
                 id="rsvpCardBg"
-                className="max-w-md w-full border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg custom-font-tajawal reveal-on-scroll"
+                className="max-w-md w-full border border-[#8C7A6B]/30 rounded-3xl p-10 shadow-lg custom-font-tajawal reveal-on-scroll"
                 style={{ backgroundColor: "#FFFFFF" }}
               >
                 <div className="text-center mb-10">
@@ -720,7 +720,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="اسمك الكريم"
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
+                        className="w-full bg-[#FAF7F2] border border-[#8C7A6B]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#8C7A6B]"
                       />
                     </div>
 
@@ -740,7 +740,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                               className={`py-3 rounded-xl text-base font-medium transition ${
                                 isActive
                                   ? "text-white shadow"
-                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
+                                  : "border border-[#8C7A6B]/30 text-[#3D312A]"
                               }`}
                               style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
                               getColorStyle={(color) =>
@@ -762,13 +762,13 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                           عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
                         </EditableText>
                       </label>
-                      <div className="flex items-center justify-center gap-6 bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl py-3">
+                      <div className="flex items-center justify-center gap-6 bg-[#FAF7F2] border border-[#8C7A6B]/30 rounded-2xl py-3">
                         <button
                           type="button"
                           onClick={() =>
                             setCompanions(Math.max(0, companions - 1))
                           }
-                          className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full bg-white border border-[#8C7A6B]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                         >
                           -
                         </button>
@@ -780,7 +780,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                         <button
                           type="button"
                           onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full bg-white border border-[#8C7A6B]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                         >
                           +
                         </button>
@@ -796,7 +796,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                         value={guestNote}
                         onChange={(e) => setGuestNote(e.target.value)}
                         placeholder="اكتب تهنئتك للعروسين..."
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
+                        className="w-full bg-[#FAF7F2] border border-[#8C7A6B]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#8C7A6B] resize-none"
                       />
                     </div>
 
