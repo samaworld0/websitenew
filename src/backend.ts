@@ -184,6 +184,7 @@ function toDatabaseInvitation(inv: Invitation) {
     textStyles: inv.textStyles ?? null,
     heroEyebrow: inv.heroEyebrow ?? null,
     flashColor: inv.flashColor ?? null,
+    skipIntroVideo: inv.skipIntroVideo ?? false,
   }
 }
 
