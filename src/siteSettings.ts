@@ -3,6 +3,15 @@
 // وقابل للتعديل بدون لمس الكود.
 
 export interface SiteSettings {
+  // اسم النافذة (Tab) بالمتصفح وأيقونتها (Favicon) — تظهر بعلامة تبويب
+  // المتصفح فوق، مو بمحتوى الصفحة نفسها
+  meta: {
+    // العنوان اللي يظهر بعلامة تبويب المتصفح (وبنتائج البحث بجوجل)
+    siteTitle: string
+    // رابط أيقونة النافذة (Favicon) — لو فاضي نستخدم أيقونة المتصفح
+    // الافتراضية (بدون أيقونة مخصصة)
+    faviconUrl?: string
+  }
   hero: {
     badge: string
     titleLine1: string
@@ -72,6 +81,10 @@ export const SITE_FONT_OPTIONS: { label: string; family: string }[] = [
 ]
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  meta: {
+    siteTitle: "سما | دعوات زفاف إلكترونية",
+    faviconUrl: undefined,
+  },
   hero: {
     badge: "🎁 جرّب دعوتك مجاناً قبل ما تدفع أي فلس",
     titleLine1: "دعوة إلكترونية تخطف الأنظار",
