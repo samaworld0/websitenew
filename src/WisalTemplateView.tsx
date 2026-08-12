@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
-import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM } from "./utils"
+import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
 import { EditableText, EditableBackground, EditableIcon } from "./LiveEditing"
 
@@ -312,13 +312,12 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         </button>
       )}
 
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
+      {/* لمعة فتح الدعوة — بيضاء افتراضياً، أو أي لون يختاره الأدمن (flashColor) */}
       {showFlash && (
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.95) 0%, rgba(212,175,55,0.55) 35%, transparent 70%)",
+            background: `radial-gradient(circle at center, ${hexToRgba(inv.flashColor || "#FFFFFF", 0.95)} 0%, ${hexToRgba(inv.flashColor || "#FFFFFF", 0.55)} 35%, transparent 70%)`,
             animation: "goldFlash 900ms ease-out forwards",
           }}
         />
@@ -359,7 +358,17 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
-              <div />
+              <div className="text-center px-2">
+                {inv.verse && (
+                  <EditableText
+                    id="openingVerse"
+                    as="p"
+                    className="text-sm md:text-base text-[#E8DCC4]/90 leading-loose custom-font-amiri max-w-lg mx-auto"
+                  >
+                    {inv.verse}
+                  </EditableText>
+                )}
+              </div>
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-eyebrow">
                   <EditableText id="heroEyebrow">
