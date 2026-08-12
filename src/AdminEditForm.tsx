@@ -50,6 +50,10 @@ export function AdminEditForm({
     setForm((f) => ({ ...f, unlisted: !f.unlisted }))
   }
 
+  const toggleSkipIntroVideo = () => {
+    setForm((f) => ({ ...f, skipIntroVideo: !f.skipIntroVideo }))
+  }
+
   const updateProgramItem = (
     index: number,
     field: "label" | "time",
@@ -304,6 +308,26 @@ export function AdminEditForm({
           اتركه فاضي عشان يضل أبيض زي الأصل.
         </p>
       </div>
+
+      {form.templateType === "wisal" && (
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={!!form.skipIntroVideo}
+              onChange={toggleSkipIntroVideo}
+              className="w-5 h-5 rounded border-border accent-[#B8862F]"
+            />
+            <span className="text-sm font-bold">
+              تخطي فيديو فتح الدعوة (الدخول مباشرة بومضة خفيفة فقط)
+            </span>
+          </label>
+          <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+            لو مفعّل: ضغطة الضيف على "اضغط لفتح الدعوة" تدخله مباشرة لمحتوى
+            الدعوة مع نفس ومضة الفتح أعلاه، بدون تشغيل فيديو الباب/الظرف.
+          </p>
+        </div>
+      )}
 
       {/* --- حقول الرفع الجديدة المدمجة --- */}
       <div className="md:col-span-2">
