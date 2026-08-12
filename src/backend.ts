@@ -183,6 +183,7 @@ function toDatabaseInvitation(inv: Invitation) {
     mapUrl: inv.mapUrl ?? null,
     textStyles: inv.textStyles ?? null,
     heroEyebrow: inv.heroEyebrow ?? null,
+    flashColor: inv.flashColor ?? null,
   }
 }
 
