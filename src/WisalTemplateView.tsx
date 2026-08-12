@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, CustomTextLayer } from "./LiveEditing"
 
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
 // لما يوصله السكرول — أنيميشن خفيف ولطيف بدون أي مكتبات خارجية.
@@ -358,6 +358,9 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
+              {/* نصوص يضيفها الأدمن يدويًا فوق الشاشة الأولى (زر "✚ إضافة
+                  نص") — تقدر تتسحب لأي مكان بنفس الشاشة */}
+              <CustomTextLayer />
               <div className="text-center px-2">
                 {inv.verse && (
                   <EditableText
