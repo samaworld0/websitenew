@@ -30,6 +30,7 @@ export default function App() {
   const [tryBase, setTryBase] = useState<Invitation | null>(null)
   const [siteSettings, setSiteSettings] =
     useState<SiteSettings>(DEFAULT_SITE_SETTINGS)
+  const [siteSettingsLoaded, setSiteSettingsLoaded] = useState(false)
 
   useEffect(() => {
     loadInvitations().then((data) => {
@@ -45,6 +46,7 @@ export default function App() {
       applyThemeColors(settings.colors)
       applySiteFont(settings.typography)
       applySiteMeta(settings.meta)
+      setSiteSettingsLoaded(true)
     })
   }, [])
 
@@ -134,6 +136,19 @@ export default function App() {
           setTryBase(null)
         }}
       />
+    )
+  }
+
+  // الصفحة الرئيسية تعتمد بالكامل على siteSettings (العنوان، الوصف،
+  // الألوان...). لو عرضناها قبل ما توصل الإعدادات الحقيقية من Supabase،
+  // المستخدم يشوف نص "DEFAULT_SITE_SETTINGS" الثابت بالكود أول شي، وبعدين
+  // يتبدّل فجأة للنص الحقيقي المخزّن — فيبان وكأنها "صفحة تختفي وتطلع
+  // صفحة ثانية بمحتوى مختلف". ننتظر وصول البيانات الحقيقية قبل أي عرض.
+  if (!siteSettingsLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+      </div>
     )
   }
 
