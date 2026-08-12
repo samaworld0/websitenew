@@ -367,7 +367,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                   className="flex justify-center items-center gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#C9A227]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C6B6F]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A2B32] lamsa-heading">
                       <EditableText id="countdownSecondsValue">
                         {String(timeLeft.seconds).padStart(2, "0")}
@@ -377,7 +377,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                       <EditableText id="countdownSecondsLabel">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#C9A227]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C6B6F]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A2B32] lamsa-heading">
                       <EditableText id="countdownMinutesValue">
                         {String(timeLeft.minutes).padStart(2, "0")}
@@ -387,7 +387,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                       <EditableText id="countdownMinutesLabel">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#C9A227]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C6B6F]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A2B32] lamsa-heading">
                       <EditableText id="countdownHoursValue">
                         {String(timeLeft.hours).padStart(2, "0")}
@@ -397,7 +397,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                       <EditableText id="countdownHoursLabel">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#C9A227]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#8C6B6F]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A2B32] lamsa-heading">
                       <EditableText id="countdownDaysValue">
                         {timeLeft.days}
@@ -416,7 +416,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
             <EditableBackground
               id="programSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A227]"
+              className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#8C6B6F]"
             >
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
                 <h3 className="text-3xl font-bold text-[#F1D4B8] mb-12 lamsa-heading">
@@ -434,14 +434,14 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                     className="relative"
                     style={{ gridColumn: 2, gridRow: "1 / span 3" }}
                   >
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#C9A227]/40" />
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#8C6B6F]/40" />
                     {[0, 50, 100].map((pos) => (
                       <EditableIcon
                         key={pos}
                         id="programTimelineDots"
                         as="span"
                         className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                        style={{ top: `${pos}%`, backgroundColor: "#C9A227", width: 6, height: 6 }}
+                        style={{ top: `${pos}%`, backgroundColor: "#8C6B6F", width: 6, height: 6 }}
                         getSizeStyle={(pct) => ({ width: (6 * pct) / 100, height: (6 * pct) / 100 })}
                         getColorStyle={(color) => ({ backgroundColor: color })}
                       />
@@ -537,11 +537,11 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
             <EditableBackground
               id="rsvpSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#FBF3EF] border-t-2 border-[#C9A227]"
+              className="py-20 px-6 flex flex-col items-center bg-[#FBF3EF] border-t-2 border-[#8C6B6F]"
             >
               <EditableBackground
                 id="rsvpCardBg"
-                className="max-w-md w-full border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg lamsa-tajawal lamsa-reveal"
+                className="max-w-md w-full border border-[#8C6B6F]/30 rounded-3xl p-10 shadow-lg lamsa-tajawal lamsa-reveal"
                 style={{ backgroundColor: "#FFFFFF" }}
               >
                 <div className="text-center mb-10">
@@ -574,7 +574,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="اسمك الكريم"
-                        className="w-full bg-[#FBF3EF] border border-[#C9A227]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
+                        className="w-full bg-[#FBF3EF] border border-[#8C6B6F]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#8C6B6F]"
                       />
                     </div>
 
@@ -594,7 +594,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                               className={`py-3 rounded-xl text-base font-medium transition ${
                                 isActive
                                   ? "text-white shadow"
-                                  : "border border-[#C9A227]/30 text-[#3D2B2E]"
+                                  : "border border-[#8C6B6F]/30 text-[#3D2B2E]"
                               }`}
                               style={{ backgroundColor: isActive ? "#B8862F" : "#FBF3EF" }}
                               getColorStyle={(color) =>
@@ -616,13 +616,13 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                           عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
                         </EditableText>
                       </label>
-                      <div className="flex items-center justify-center gap-6 bg-[#FBF3EF] border border-[#C9A227]/30 rounded-2xl py-3">
+                      <div className="flex items-center justify-center gap-6 bg-[#FBF3EF] border border-[#8C6B6F]/30 rounded-2xl py-3">
                         <button
                           type="button"
                           onClick={() =>
                             setCompanions(Math.max(0, companions - 1))
                           }
-                          className="w-10 h-10 rounded-full bg-white border border-[#C9A227]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full bg-white border border-[#8C6B6F]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                         >
                           -
                         </button>
@@ -634,7 +634,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                         <button
                           type="button"
                           onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full bg-white border border-[#C9A227]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full bg-white border border-[#8C6B6F]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                         >
                           +
                         </button>
@@ -650,7 +650,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                         value={guestNote}
                         onChange={(e) => setGuestNote(e.target.value)}
                         placeholder="اكتب تهنئتك..."
-                        className="w-full bg-[#FBF3EF] border border-[#C9A227]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
+                        className="w-full bg-[#FBF3EF] border border-[#8C6B6F]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#8C6B6F] resize-none"
                       />
                     </div>
 
@@ -690,8 +690,8 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
           }`}
         >
           <div className="relative flex flex-col items-center">
-            <span className="absolute w-24 h-24 rounded-full border border-[#C9A227]/60 animate-[lamsaPulseRing_2.4s_ease-out_infinite]" />
-            <span className="absolute w-24 h-24 rounded-full border border-[#C9A227]/40 animate-[lamsaPulseRing_2.4s_ease-out_infinite]" style={{ animationDelay: "0.8s" }} />
+            <span className="absolute w-24 h-24 rounded-full border border-[#8C6B6F]/60 animate-[lamsaPulseRing_2.4s_ease-out_infinite]" />
+            <span className="absolute w-24 h-24 rounded-full border border-[#8C6B6F]/40 animate-[lamsaPulseRing_2.4s_ease-out_infinite]" style={{ animationDelay: "0.8s" }} />
             <span className="relative text-5xl text-[#C9A227]">✦</span>
           </div>
           <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#C9A227] text-sm md:text-base tracking-widest lamsa-eyebrow animate-pulse">
