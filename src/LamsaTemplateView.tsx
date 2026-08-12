@@ -312,13 +312,13 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         </button>
       )}
 
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
+      {/* لمعة بيضاء لحظة فتح الدعوة */}
       {showFlash && (
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.95) 0%, rgba(212,175,55,0.55) 35%, transparent 70%)",
+              "radial-gradient(circle at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.55) 35%, transparent 70%)",
             animation: "goldFlash 900ms ease-out forwards",
           }}
         />
