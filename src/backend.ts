@@ -300,7 +300,9 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
   }
 }
 
-export async function persistSiteSettings(settings: SiteSettings) {
+export async function persistSiteSettings(
+  settings: SiteSettings,
+): Promise<{ ok: boolean; error?: string }> {
   try {
     const blob = new Blob([JSON.stringify(settings)], {
       type: "application/json",
@@ -313,13 +315,15 @@ export async function persistSiteSettings(settings: SiteSettings) {
         contentType: "application/json",
       })
     if (error) throw error
-    return true
+    return { ok: true }
   } catch (err) {
-    alert(
-      `حدث خطأ أثناء حفظ إعدادات الواجهة.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود أو غير مفعّل كـ Public في Storage.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`,
-    )
+    // نرجّع رسالة الخطأ بدل استخدام alert() فقط — بعض بيئات المعاينة
+    // (مثال: نوافذ iframe المعزولة) تمنع نوافذ alert()/confirm() تماماً،
+    // فيبدو للمستخدم إن "ولا شي صار" رغم إن الحفظ فشل فعليًا. الحين
+    // الخطأ يظهر بشكل مضمون داخل الصفحة نفسها (Toast أحمر بلوحة التحكم).
+    const message = `تعذّر حفظ إعدادات الواجهة.\n\nالسبب الأرجح: bucket باسم "invitation-media" غير موجود، أو غير مفعّل كـ Public، أو صلاحيات (RLS Policies) الخاصة به بـ Supabase Storage ما تسمح بالرفع.\n\nتفاصيل الخطأ التقنية: ${describeError(err)}`
     console.error("Supabase persistSiteSettings error:", err)
-    return false
+    return { ok: false, error: message }
   }
 }
 
