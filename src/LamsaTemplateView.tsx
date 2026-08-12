@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
-import { getTimeLeft, getNameFontSizeClass, DEFAULT_LAMSA_PROGRAM } from "./utils"
+import { getTimeLeft, getNameFontSizeClass, DEFAULT_LAMSA_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
 import { EditableText, EditableBackground, EditableIcon } from "./LiveEditing"
 
@@ -224,13 +224,12 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
         </button>
       )}
 
-      {/* لمعة بيضاء لحظة فتح الدعوة */}
+      {/* لمعة فتح الدعوة — بيضاء افتراضياً، أو أي لون يختاره الأدمن (flashColor) */}
       {showFlash && (
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.45) 35%, transparent 70%)",
+            background: `radial-gradient(circle at center, ${hexToRgba(inv.flashColor || "#FFFFFF", 0.95)} 0%, ${hexToRgba(inv.flashColor || "#FFFFFF", 0.45)} 35%, transparent 70%)`,
             animation: "lamsaFlash 800ms ease-out forwards",
           }}
         />
