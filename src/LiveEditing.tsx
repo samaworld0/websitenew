@@ -1123,24 +1123,29 @@ export function AddTextButton() {
   )
 }
 
-// طبقة النصوص المُضافة يدويًا — تُوضع مرة وحدة داخل حاوية الشاشة الأولى
-// (قسم الافتتاحية) بكل قالب، وهي الحاوية اللي يقدر الأدمن يسحب أي نص
-// مُضاف بداخلها لأي مكان (بنفس مقبض ✥ العادي، بدون حد أقصى عملي للمسافة)
+// طبقة النصوص المُضافة يدويًا — تُوضع مرة وحدة بأول حاوية تلف كل أقسام
+// القالب (الحاوية اللي تسكرول، بدون أي overflow-hidden على طول الصفحة)،
+// حتى النص المُضاف يقدر يتسحب لأي مكان بكامل الدعوة مو بس أول شاشة.
+// الحاوية نفسها ارتفاعها صفر (ما تاخذ أي مساحة أو تحجب أي ضغطة) وتوضع
+// بأعلى الصفحة تمامًا؛ كل نص بداخلها موضعه المبدئي بالـ position:absolute
+// من هالنقطة، وبعدها ينتقل بنفس آلية السحب العادية (transform translate)
+// المستخدمة لباقي عناصر EditableText، فيقدر ينزل لأي قسم تحت بحرية.
 export function CustomTextLayer() {
   const { styles } = useEditMode()
   const ids = Object.keys(styles).filter((k) => k.startsWith(CUSTOM_PREFIX))
   if (ids.length === 0) return null
   return (
-    <div className="absolute inset-0 z-30 pointer-events-none">
+    <div className="relative w-full" style={{ height: 0 }}>
       {ids.map((key, i) => (
         <div
           key={key}
-          className="absolute pointer-events-auto"
+          className="absolute z-30"
           style={{
-            top: `${10 + i * 7}%`,
+            top: `${90 + i * 60}px`,
             insetInlineStart: "50%",
             transform: "translateX(-50%)",
             maxWidth: "90%",
+            width: "max-content",
           }}
         >
           <EditableText
