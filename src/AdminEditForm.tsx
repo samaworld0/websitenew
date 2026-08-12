@@ -396,6 +396,34 @@ export function AdminEditForm({
 
       <div className="md:col-span-2">
         <label className="block text-sm font-bold mb-2">
+          فيديو خلفية القسم الأول (اختياري — رابط أو رفع ملف)
+        </label>
+        <div className="flex gap-2">
+          <input
+            value={form.doorBgVideo || ""}
+            onChange={(e) => updateField("doorBgVideo", e.target.value)}
+            placeholder="/videos/door-bg-3.mp4"
+            className="flex-1 border border-border rounded-xl px-4 py-2.5 bg-white text-left"
+            dir="ltr"
+          />
+          <label className="shrink-0 px-6 py-2.5 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-xl font-bold cursor-pointer transition flex items-center gap-2 aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
+            <span>{uploadingField === "doorBgVideo" ? "⏳ جارِ الرفع..." : "🎥 رفع فيديو"}</span>
+            <input
+              type="file"
+              accept="video/*"
+              className="hidden"
+              disabled={uploadingField !== null}
+              onChange={(e) => handleFileUpload("doorBgVideo", e.target.files?.[0] || null)}
+            />
+          </label>
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
+          فيديو متحرك يشتغل بالخلفية فوق صورة/تدرج القسم الأول (خفيف الشفافية). لو تركته فاضي، القسم الأول يضل بصورته أو تدرجه العادي بدون فيديو.
+        </p>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-bold mb-2">
           صورة بوستر الفيديو (رابط أو رفع ملف)
         </label>
         <div className="flex gap-2">
