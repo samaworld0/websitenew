@@ -379,3 +379,26 @@ export function applySiteFont(typography: SiteSettings["typography"]) {
     customFontUrl ? `'${fontFamily}'` : fontFamily,
   )
 }
+
+// يطبّق اسم النافذة (Tab) والأيقونة (Favicon) فعلياً على الصفحة —
+// يغيّر document.title مباشرة، ويحقن/يحدّث وسم <link rel="icon"> بجذر
+// الصفحة حتى تتغيّر أيقونة المتصفح بدون الحاجة لتعديل index.html يدوياً.
+export function applySiteMeta(meta: SiteSettings["meta"]) {
+  if (typeof document === "undefined" || !meta) return
+
+  if (meta.siteTitle) {
+    document.title = meta.siteTitle
+  }
+
+  if (meta.faviconUrl) {
+    let link = document.querySelector<HTMLLinkElement>(
+      "link[rel~='icon']",
+    )
+    if (!link) {
+      link = document.createElement("link")
+      link.rel = "icon"
+      document.head.appendChild(link)
+    }
+    link.href = meta.faviconUrl
+  }
+}
