@@ -7,6 +7,7 @@ import {
   loadSiteSettings,
   applyThemeColors,
   applySiteFont,
+  applySiteMeta,
 } from "./backend"
 import { SiteSettings, DEFAULT_SITE_SETTINGS } from "./siteSettings"
 import { InvitationCard } from "./InvitationCard"
@@ -37,6 +38,7 @@ export default function App() {
       setSiteSettings(settings)
       applyThemeColors(settings.colors)
       applySiteFont(settings.typography)
+      applySiteMeta(settings.meta)
     })
   }, [])
 
