@@ -13,6 +13,7 @@ import {
   persistSiteSettings,
   applyThemeColors,
   applySiteFont,
+  applySiteMeta,
 } from "./backend"
 import { SiteSettings, DEFAULT_SITE_SETTINGS } from "./siteSettings"
 import { TemplatePicker } from "./TemplatePicker"
@@ -83,6 +84,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     setSiteSettings(settings)
     applyThemeColors(settings.colors)
     applySiteFont(settings.typography)
+    applySiteMeta(settings.meta)
     if (result.ok) {
       flash("تم حفظ إعدادات الواجهة ✅ — التغييرات ظاهرة الآن بالصفحة الرئيسية")
     } else {
@@ -464,6 +466,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                 onSave={handleSaveSiteSettings}
                 onPreviewColors={applyThemeColors}
                 onPreviewFont={applySiteFont}
+                onPreviewMeta={applySiteMeta}
               />
             )}
           </>
