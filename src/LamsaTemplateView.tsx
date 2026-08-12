@@ -416,7 +416,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
             <EditableBackground
               id="programSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#8C6B6F]"
+              className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A9A0]"
             >
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
                 <h3 className="text-3xl font-bold text-[#F1D4B8] mb-12 lamsa-heading">
@@ -434,14 +434,14 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                     className="relative"
                     style={{ gridColumn: 2, gridRow: "1 / span 3" }}
                   >
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#8C6B6F]/40" />
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px border-l border-dotted border-[#C9A9A0]/40" />
                     {[0, 50, 100].map((pos) => (
                       <EditableIcon
                         key={pos}
                         id="programTimelineDots"
                         as="span"
                         className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-                        style={{ top: `${pos}%`, backgroundColor: "#8C6B6F", width: 6, height: 6 }}
+                        style={{ top: `${pos}%`, backgroundColor: "#C9A9A0", width: 6, height: 6 }}
                         getSizeStyle={(pct) => ({ width: (6 * pct) / 100, height: (6 * pct) / 100 })}
                         getColorStyle={(color) => ({ backgroundColor: color })}
                       />
