@@ -437,6 +437,19 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             </div>
           </section>
 
+          {/* قسم فاصل بين الشاشة الأولى وقسم "احفظ الموعد" — بدون محتوى
+              ثابت، لونه يتحكم فيه الأدمن بالكامل من لوحة التصميم المباشر
+              (EditableBackground). افتراضياً شفاف حتى ما يبين إذا الأدمن
+              ما لوّنه بعد. */}
+          <EditableBackground
+            id="dividerSectionOne"
+            as="section"
+            className="w-full min-h-[80px] relative z-20"
+            style={{ backgroundColor: "transparent" }}
+          >
+            <div className="h-[80px]" />
+          </EditableBackground>
+
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
             <section className="py-24 px-6 flex flex-col items-center">
