@@ -913,6 +913,7 @@ export function EditableText({
     fontSize: 12,
     lineHeight: "20px",
     userSelect: "none",
+    touchAction: "none",
   }
 
   return (
@@ -1158,6 +1159,7 @@ export function EditableImage({ id }: { id: string }) {
     fontSize: 12,
     lineHeight: "20px",
     userSelect: "none",
+    touchAction: "none",
   }
 
   return (
@@ -1390,6 +1392,7 @@ export function EditableBackground({
             zIndex: 400,
             boxShadow: "0 4px 14px rgba(0,0,0,.35)",
             userSelect: "none",
+            touchAction: "none",
           }}
         >
           ✥
