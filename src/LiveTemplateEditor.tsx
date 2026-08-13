@@ -2,7 +2,15 @@ import { useEffect, useRef, useState } from "react"
 import { Invitation } from "./types"
 import { WisalTemplateView } from "./WisalTemplateView"
 import { LamsaTemplateView } from "./LamsaTemplateView"
-import { EditModeProvider, DeselectSurface, EditPanel, TextStyle, PANEL_WIDTH, AddTextButton } from "./LiveEditing"
+import {
+  EditModeProvider,
+  DeselectSurface,
+  EditPanel,
+  TextStyle,
+  PANEL_WIDTH,
+  AddTextButton,
+  PageBackgroundButton,
+} from "./LiveEditing"
 
 // محرر التصميم المباشر — يفتح المعاينة الحقيقية للدعوة (نفس المكوّن اللي
 // يشوفه الضيف) بس بوضع "تعديل" مفعّل، حتى يضغط الأدمن على أي نص بالصفحة
@@ -75,6 +83,7 @@ export function LiveTemplateEditor({
             إغلاق
           </button>
           <AddTextButton />
+          <PageBackgroundButton />
           <button
             onClick={handleSave}
             className="px-4 py-1.5 rounded-full text-[11px] font-bold bg-[#B8862F] text-white shadow-lg"
