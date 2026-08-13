@@ -77,6 +77,12 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const [doorVideoFailed, setDoorVideoFailed] = useState(false)
+  // لو الأدمن غيّر رابط الفيديو (مثلاً رفع نسخة جديدة بعد فشل الأولى)،
+  // نعطي الفيديو الجديد فرصة يشتغل من جديد بدل ما يضل عالق على "فشل"
+  useEffect(() => {
+    setDoorVideoFailed(false)
+  }, [inv.doorBgVideo])
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -354,27 +360,28 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               قسم يحتفظ بنفس محتواه بالضبط، بس صار له معرّف ثابت وترتيب
               افتراضي (index) يعتمد عليه لو الأدمن ما حرّكه أبدًا. */}
           <ReorderableSection id="core:hero" label="الافتتاحية" index={0}>
-          {/* القسم الأول مع الخلفية والزهور — يعرض الفيديو لو الأدمن رفع
-              واحد (doorBgVideo)، وإلا يعرض صورة الخلفية (heroBg) فقط.
-              الاثنين ما يظهروا مع بعض أبداً — خيار واحد بس. */}
+          {/* القسم الأول مع الخلفية والزهور — يعرض صورة الخلفية (heroBg)
+              دايمًا كطبقة أساسية، وفوقها الفيديو (doorBgVideo) لو الأدمن
+              رفع واحد ونجح تحميله. هذا يضمن إنه دايمًا فيه خلفية ظاهرة حتى
+              لو رابط الفيديو انكسر أو الملف ما وصل (بدل ما تطلع الشاشة
+              فاضية/بيضاء زي قبل). */}
           <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center bg-black"
             style={{
-              backgroundImage: inv.doorBgVideo
-                ? undefined
-                : `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
+              backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
             }}
           >
             <div className="absolute inset-0 opacity-20 pointer-events-none">
               <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
               <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
             </div>
-            {inv.doorBgVideo && (
+            {inv.doorBgVideo && !doorVideoFailed && (
               <video
                 autoPlay
                 loop
                 muted
                 playsInline
+                onError={() => setDoorVideoFailed(true)}
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
               >
                 <source src={inv.doorBgVideo} type="video/mp4" />
