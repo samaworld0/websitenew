@@ -231,10 +231,28 @@ export function DeselectSurface({ children }: { children: ReactNode }) {
 
 const MIN_PX = 8
 const MAX_PX = 220
-// أقصى مسافة تحريك مسموحة (بكسل) بأي اتجاه — رقم كبير جداً عملياً يعني
-// حرية تحريك كاملة بأي مكان بالشاشة، مع بقاء حد أقصى احترازي بسيط يمنع بس
-// قيم تالفة/غير منطقية (لو انحفظت غلط) من تكسير التصميم بشكل متطرف
-const MAX_OFFSET = 4000
+// أقصى مسافة تحريك مسموحة (بالنسبة المئوية من عرض الشاشة) بأي اتجاه — رقم
+// كبير جداً عملياً يعني حرية تحريك كاملة بأي مكان، مع بقاء حد أقصى احترازي
+// بسيط يمنع بس قيم تالفة/غير منطقية (لو انحفظت غلط) من تكسير التصميم
+// بشكل متطرف
+const MAX_OFFSET = 500
+
+// إحداثيات السحب (x, y) تتخزّن كنسبة مئوية من عرض الشاشة، مو كبكسل ثابت —
+// حتى لو الأدمن سحب عنصر وهو يشتغل على شاشة كمبيوتر عريضة، نفس النسبة
+// تنطبّق صح على شاشة جوال ضيقة بدل ما تطلع القيمة المطلقة (مثلاً 300px)
+// نسبة ضخمة من عرض شاشة الجوال الصغيرة وتدفع العنصر برّه حدود الشاشة.
+// نستخدم عرض الشاشة (window.innerWidth) كمرجع للاتجاهين الأفقي والرأسي
+// معًا (بدل ارتفاع الحاوية اللي يختلف بشكل كبير وغير منطقي بسبب السكرول)
+// حتى تنسحب العناصر بنفس مقياس التكبير/التصغير بالاتجاهين بدون تشويه.
+function referenceWidth() {
+  return typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1200
+}
+function pxToPercent(px: number) {
+  return (px / referenceWidth()) * 100
+}
+function percentToPx(percent: number) {
+  return (percent / 100) * referenceWidth()
+}
 
 export function EditableText({
   id,
@@ -315,13 +333,17 @@ export function EditableText({
     // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
     // الحجم/الموضع/الخط/اللون المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية —
     // مع حد أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد)
-    // ما تطلع النص برّه حدود الشاشة
-    const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
-    const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
+    // ما تطلع النص برّه حدود الشاشة. القيم المحفوظة نسبة مئوية من عرض
+    // الشاشة، فنحوّلها لبكسل فعلي حسب عرض شاشة الجهاز الحالي (جوال أو
+    // كمبيوتر) — هذا اللي يخلي نفس الموضع يبان صح على كل المقاسات
+    const clampedXPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
+    const clampedYPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
+    const clampedX = percentToPx(clampedXPct)
+    const clampedY = percentToPx(clampedYPct)
     // لو النص انسحب لمكان بعيد عن موضعه الأصلي، نرفع طبقته (z-index) حتى
     // ما يختفي وراء القسم اللي بعده لما يتداخل بصرياً معه (القسم التالي له
     // خلفية خاصة تُرسم فوقه بترتيب DOM العادي وإلا)
-    const isMoved = clampedX !== 0 || clampedY !== 0
+    const isMoved = clampedXPct !== 0 || clampedYPct !== 0
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
@@ -437,10 +459,12 @@ export function EditableText({
       if (Math.abs(snapped - next) < 4) next = snapped % 360
       updateStyle(id, { rotation: next })
     } else {
-      const dx = ev.clientX - d.startX
-      const dy = ev.clientY - d.startY
-      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dx))
-      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dy))
+      // d.startX0/d.startY0 محفوظة كنسبة مئوية — نحوّل فرق حركة الماوس
+      // بالبكسل لنفس النسبة قبل ما نضيفه لهم، حتى يبقى كل شي بنفس الوحدة
+      const dxPct = pxToPercent(ev.clientX - d.startX)
+      const dyPct = pxToPercent(ev.clientY - d.startY)
+      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dxPct))
+      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dyPct))
       updateStyle(id, { x: nextX, y: nextY })
     }
   }
@@ -457,7 +481,9 @@ export function EditableText({
     ...(px ? { fontSize: `${px}px` } : null),
     ...(st.font ? { fontFamily: st.font } : null),
     ...(st.color ? { color: st.color } : null),
-    transform: `translate(${offX}px, ${offY}px)`,
+    // offX/offY نسبة مئوية من عرض الشاشة — نحوّلها لبكسل فعلي للعرض بوضع
+    // التعديل (نفس التحويل المطبّق بالمعاينة النهائية عند الضيف)
+    transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)`,
     ...(rotation ? { rotate: `${rotation}deg` } : null),
     display: "inline-block",
     position: "relative",
