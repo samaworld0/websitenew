@@ -91,21 +91,14 @@ export function getNameFontSizeClass(
   return NAME_FONT_SIZE_CLASSES[size || defaultSize]
 }
 
-// برنامج الحفل الافتراضي لكل قالب — تستخدمه القوالب نفسها (Wisal/Lamsa)
-// ولوحة تحكم التعديل (AdminEditForm) حتى تبتدي بنفس القيم لو الدعوة
-// ما فيها برنامج مخصص بعد
+// برنامج الحفل الافتراضي — يستخدمه قالب وصال نفسه ولوحة تحكم التعديل
+// (AdminEditForm) حتى تبتدي بنفس القيم لو الدعوة ما فيها برنامج مخصص بعد
 export const DEFAULT_WISAL_PROGRAM = [
   { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
   { label: "عقد القران", time: "٧:٣٠ مساءً" },
   { label: "العشاء", time: "٩:٠٠ مساءً" },
 ]
 
-export const DEFAULT_LAMSA_PROGRAM = [
-  { label: "استقبال الضيوف", time: "٦:٠٠ مساءً" },
-  { label: "حفل الخطوبة وتقديم الشبكة", time: "٦:٣٠ مساءً" },
-  { label: "الحلوى والتهنئة", time: "٨:٠٠ مساءً" },
-]
-
-export function getDefaultProgramItems(templateType: "wisal" | "lamsa" | undefined) {
-  return templateType === "lamsa" ? DEFAULT_LAMSA_PROGRAM : DEFAULT_WISAL_PROGRAM
+export function getDefaultProgramItems(templateType: "wisal" | undefined) {
+  return DEFAULT_WISAL_PROGRAM
 }
