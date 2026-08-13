@@ -582,14 +582,19 @@ export function ReorderableSection({
 
   const isHidden = !!styles[id]?.hidden
 
+  const order = styles[id]?.order ?? index
+
   if (!editable) {
     // برّه وضع التعديل: القسم المخفي ما ينعرض إطلاقاً عند الضيف، وما ياخذ
     // أي مساحة بالتصميم (نفس سلوك إخفاء أي عنصر ثاني بالمحرر)
     if (isHidden) return null
-    return <>{children}</>
+    // لازم نطبّق order هنا أيضاً (مو بس بوضع التعديل)، وإلا ترتيب الأقسام
+    // اللي حرّكه الأدمن بالمحرر (وانحفظ فعلياً بـ textStyles) ما ينعكس
+    // أبداً عند الضيف أو بالمعاينة الحقيقية — يضل يعرض الترتيب الافتراضي
+    // بالكود فقط، رغم إن القيمة محفوظة صح بقاعدة البيانات
+    return <div style={{ order }}>{children}</div>
   }
 
-  const order = styles[id]?.order ?? index
   const isSelected = selectedId === id
 
   return (
