@@ -708,6 +708,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             >
               <EditableBackground
                 id="rsvpCardBg"
+                movable
                 className="max-w-md w-full border border-[#8C7A6B]/30 rounded-3xl p-10 shadow-lg custom-font-tajawal reveal-on-scroll"
                 style={{ backgroundColor: "#FFFFFF" }}
               >
