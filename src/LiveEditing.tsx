@@ -1631,8 +1631,8 @@ export function EditPanel() {
       style={{
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8,
+        justifyContent: "flex-start",
+        gap: 12,
         padding: "8px 10px",
         borderRadius: 8,
         background: "#2A211D",
@@ -1640,18 +1640,6 @@ export function EditPanel() {
         marginBottom: 6,
       }}
     >
-      <span
-        style={{
-          fontSize: 12,
-          color: "#F5EBE0",
-          fontFamily: "Cairo, sans-serif",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {label}
-      </span>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
         <button
           type="button"
@@ -1682,6 +1670,18 @@ export function EditPanel() {
           ▼
         </button>
       </div>
+      <span
+        style={{
+          fontSize: 12,
+          color: "#F5EBE0",
+          fontFamily: "Cairo, sans-serif",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
     </div>
   )
 
