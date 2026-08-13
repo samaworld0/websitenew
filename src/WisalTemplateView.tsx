@@ -479,7 +479,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           </EditableBackground>
           </ReorderableSection>
 
-          <ReorderableSection id="core:saveDate" label="احفظ الموعد والعد التنازلي" index={1}>
+          <ReorderableSection id="core:saveDate" label="بطاقة احفظ الموعد" index={1}>
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full">
             <section className="py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
@@ -541,7 +541,13 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                   </div>
                 </div>
               </div>
+            </section>
+          </div>
+          </ReorderableSection>
 
+          <ReorderableSection id="core:countdown" label="العداد التنازلي" index={2}>
+          <div className="w-full">
+            <section className="py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
               {/* العداد التنازلي المكبر */}
               <div className="text-center w-full max-w-lg mb-16 reveal-on-scroll">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-heading">
@@ -597,7 +603,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           </div>
           </ReorderableSection>
 
-          <ReorderableSection id="core:program" label="برنامج الحفل والمكان" index={2}>
+          <ReorderableSection id="core:program" label="برنامج الحفل والمكان" index={3}>
             {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل،
                 والزهرة الحمراء بالمنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
             <EditableBackground
@@ -713,7 +719,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             </EditableBackground>
           </ReorderableSection>
 
-          <ReorderableSection id="core:rsvp" label="تأكيد الحضور" index={3}>
+          <ReorderableSection id="core:rsvp" label="تأكيد الحضور" index={4}>
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل */}
             <EditableBackground
               id="rsvpSectionBg"
