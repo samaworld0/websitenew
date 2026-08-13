@@ -68,6 +68,14 @@ export const CUSTOM_PREFIX = "custom:"
 // ترتيب الصفحة)، بس مصدره ملف مرفوع مو نص. الرابط نفسه يتخزّن بحقل
 // imageUrl، والعرض بالبكسل بحقل size العادي
 export const CUSTOM_IMAGE_PREFIX = "image:"
+// الشعار/اللوقو الرئيسي (الحقل الثابت اللي يرفعه الأدمن من نموذج بيانات
+// الدعوة، inv.logoUrl) — نعامله بنفس آلية EditableImage بالضبط (سحب/تكبير/
+// تدوير) حتى يقدر الأدمن يتحكم بموضعه وحجمه من المحرر المباشر، بس رابط
+// الصورة نفسه يفضل يجي من inv.logoUrl (مو من كائن الأنماط) لأنه يتغيّر من
+// نموذج البيانات الثابت مو من هنا — فقط الموضع/الحجم/الدوران يتخزّن بمفتاح
+// الأنماط. معرّف ثابت (مو عشوائي زي الصور المُضافة يدويًا) عشان يبقى نفسه
+// دايمًا لكل دعوة
+export const LOGO_ID = CUSTOM_IMAGE_PREFIX + "mainLogo"
 // أقسام جديدة يضيفها الأدمن يدويًا (زر "➕ إضافة قسم") — كل قسم عبارة عن
 // صندوق بعرض الشاشة كامل، ياخذ مساحة حقيقية بترتيب الصفحة (مو عائم زي
 // النصوص المُضافة)، ينضاف بآخر الدعوة بعد كل الأقسام الجاهزة. لونه يتخزّن
@@ -1010,7 +1018,24 @@ const IMAGE_MAX_PX = 800
 // نفس فكرة EditableText بالضبط (سحب/تكبير/تدوير + تحديد من لوحة الخصائص)
 // بس لعنصر <img> بدل نص — حقل "size" هنا يمثّل عرض الصورة بالبكسل (الارتفاع
 // يتبع تلقائيًا حسب أبعاد الصورة الأصلية)، وما فيه لون ولا خط نطبّقه عليها
-export function EditableImage({ id }: { id: string }) {
+export function EditableImage({
+  id,
+  url: urlProp,
+  defaultSize = 180,
+  imgClassName,
+}: {
+  id: string
+  // رابط احتياطي يُستخدم لو ما كان فيه imageUrl مخزّن بكائن الأنماط لهذا
+  // المعرّف — يخلي عناصر مثل الشعار الرئيسي (LOGO_ID) تستخدم نفس مكوّن
+  // السحب/التكبير مع إبقاء مصدر الرابط نفسه بحقل بيانات الدعوة (inv.logoUrl)
+  url?: string
+  // عرض ابتدائي مختلف عن 180 الافتراضية (مفيد لعناصر مثل الشعار اللي
+  // مقاسها الطبيعي أصغر عادة من صورة مُضافة يدويًا)
+  defaultSize?: number
+  // كلاس إضافي يُطبّق على وسم <img> نفسه (مثال: drop-shadow) بالحالتين
+  // (وضع التعديل ووضع العرض النهائي)
+  imgClassName?: string
+}) {
   const { editable, styles, selectedId, setSelectedId, updateStyle } = useEditMode()
   const ref = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<{
@@ -1026,11 +1051,11 @@ export function EditableImage({ id }: { id: string }) {
   } | null>(null)
 
   const st = styles[id] || {}
-  const url = st.imageUrl
+  const url = st.imageUrl || urlProp
   if (!url) return null
 
   const isSelected = selectedId === id
-  const px = st.size ?? 180
+  const px = st.size ?? defaultSize
   const offX = st.x || 0
   const offY = st.y || 0
   const rotation = st.rotation || 0
@@ -1046,6 +1071,7 @@ export function EditableImage({ id }: { id: string }) {
         src={url}
         alt=""
         draggable={false}
+        className={imgClassName}
         style={{
           width: px,
           height: "auto",
@@ -1185,7 +1211,13 @@ export function EditableImage({ id }: { id: string }) {
         setSelectedId(id)
       }}
     >
-      <img src={url} alt="" draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
+      <img
+        src={url}
+        alt=""
+        draggable={false}
+        className={imgClassName}
+        style={{ width: "100%", height: "auto", display: "block" }}
+      />
       {isHidden && (
         <span
           contentEditable={false}
@@ -1622,7 +1654,9 @@ export function EditPanel() {
         : isSection
           ? "قسم مُضاف يدويًا"
           : isImage
-            ? "صورة مُضافة يدويًا"
+            ? selectedId === LOGO_ID
+              ? "الشعار الرئيسي"
+              : "صورة مُضافة يدويًا"
             : isCoreSection
               ? coreSections[selectedId!]?.label || selectedId
               : selectedId
@@ -2711,8 +2745,13 @@ export function EditPanel() {
             onClick={() => {
               resetStyle(selectedId)
               // النص/القسم/الصورة المُضافة ما لها "وضع أصلي" ترجع له —
-              // رجوعها هو حذفها بالكامل، فنلغي تحديدها لأنها ما عادت موجودة
-              if (isCustom || isSection || isImage) setSelectedId(null)
+              // رجوعها هو حذفها بالكامل، فنلغي تحديدها لأنها ما عادت موجودة.
+              // الشعار الرئيسي استثناء: مصدره (الرابط) مو مخزّن بكائن
+              // الأنماط أصلاً (يجي من inv.logoUrl)، فـ"الحذف" هنا فعليًا
+              // إعادة ضبط الموضع/الحجم فقط والشعار يبقى ظاهر — نبقيه محددًا
+              if ((isCustom || isSection || isImage) && selectedId !== LOGO_ID) {
+                setSelectedId(null)
+              }
             }}
             style={{
               ...smallBtnStyle,
@@ -2722,13 +2761,15 @@ export function EditPanel() {
               fontWeight: 700,
             }}
           >
-            {isSection
-              ? "🗑 حذف هذا القسم"
-              : isImage
-                ? "🗑 حذف هذه الصورة"
-                : isCustom
-                  ? "🗑 حذف هذا النص"
-                  : "↺ استرجاع الوضع الأصلي لهذا العنصر"}
+            {selectedId === LOGO_ID
+              ? "↺ إعادة ضبط الموضع والحجم"
+              : isSection
+                ? "🗑 حذف هذا القسم"
+                : isImage
+                  ? "🗑 حذف هذه الصورة"
+                  : isCustom
+                    ? "🗑 حذف هذا النص"
+                    : "↺ استرجاع الوضع الأصلي لهذا العنصر"}
           </button>
 
           <button
