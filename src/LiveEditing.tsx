@@ -572,7 +572,18 @@ export function ReorderableSection({
   const isSelected = selectedId === id
 
   return (
-    <div className="relative w-full" style={{ order }}>
+    <div
+      className="relative w-full"
+      style={{
+        order,
+        // خط متقطع خفيف يوضّح حدود كل قسم أساسي أثناء التعديل بس (ما يأثر
+        // على المساحة الفعلية لأنه outline مو border) — يمنع الالتباس
+        // اللي يصير لما توصل بالسكرول بالضبط لحد الفاصل بين قسمين، حتى لو
+        // ما كان أي قسم محدد حاليًا
+        outline: "1px dashed rgba(184,134,47,0.35)",
+        outlineOffset: -1,
+      }}
+    >
       {/* شارة صغيرة "لاصقة" (sticky) تبقى ظاهرة طول ما القسم على الشاشة،
           الضغط عليها يحدد القسم كامل فتفتح لوحة الخصائص بزر "▲ لأعلى /
           ▼ لأسفل" لتحريكه */}
@@ -2634,6 +2645,8 @@ export function CustomSectionsLayer() {
               backgroundColor: st.color || "#FBF3EF",
               cursor: editable ? "pointer" : undefined,
               boxShadow: isSelected ? "inset 0 0 0 3px #3B82F6" : "inset 0 0 0 0px transparent",
+              outline: editable ? "1px dashed rgba(184,134,47,0.35)" : undefined,
+              outlineOffset: -1,
               transition: "box-shadow .15s ease",
             }}
             onClick={
