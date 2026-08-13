@@ -51,13 +51,21 @@ function EditorShell({
 
       <DeselectSurface>
         <div
-          className="w-full h-full"
+          className="w-full h-full flex justify-center"
           style={{
             paddingInlineStart: sidebarWidth,
             transition: "padding-inline-start .15s ease",
           }}
         >
-          <WisalTemplateView inv={inv} />
+          {/* حاوية البطاقة: عرض كامل بالجوال، وبعرض ثابت يشبه شاشة الجوال
+              ويتوسط المساحة المتبقية (بعد الشريط الجانبي) بالكمبيوتر، مع
+              خلفية داكنة حواليها. [transform:translateZ(0)] يخلي هذي
+              الحاوية "containing block" لأي عنصر position:fixed بداخلها
+              (زر كتم الصوت، طبقة فتح الدعوة...) عشان يتحدد بالنسبة لعرض
+              البطاقة نفسها، نفس سلوك صفحة عرض الضيف بالضبط. */}
+          <div className="relative h-full w-full min-w-[320px] shrink-0 md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]">
+            <WisalTemplateView inv={inv} />
+          </div>
         </div>
       </DeselectSurface>
       <EditPanel />
