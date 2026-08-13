@@ -1238,6 +1238,11 @@ export function EditableBackground({
   children,
   dir,
   attrs,
+  // لو مفعّل: يضيف مقبض "✥" يطلع لما القسم محدد، يخلي الأدمن يسحب القسم
+  // كامل (بكل محتواه — نصوص، حقول فورم، أزرار...) لأي مكان، بدل ما يضطر
+  // يسحب كل نص جوّه لحاله. نفس فكرة تحريك EditableText بالضبط بس مطبّقة
+  // على القسم كوحدة وحدة (مثال: بطاقة "تأكيد الحضور" كاملة)
+  movable,
 }: {
   id: string
   as?: string
@@ -1252,18 +1257,35 @@ export function EditableBackground({
   // بمنطق التحديد) حتى ما يصير إرسال فورم أو أي فعل حقيقي وأنت تحاول تختار
   // العنصر بس؛ برّه وضع التعديل تُطبَّق كاملة عادي لأنها تخص تجربة الضيف
   attrs?: Record<string, any>
+  movable?: boolean
 }) {
-  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const { editable, styles, selectedId, setSelectedId, updateStyle } = useEditMode()
   const Tag = as as any
   const key = BG_PREFIX + id
   const saved = styles[key]
   const extraProps = dir ? { dir } : {}
+  const dragRef = useRef<{ startX: number; startY: number; startX0: number; startY0: number } | null>(
+    null,
+  )
+
+  const offX = saved?.x || 0
+  const offY = saved?.y || 0
 
   if (!editable) {
+    const clampedXPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, offX))
+    const clampedYPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, offY))
+    const isMoved = movable && (clampedXPct !== 0 || clampedYPct !== 0)
     const mergedStyle: React.CSSProperties = {
       ...style,
       ...(saved?.color
         ? { backgroundColor: saved.color, backgroundImage: "none" }
+        : null),
+      ...(isMoved
+        ? {
+            transform: `translate(${percentToPx(clampedXPct)}px, ${percentToPx(clampedYPct)}px)`,
+            position: style?.position ?? "relative",
+            zIndex: 40,
+          }
         : null),
     }
     return (
@@ -1274,15 +1296,42 @@ export function EditableBackground({
   }
 
   const isSelected = selectedId === key
+
+  const startMove = (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startX0: offX, startY0: offY }
+    window.addEventListener("pointermove", handleMove)
+    window.addEventListener("pointerup", handleUp)
+  }
+  const handleMove = (ev: PointerEvent) => {
+    const d = dragRef.current
+    if (!d) return
+    const dxPct = pxToPercent(ev.clientX - d.startX)
+    const dyPct = pxToPercent(ev.clientY - d.startY)
+    const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dxPct))
+    const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dyPct))
+    updateStyle(key, { x: nextX, y: nextY })
+  }
+  const handleUp = () => {
+    dragRef.current = null
+    window.removeEventListener("pointermove", handleMove)
+    window.removeEventListener("pointerup", handleUp)
+  }
+
   const mergedStyle: React.CSSProperties = {
     ...style,
     ...(saved?.color
       ? { backgroundColor: saved.color, backgroundImage: "none" }
       : null),
+    ...(movable
+      ? { transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)` }
+      : null),
     position: style?.position ?? "relative",
     cursor: "pointer",
     boxShadow: isSelected ? "inset 0 0 0 3px #3B82F6" : "inset 0 0 0 0px transparent",
     transition: "box-shadow .15s ease",
+    zIndex: isSelected ? 350 : movable && (offX !== 0 || offY !== 0) ? 40 : undefined,
   }
 
   return (
@@ -1298,6 +1347,35 @@ export function EditableBackground({
       }}
     >
       {children}
+      {movable && isSelected && (
+        <span
+          contentEditable={false}
+          onPointerDown={startMove}
+          onClick={(e) => e.stopPropagation()}
+          title="اسحب لتحريك القسم كامل لأي مكان"
+          style={{
+            position: "absolute",
+            insetInlineStart: "50%",
+            transform: "translateX(50%)",
+            top: -14,
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            background: "#1A1210",
+            border: "1px solid #B8862F",
+            color: "#F1D989",
+            fontSize: 14,
+            lineHeight: "26px",
+            textAlign: "center",
+            cursor: "grab",
+            zIndex: 400,
+            boxShadow: "0 4px 14px rgba(0,0,0,.35)",
+            userSelect: "none",
+          }}
+        >
+          ✥
+        </span>
+      )}
     </Tag>
   )
 }
@@ -2226,6 +2304,21 @@ export function EditPanel() {
                   أو اسحب مقبض ⟳ فوق العنصر بالتصميم مباشرة
                 </div>
               )}
+            </PanelSection>
+          )}
+
+          {isBg && (st.x != null || st.y != null) && (
+            <PanelSection title="الموضع">
+              <div style={{ fontSize: 10, color: "#8C6B6F", marginBottom: 6 }}>
+                اسحب مقبض ✥ فوق القسم بالتصميم مباشرة حتى تحرّكه لأي مكان
+              </div>
+              <button
+                type="button"
+                style={{ ...smallBtnStyle, width: "100%" }}
+                onClick={() => updateStyle(selectedId, { x: undefined, y: undefined })}
+              >
+                ↺ إرجاع للموضع الأصلي
+              </button>
             </PanelSection>
           )}
 
