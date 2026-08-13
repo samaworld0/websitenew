@@ -45,6 +45,11 @@ export interface TextStyle {
   // مسبوق بـ IMAGE_PREFIX (صور يضيفها الأدمن يدويًا فوق التصميم). حقل
   // "size" بهالحالة يمثّل عرض الصورة بالبكسل (مو حجم خط)
   imageUrl?: string
+  // ترتيب القسم بين باقي الأقسام المُضافة يدويًا (رقم أصغر = أعلى). يُستخدم
+  // فقط للعناصر المسبوقة بـ SECTION_PREFIX، ويبقى undefined لحد ما الأدمن
+  // يستخدم أزرار "نقل لأعلى/أسفل" أول مرة — قبلها الترتيب يعتمد على وقت
+  // الإضافة (نفس السلوك القديم) عبر sortSectionIds بالأسفل
+  order?: number
 }
 
 const BG_PREFIX = "bg:"
@@ -67,6 +72,21 @@ export const SECTION_PREFIX = "section:"
 const DEFAULT_SECTION_HEIGHT = 220
 const MIN_SECTION_HEIGHT = 80
 const MAX_SECTION_HEIGHT = 900
+
+// ترتيب معرّفات الأقسام المُضافة يدويًا: نعتمد على حقل order الصريح إذا
+// كان موجود على القسمين المُقارَنين (يتغيّر بأزرار نقل لأعلى/أسفل)، وإلا
+// نرجع لنفس الترتيب الزمني القديم حسب المعرّف (وقت الإضافة) — بذا الأقسام
+// اللي ما انحركت أبدًا تبقى تترتب صح زي ما كانت
+function sortSectionIds(ids: string[], styles: Record<string, TextStyle>): string[] {
+  return [...ids].sort((a, b) => {
+    const oa = styles[a]?.order
+    const ob = styles[b]?.order
+    if (oa != null && ob != null) return oa - ob
+    if (oa != null) return -1
+    if (ob != null) return 1
+    return a < b ? -1 : a > b ? 1 : 0
+  })
+}
 
 // يحوّل شجرة children لنص عادي (يهتم بالنصوص الفعلية بس، يتجاهل أي عنصر
 // زخرفي متداخل) — نستخدمه حتى نعرف "النص الأصلي" الحالي لأي EditableText
@@ -111,6 +131,10 @@ interface EditModeValue {
   // يضيف قسم جديد بآخر الدعوة (بعد كل الأقسام الجاهزة) ويحدده فورًا حتى
   // يقدر الأدمن يغيّر لونه/ارتفاعه من لوحة الخصائص مباشرة
   addCustomSection: () => void
+  // ينقل القسم المحدد خطوة لأعلى أو لأسفل بترتيب الأقسام المُضافة يدويًا
+  // (يبدّل ترتيبه مع القسم المجاور بنفس الاتجاه مباشرة). بدون تأثير لو
+  // كان أول قسم وطلبت "لأعلى"، أو آخر قسم وطلبت "لأسفل"
+  moveSection: (id: string, direction: "up" | "down") => void
   // تراجع/إعادة لآخر تعديل على الأنماط (styles) — يغطي كل التغييرات: نص،
   // لون، حجم، موضع، إضافة/حذف عنصر... إلخ. مفعّلة باختصارات لوحة المفاتيح
   // (Ctrl/Cmd+Z للتراجع، Ctrl/Cmd+Shift+Z أو Ctrl/Cmd+Y للإعادة) وبزرين
@@ -143,6 +167,7 @@ const EditModeContext = createContext<EditModeValue>({
   addCustomIcon: () => {},
   addCustomImage: () => {},
   addCustomSection: () => {},
+  moveSection: () => {},
   undo: () => {},
   redo: () => {},
   canUndo: false,
@@ -371,6 +396,34 @@ export function EditModeProvider({
     setSelectedId(id)
   }
 
+  // يبدّل ترتيب القسم المحدد مع القسم المجاور بنفس الاتجاه. نطبّع أولًا
+  // ترتيب كل الأقسام الحالية (نعطي كل وحد رقم order صريح حسب ترتيبه الظاهر
+  // حاليًا) حتى يشتغل التبديل صح حتى لو بعضها ما كان له order من قبل
+  // (أقسام قديمة كانت تعتمد على ترتيب المعرّف الزمني بس)
+  const moveSection = (id: string, direction: "up" | "down") => {
+    const ids = sortSectionIds(
+      Object.keys(stylesRef.current).filter((k) => k.startsWith(SECTION_PREFIX)),
+      stylesRef.current,
+    )
+    const idx = ids.indexOf(id)
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1
+    if (idx === -1 || swapIdx < 0 || swapIdx >= ids.length) return
+    pushHistory()
+    setStyles((prev) => {
+      const next = { ...prev }
+      ids.forEach((key, i) => {
+        next[key] = { ...next[key], order: i }
+      })
+      const a = ids[idx]
+      const b = ids[swapIdx]
+      const orderA = next[a].order
+      next[a] = { ...next[a], order: next[b].order }
+      next[b] = { ...next[b], order: orderA }
+      onStylesChange?.(next)
+      return next
+    })
+  }
+
   const sidebarWidth = editable ? RAIL_WIDTH + (activeTab ? FLYOUT_WIDTH : 0) : 0
 
   return (
@@ -389,6 +442,7 @@ export function EditModeProvider({
         addCustomIcon,
         addCustomImage,
         addCustomSection,
+        moveSection,
         undo,
         redo,
         canUndo: past.length > 0,
@@ -1258,6 +1312,7 @@ export function EditPanel() {
     addCustomIcon,
     addCustomImage,
     addCustomSection,
+    moveSection,
     undo,
     redo,
     canUndo,
@@ -1277,6 +1332,12 @@ export function EditPanel() {
   const isCustom = !!selectedId?.startsWith(CUSTOM_PREFIX)
   const isSection = !!selectedId?.startsWith(SECTION_PREFIX)
   const isImage = !!selectedId?.startsWith(CUSTOM_IMAGE_PREFIX)
+  // ترتيب القسم المحدد حاليًا بين باقي الأقسام — نحتاجه حتى نعطّل زر
+  // "لأعلى" لو كان أول قسم، وزر "لأسفل" لو كان آخر قسم
+  const sectionIds = isSection
+    ? sortSectionIds(Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX)), styles)
+    : []
+  const sectionIndex = isSection && selectedId ? sectionIds.indexOf(selectedId) : -1
   const plainId = isBg
     ? selectedId!.slice(BG_PREFIX.length)
     : isIcon
@@ -1842,6 +1903,40 @@ export function EditPanel() {
             </PanelSection>
           )}
 
+          {isSection && (
+            <PanelSection title="الترتيب">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  style={{
+                    ...smallBtnStyle,
+                    opacity: sectionIndex <= 0 ? 0.4 : 1,
+                    cursor: sectionIndex <= 0 ? "default" : "pointer",
+                  }}
+                  disabled={sectionIndex <= 0}
+                  onClick={() => moveSection(selectedId!, "up")}
+                >
+                  ▲ لأعلى
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    ...smallBtnStyle,
+                    opacity: sectionIndex === -1 || sectionIndex >= sectionIds.length - 1 ? 0.4 : 1,
+                    cursor:
+                      sectionIndex === -1 || sectionIndex >= sectionIds.length - 1
+                        ? "default"
+                        : "pointer",
+                  }}
+                  disabled={sectionIndex === -1 || sectionIndex >= sectionIds.length - 1}
+                  onClick={() => moveSection(selectedId!, "down")}
+                >
+                  ▼ لأسفل
+                </button>
+              </div>
+            </PanelSection>
+          )}
+
           {!isImage && (
             <PanelSection title={isBg || isSection ? "لون الخلفية" : isIcon ? "اللون" : "لون النص"}>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
@@ -2167,11 +2262,12 @@ export function PageBackgroundButton() {
 // والتلوين يدويًا هنا بنفس فكرتها بالضبط.
 export function CustomSectionsLayer() {
   const { editable, styles, selectedId, setSelectedId } = useEditMode()
-  const ids = Object.keys(styles)
-    .filter((k) => k.startsWith(SECTION_PREFIX))
-    // ترتيب زمني حسب وقت الإضافة (الجزء الأول من المعرّف مبني على
-    // Date.now().toString(36)) حتى تظهر الأقسام بنفس ترتيب إضافتها
-    .sort()
+  // ترتيب الأقسام: حسب order الصريح لو الأدمن حرّكها، وإلا حسب وقت
+  // الإضافة كالمعتاد (شوف sortSectionIds بالأعلى)
+  const ids = sortSectionIds(
+    Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX)),
+    styles,
+  )
   if (ids.length === 0) return null
   return (
     <>
