@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_LAMSA_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomSectionsLayer } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomImageLayer, CustomSectionsLayer } from "./LiveEditing"
 
 // نفس فكرة الظهور التدريجي عند السكرول المستخدمة بقالب "وصال"
 function useRevealOnScroll(active: boolean) {
@@ -250,6 +250,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
               بالشاشة الأولى (القسم الأول وحده overflow-hidden فيقص أي شي
               ينسحب برّا حدوده) */}
           <CustomTextLayer />
+          <CustomImageLayer />
 
           {/* القسم الأول — خلفية متدرجة (صورة اختيارية + تدرج وردي/ذهبي CSS)، مع فيديو خلفية اختياري فوقها لو الأدمن رفع واحد */}
           <section
