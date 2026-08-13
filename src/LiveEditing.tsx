@@ -571,7 +571,14 @@ export function ReorderableSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable, id, label, index])
 
-  if (!editable) return <>{children}</>
+  const isHidden = !!styles[id]?.hidden
+
+  if (!editable) {
+    // برّه وضع التعديل: القسم المخفي ما ينعرض إطلاقاً عند الضيف، وما ياخذ
+    // أي مساحة بالتصميم (نفس سلوك إخفاء أي عنصر ثاني بالمحرر)
+    if (isHidden) return null
+    return <>{children}</>
+  }
 
   const order = styles[id]?.order ?? index
   const isSelected = selectedId === id
@@ -587,6 +594,10 @@ export function ReorderableSection({
         // ما كان أي قسم محدد حاليًا
         outline: "1px dashed rgba(184,134,47,0.35)",
         outlineOffset: -1,
+        // القسم المخفي يبقى ظاهر بوضع التعديل بس بشفافية أقل، حتى يقدر
+        // الأدمن يلقاه ويحدده ويرجّعه — يختفي كليًا بس عند الضيف (فوق)
+        opacity: isHidden ? 0.35 : 1,
+        transition: "opacity .15s ease",
       }}
     >
       {/* شارة صغيرة "لاصقة" (sticky) تبقى ظاهرة طول ما القسم على الشاشة،
@@ -609,6 +620,7 @@ export function ReorderableSection({
         }}
         title={`تحريك قسم: ${label}`}
       >
+        {isHidden && "⊘ "}
         ✥ {label}
       </button>
       {isSelected && (
@@ -1721,7 +1733,9 @@ export function EditPanel() {
     index: number,
     total: number,
     onMove: (id: string, direction: "up" | "down") => void,
-  ) => (
+  ) => {
+    const rowHidden = !!styles[id]?.hidden
+    return (
     <div
       key={id}
       style={{
@@ -1734,6 +1748,7 @@ export function EditPanel() {
         background: "#2A211D",
         border: "1px solid #B8862F33",
         marginBottom: 6,
+        opacity: rowHidden ? 0.55 : 1,
       }}
     >
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -1774,12 +1789,27 @@ export function EditPanel() {
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          flex: 1,
         }}
       >
         {label}
       </span>
+      <button
+        type="button"
+        onClick={() => updateStyle(id, { hidden: !rowHidden })}
+        title={rowHidden ? "إظهار القسم" : "إخفاء القسم"}
+        style={{
+          ...smallBtnStyle,
+          padding: "4px 8px",
+          flexShrink: 0,
+          background: rowHidden ? "#B8862F" : "#2A211D",
+          color: rowHidden ? "#1A1210" : "#F5EBE0",
+        }}
+      >
+        {rowHidden ? "⊘" : "👁"}
+      </button>
     </div>
-  )
+  )}
 
   const pageBgKey = BG_PREFIX + "pageBg"
   const pageBgStyle = styles[pageBgKey] || {}
@@ -2184,10 +2214,27 @@ export function EditPanel() {
                   </div>
                 </PanelSection>
 
+                <PanelSection title="الإظهار">
+                  <button
+                    type="button"
+                    onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
+                    style={{
+                      ...smallBtnStyle,
+                      width: "100%",
+                      background: st.hidden ? "#B8862F" : "#2A211D",
+                      color: st.hidden ? "#1A1210" : "#F5EBE0",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {st.hidden ? "⊘ القسم مخفي — اضغط لإظهاره" : "👁 إخفاء هذا القسم"}
+                  </button>
+                </PanelSection>
+
                 <div style={hintTextStyle}>
                   هذا قسم جاهز بالقالب — تقدر تبدّل ترتيبه بين باقي الأقسام
-                  الأساسية بس، مو حذفه. لتغيير لونه أو نصوصه، اضغط على
-                  العنصر نفسه بالتصميم مباشرة.
+                  الأساسية، أو تخفيه كامل لو ما تحتاجه (زر "إخفاء هذا القسم"
+                  فوق). لتغيير لونه أو نصوصه، اضغط على العنصر نفسه بالتصميم
+                  مباشرة.
                 </div>
 
                 <button
