@@ -1240,6 +1240,26 @@ export function AddTextButton() {
   )
 }
 
+// زر "🎨 لون خلفية الدعوة" — يوضع بشريط أدوات محرر التصميم (LiveTemplateEditor)
+// ويفتح مباشرة لوحة خصائص خلفية الصفحة الكاملة (bg:pageBg) بضغطة وحدة،
+// بدل ما يحتاج الأدمن يدوّر على فراغ فاضي بالتصميم يضغط عليه حتى يحددها
+// (صعب لأن أغلب مساحة الدعوة مغطاة بأقسام لها خلفياتها الخاصة اللي توقف
+// انتشار الضغطة قبل ما توصل لخلفية الصفحة تحتها)
+export function PageBackgroundButton() {
+  const { editable, setSelectedId } = useEditMode()
+  if (!editable) return null
+  return (
+    <button
+      type="button"
+      onClick={() => setSelectedId(BG_PREFIX + "pageBg")}
+      className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#2A211D] text-[#F1D989] border border-[#B8862F]"
+      style={{ fontFamily: "Cairo, sans-serif" }}
+    >
+      🎨 لون خلفية الدعوة
+    </button>
+  )
+}
+
 // طبقة النصوص المُضافة يدويًا — تُوضع مرة وحدة بأول حاوية تلف كل أقسام
 // القالب (الحاوية اللي تسكرول، بدون أي overflow-hidden على طول الصفحة)،
 // حتى النص المُضاف يقدر يتسحب لأي مكان بكامل الدعوة مو بس أول شاشة.
