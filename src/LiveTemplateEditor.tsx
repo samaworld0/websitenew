@@ -9,6 +9,7 @@ import {
   TextStyle,
   PANEL_WIDTH,
   AddTextButton,
+  AddSectionButton,
   PageBackgroundButton,
 } from "./LiveEditing"
 
@@ -83,6 +84,7 @@ export function LiveTemplateEditor({
             إغلاق
           </button>
           <AddTextButton />
+          <AddSectionButton />
           <PageBackgroundButton />
           <button
             onClick={handleSave}
