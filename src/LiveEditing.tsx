@@ -34,6 +34,11 @@ export interface TextStyle {
   fontUrl?: string
   // لون مخصص — يُستخدم للنص (color) وللخلفيات (نفس الحقل، background)
   color?: string
+  // لون خلفية مخصص لعناصر EditableText اللي أصلاً عندها خلفية بالتصميم
+  // (مثال: زر "الموقع على الخريطة" — خلفيته الذهبية جاية من كلاس Tailwind
+  // ثابت، مو من "color" اللي يستخدم للنص). منفصل عن حقل color حتى ما
+  // نتعارض مع تلوين النص نفسه على نفس العنصر
+  bgColor?: string
   // إخفاء العنصر بالكامل من المعاينة النهائية (يبقى ظاهر بوضع التعديل
   // بشفافية أقل حتى يقدر الأدمن يلقاه ويرجّعه)
   hidden?: boolean
@@ -737,6 +742,7 @@ export function EditableText({
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
       ...(savedStyle.font ? { fontFamily: savedStyle.font } : null),
       ...(savedStyle.color ? { color: savedStyle.color } : null),
+      ...(savedStyle.bgColor ? { backgroundColor: savedStyle.bgColor, backgroundImage: "none" } : null),
       transform: `translate(${clampedX}px, ${clampedY}px)`,
       // خاصية CSS مستقلة عن transform حتى تشتغل مع الـ translate اللي فوق
       // بدون ما تلغيه (المتصفحات الحديثة تدعم rotate/scale/translate
@@ -869,6 +875,7 @@ export function EditableText({
     ...(px ? { fontSize: `${px}px` } : null),
     ...(st.font ? { fontFamily: st.font } : null),
     ...(st.color ? { color: st.color } : null),
+    ...(st.bgColor ? { backgroundColor: st.bgColor, backgroundImage: "none" } : null),
     // offX/offY نسبة مئوية من عرض الشاشة — نحوّلها لبكسل فعلي للعرض بوضع
     // التعديل (نفس التحويل المطبّق بالمعاينة النهائية عند الضيف)
     transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)`,
@@ -2423,6 +2430,54 @@ export function EditPanel() {
                   <button
                     type="button"
                     onClick={() => updateStyle(selectedId, { color: undefined })}
+                    style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
+                  >
+                    ↺ الأصلي
+                  </button>
+                )}
+              </div>
+            </PanelSection>
+          )}
+
+          {!isBg && !isIcon && !isSection && !isImage && (
+            <PanelSection title="خلفية الزر (إن وجدت)">
+              <div style={{ fontSize: 10, color: "#8C6B6F", marginBottom: 8 }}>
+                لو هذا العنصر زر أو رابط له خلفية ملوّنة (مثال: زر "الموقع
+                على الخريطة")، غيّر لونها من هنا
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                {COLOR_PRESETS.map((c) => (
+                  <span
+                    key={c}
+                    onClick={() => updateStyle(selectedId, { bgColor: c })}
+                    style={swatchStyle(c, st.bgColor === c)}
+                    title={c}
+                  />
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="color"
+                  value={st.bgColor || customColor}
+                  onChange={(e) => {
+                    setCustomColor(e.target.value)
+                    updateStyle(selectedId, { bgColor: e.target.value })
+                  }}
+                  style={{
+                    width: 34,
+                    height: 30,
+                    border: "1px solid #B8862F55",
+                    borderRadius: 6,
+                    background: "transparent",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                />
+                <span style={{ fontSize: 11, color: "#B8A99A" }}>لون حر</span>
+                {st.bgColor && (
+                  <button
+                    type="button"
+                    onClick={() => updateStyle(selectedId, { bgColor: undefined })}
                     style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
                   >
                     ↺ الأصلي
