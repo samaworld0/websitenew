@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomImageLayer, CustomSectionsLayer } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomImageLayer, CustomSectionsLayer, ReorderableSection } from "./LiveEditing"
 
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
 // لما يوصله السكرول — أنيميشن خفيف ولطيف بدون أي مكتبات خارجية.
@@ -336,7 +336,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
       >
         <div
-          className={`relative transition-all duration-1000 w-full ${
+          className={`relative transition-all duration-1000 w-full flex flex-col ${
             isOpen ? "opacity-100" : "opacity-0"
           }`}
         >
@@ -348,6 +348,12 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           <CustomTextLayer />
           <CustomImageLayer />
 
+          {/* الأقسام الأساسية الأربعة بالقالب ملفوفة بـReorderableSection
+              حتى يقدر الأدمن يبدّل ترتيبها من لوحة الخصائص (خاصية CSS
+              "order" — الحاوية الأب فوق display:flex عمودي لأجل هذا). كل
+              قسم يحتفظ بنفس محتواه بالضبط، بس صار له معرّف ثابت وترتيب
+              افتراضي (index) يعتمد عليه لو الأدمن ما حرّكه أبدًا. */}
+          <ReorderableSection id="core:hero" label="الافتتاحية" index={0}>
           {/* القسم الأول مع الخلفية والزهور — يعرض الفيديو لو الأدمن رفع
               واحد (doorBgVideo)، وإلا يعرض صورة الخلفية (heroBg) فقط.
               الاثنين ما يظهروا مع بعض أبداً — خيار واحد بس. */}
@@ -450,10 +456,12 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           >
             <div className="h-[80px]" />
           </EditableBackground>
+          </ReorderableSection>
 
+          <ReorderableSection id="core:saveDate" label="احفظ الموعد والعد التنازلي" index={1}>
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
-          <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
-            <section className="py-24 px-6 flex flex-col items-center">
+          <div className="w-full">
+            <section className="py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
               {/* بطاقة احفظ الموعد */}
               <div className="text-center w-full max-w-sm mb-20 reveal-on-scroll">
                 <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-8 custom-font-heading flex items-center justify-center gap-2">
@@ -565,13 +573,16 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                 </div>
               </div>
             </section>
+          </div>
+          </ReorderableSection>
 
+          <ReorderableSection id="core:program" label="برنامج الحفل والمكان" index={2}>
             {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل،
                 والزهرة الحمراء بالمنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
             <EditableBackground
               id="programSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#C9BBA0]"
+              className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#C9BBA0] relative z-20"
             >
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-12 custom-font-heading">
@@ -679,12 +690,14 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                 </EditableText>
               </div>
             </EditableBackground>
+          </ReorderableSection>
 
+          <ReorderableSection id="core:rsvp" label="تأكيد الحضور" index={3}>
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل */}
             <EditableBackground
               id="rsvpSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#8C7A6B]"
+              className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#8C7A6B] relative z-20"
             >
               <EditableBackground
                 id="rsvpCardBg"
@@ -824,10 +837,11 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                 )}
               </EditableBackground>
             </EditableBackground>
-          </div>
+          </ReorderableSection>
 
           {/* الأقسام اللي يضيفها الأدمن يدويًا (زر "➕ إضافة قسم") — تنضاف
-              دائمًا بعد كل الأقسام الجاهزة أعلاه */}
+              دائمًا بعد كل الأقسام الجاهزة أعلاه (بغض النظر عن ترتيب
+              الأقسام الأساسية فوق — order:9999 داخل CustomSectionsLayer) */}
           <CustomSectionsLayer />
         </div>
       </div>
