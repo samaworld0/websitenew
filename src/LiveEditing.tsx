@@ -109,6 +109,39 @@ function sortSectionIds(ids: string[], styles: Record<string, TextStyle>): strin
   })
 }
 
+// ترتيب "فعلي" لأي قسم (أساسي جاهز أو مُضاف يدويًا) — يعتمد على حقل order
+// الصريح لو الأدمن حرّكه من قبل، وإلا قيمة افتراضية حسب نوعه: الأقسام
+// الأساسية تاخذ ترتيب تسجيلها (0، 1، 2...)، والأقسام المُضافة يدويًا بدون
+// ترتيب صريح تاخذ رقم كبير جدًا (1000) حتى تظل افتراضيًا بعد كل الأقسام
+// الجاهزة (نفس السلوك القديم قبل ما تصير قابلة للتداخل معها)
+function effectiveSectionOrder(
+  id: string,
+  styles: Record<string, TextStyle>,
+  coreSections: Record<string, { label: string; index: number }>,
+): number {
+  const explicit = styles[id]?.order
+  if (explicit != null) return explicit
+  if (id.startsWith(CORE_SECTION_PREFIX)) return coreSections[id]?.index ?? 0
+  return 1000
+}
+
+// قائمة كل الأقسام (الأساسية الجاهزة + المُضافة يدويًا) بترتيب واحد
+// موحّد — أساس زري "▲ لأعلى / ▼ لأسفل" الموحّدين اللي يقدرون ينقلوا أي
+// قسم فوق أو تحت أي قسم ثاني بغض النظر عن نوعه
+function getOrderedSectionIds(
+  styles: Record<string, TextStyle>,
+  coreSections: Record<string, { label: string; index: number }>,
+): string[] {
+  const customIds = Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX))
+  const ids = [...Object.keys(coreSections), ...customIds]
+  return ids.sort((a, b) => {
+    const oa = effectiveSectionOrder(a, styles, coreSections)
+    const ob = effectiveSectionOrder(b, styles, coreSections)
+    if (oa !== ob) return oa - ob
+    return a < b ? -1 : a > b ? 1 : 0
+  })
+}
+
 // يحوّل شجرة children لنص عادي (يهتم بالنصوص الفعلية بس، يتجاهل أي عنصر
 // زخرفي متداخل) — نستخدمه حتى نعرف "النص الأصلي" الحالي لأي EditableText
 // ونعرضه كقيمة ابتدائية بمربع تحرير النص بلوحة الخصائص
@@ -155,7 +188,12 @@ interface EditModeValue {
   // ينقل القسم المحدد خطوة لأعلى أو لأسفل بترتيب الأقسام المُضافة يدويًا
   // (يبدّل ترتيبه مع القسم المجاور بنفس الاتجاه مباشرة). بدون تأثير لو
   // كان أول قسم وطلبت "لأعلى"، أو آخر قسم وطلبت "لأسفل"
-  moveSection: (id: string, direction: "up" | "down") => void
+  // ينقل القسم المحدد (أساسي جاهز أو مُضاف يدويًا — النوعين معًا بترتيب
+  // واحد موحّد) خطوة لأعلى أو لأسفل، ويبدّل ترتيبه مع القسم المجاور
+  // مباشرة بغض النظر عن نوعه — فيقدر الأدمن يرفع قسم مُضاف يدويًا فوق
+  // الأقسام الجاهزة أو العكس بنفس الزرين. بدون تأثير لو كان أول قسم
+  // وطلبت "لأعلى"، أو آخر قسم وطلبت "لأسفل"
+  moveAnySection: (id: string, direction: "up" | "down") => void
   // سجل أقسام القالب الأساسية الجاهزة المُركّبة حاليًا (وصال أو لمسة) —
   // كل قسم يسجّل نفسه فيه تلقائيًا (معرّفه، تسمية عربية له، وترتيبه
   // الافتراضي) عبر registerCoreSection وقت رسمه. نعتمد عليه حتى نعرف قائمة
@@ -163,12 +201,6 @@ interface EditModeValue {
   // قالب معيّن
   coreSections: Record<string, { label: string; index: number }>
   registerCoreSection: (id: string, label: string, index: number) => void
-  // يبدّل ترتيب قسم أساسي جاهز مع القسم الأساسي المجاور بنفس الاتجاه —
-  // نفس فكرة moveSection بالضبط بس مصدر قائمة الأقسام هنا coreSections
-  // (مسجّلة تلقائيًا) بدل مفاتيح كائن الأنماط (لأن الأقسام الأساسية موجودة
-  // دائمًا، بعكس الأقسام المُضافة يدويًا اللي وجودها بالأنماط هو دليل
-  // وجودها أصلاً)
-  moveCoreSection: (id: string, direction: "up" | "down") => void
   // تراجع/إعادة لآخر تعديل على الأنماط (styles) — يغطي كل التغييرات: نص،
   // لون، حجم، موضع، إضافة/حذف عنصر... إلخ. مفعّلة باختصارات لوحة المفاتيح
   // (Ctrl/Cmd+Z للتراجع، Ctrl/Cmd+Shift+Z أو Ctrl/Cmd+Y للإعادة) وبزرين
@@ -201,10 +233,9 @@ const EditModeContext = createContext<EditModeValue>({
   addCustomIcon: () => {},
   addCustomImage: () => {},
   addCustomSection: () => {},
-  moveSection: () => {},
+  moveAnySection: () => {},
   coreSections: {},
   registerCoreSection: () => {},
-  moveCoreSection: () => {},
   undo: () => {},
   redo: () => {},
   canUndo: false,
@@ -436,34 +467,6 @@ export function EditModeProvider({
     setSelectedId(id)
   }
 
-  // يبدّل ترتيب القسم المحدد مع القسم المجاور بنفس الاتجاه. نطبّع أولًا
-  // ترتيب كل الأقسام الحالية (نعطي كل وحد رقم order صريح حسب ترتيبه الظاهر
-  // حاليًا) حتى يشتغل التبديل صح حتى لو بعضها ما كان له order من قبل
-  // (أقسام قديمة كانت تعتمد على ترتيب المعرّف الزمني بس)
-  const moveSection = (id: string, direction: "up" | "down") => {
-    const ids = sortSectionIds(
-      Object.keys(stylesRef.current).filter((k) => k.startsWith(SECTION_PREFIX)),
-      stylesRef.current,
-    )
-    const idx = ids.indexOf(id)
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1
-    if (idx === -1 || swapIdx < 0 || swapIdx >= ids.length) return
-    pushHistory()
-    setStyles((prev) => {
-      const next = { ...prev }
-      ids.forEach((key, i) => {
-        next[key] = { ...next[key], order: i }
-      })
-      const a = ids[idx]
-      const b = ids[swapIdx]
-      const orderA = next[a].order
-      next[a] = { ...next[a], order: next[b].order }
-      next[b] = { ...next[b], order: orderA }
-      onStylesChange?.(next)
-      return next
-    })
-  }
-
   // كل قسم أساسي (ReorderableSection) يسجّل نفسه هنا وقت رسمه — نتفادى أي
   // تحديث/رسم إضافي لو نفس المعلومات مسجّلة مسبقًا (نفس القالب ما يتغيّر
   // بمنتصف جلسة تعديل وحدة أصلاً، بس نحتاط لإعادة الرسم العادية)
@@ -475,27 +478,26 @@ export function EditModeProvider({
     })
   }
 
-  // نفس فكرة moveSection بالضبط، بس قائمة الأقسام هنا مصدرها سجل
-  // coreSections (الأقسام الأساسية مسجّلة دائمًا بغض النظر عن وجودها
-  // بكائن الأنماط من عدمه)، وترتيبها الافتراضي هو index وقت التسجيل لو ما
-  // كان لها order صريح بعد
-  const moveCoreSection = (id: string, direction: "up" | "down") => {
-    const sortedIds = Object.keys(coreSections).sort((a, b) => {
-      const oa = stylesRef.current[a]?.order ?? coreSections[a].index
-      const ob = stylesRef.current[b]?.order ?? coreSections[b].index
-      return oa - ob
-    })
-    const idx = sortedIds.indexOf(id)
+  // يبدّل ترتيب أي قسم (أساسي جاهز أو مُضاف يدويًا — النوعين معًا) مع
+  // القسم المجاور بنفس الاتجاه، حسب ترتيبهم الموحّد الحالي (شوف
+  // getOrderedSectionIds فوق). نطبّع أولًا ترتيب كل الأقسام (نعطي كل وحد
+  // رقم order صريح حسب ترتيبه الظاهر حاليًا، أساسي كان أو مُضاف) حتى يشتغل
+  // التبديل صح حتى لو بعضها ما كان له order صريح من قبل — وبهذا يقدر
+  // الأدمن يرفع قسم مُضاف يدويًا فوق الأقسام الجاهزة، أو ينزل قسم جاهز
+  // تحت الأقسام المُضافة، بنفس الزرين بالضبط
+  const moveAnySection = (id: string, direction: "up" | "down") => {
+    const ids = getOrderedSectionIds(stylesRef.current, coreSections)
+    const idx = ids.indexOf(id)
     const swapIdx = direction === "up" ? idx - 1 : idx + 1
-    if (idx === -1 || swapIdx < 0 || swapIdx >= sortedIds.length) return
+    if (idx === -1 || swapIdx < 0 || swapIdx >= ids.length) return
     pushHistory()
     setStyles((prev) => {
       const next = { ...prev }
-      sortedIds.forEach((key, i) => {
+      ids.forEach((key, i) => {
         next[key] = { ...next[key], order: i }
       })
-      const a = sortedIds[idx]
-      const b = sortedIds[swapIdx]
+      const a = ids[idx]
+      const b = ids[swapIdx]
       const orderA = next[a].order
       next[a] = { ...next[a], order: next[b].order }
       next[b] = { ...next[b], order: orderA }
@@ -522,10 +524,9 @@ export function EditModeProvider({
         addCustomIcon,
         addCustomImage,
         addCustomSection,
-        moveSection,
+        moveAnySection,
         coreSections,
         registerCoreSection,
-        moveCoreSection,
         undo,
         redo,
         canUndo: past.length > 0,
@@ -1606,9 +1607,8 @@ export function EditPanel() {
     addCustomIcon,
     addCustomImage,
     addCustomSection,
-    moveSection,
+    moveAnySection,
     coreSections,
-    moveCoreSection,
     undo,
     redo,
     canUndo,
@@ -1629,31 +1629,16 @@ export function EditPanel() {
   const isSection = !!selectedId?.startsWith(SECTION_PREFIX)
   const isImage = !!selectedId?.startsWith(CUSTOM_IMAGE_PREFIX)
   const isCoreSection = !!selectedId?.startsWith(CORE_SECTION_PREFIX)
-  // ترتيب القسم المحدد حاليًا بين باقي الأقسام — نحتاجه حتى نعطّل زر
-  // "لأعلى" لو كان أول قسم، وزر "لأسفل" لو كان آخر قسم
-  const sectionIds = isSection
-    ? sortSectionIds(Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX)), styles)
-    : []
-  const sectionIndex = isSection && selectedId ? sectionIds.indexOf(selectedId) : -1
-  // نفس فكرة sectionIndex بالضبط بس للأقسام الأساسية الجاهزة بالقالب
-  // (سجل coreSections بدل مفاتيح الأنماط)
-  const coreSectionIds = isCoreSection
-    ? Object.keys(coreSections).sort((a, b) => {
-        const oa = styles[a]?.order ?? coreSections[a].index
-        const ob = styles[b]?.order ?? coreSections[b].index
-        return oa - ob
-      })
-    : []
-  const coreSectionIndex =
-    isCoreSection && selectedId ? coreSectionIds.indexOf(selectedId) : -1
-  // قائمة كل الأقسام (الأساسية + المُضافة يدويًا) بترتيبها الحالي — نستخدمها
-  // بلوحة "الأقسام" المستقلة اللي تعرض كل الأقسام سوا مع أزرار نقل
-  // لأعلى/أسفل مباشرة، بدون ما يحتاج الأدمن يحدد كل قسم بالتصميم أول
-  const allCoreSectionIds = Object.keys(coreSections).sort((a, b) => {
-    const oa = styles[a]?.order ?? coreSections[a].index
-    const ob = styles[b]?.order ?? coreSections[b].index
-    return oa - ob
-  })
+  // ترتيب كل الأقسام (الأساسية الجاهزة + المُضافة يدويًا) بترتيب واحد
+  // موحّد حاليًا — نستخدمها لعرض لوحة "ترتيب الأقسام" الموحّدة، ولمعرفة
+  // ترتيب القسم المحدد حاليًا بينها (حتى نعطّل زر "لأعلى" لو كان أول قسم
+  // فعليًا، وزر "لأسفل" لو كان آخر قسم فعليًا — بغض النظر عن نوعه)
+  const allOrderedSectionIds = getOrderedSectionIds(styles, coreSections)
+  const selectedSectionIndex =
+    (isCoreSection || isSection) && selectedId ? allOrderedSectionIds.indexOf(selectedId) : -1
+  // ترقيم الأقسام المُضافة يدويًا فيما بينها بس (بمعزل عن الأقسام
+  // الأساسية) — نستخدمه فقط كتسمية "قسم مُضاف 1/2/3..." بلوحة "ترتيب
+  // الأقسام"، لا علاقة له بمنطق النقل نفسه
   const allCustomSectionIds = sortSectionIds(
     Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX)),
     styles,
@@ -2117,42 +2102,30 @@ export function EditPanel() {
 
           {activeTab === "sections" && (
             <>
-              <PanelSection title="الأقسام الأساسية">
-                {allCoreSectionIds.length === 0 ? (
+              <PanelSection title="كل الأقسام">
+                {allOrderedSectionIds.length === 0 ? (
                   <div style={hintTextStyle}>
                     لا توجد أقسام مسجّلة بعد — انتظر تحميل التصميم كاملاً.
                   </div>
                 ) : (
-                  allCoreSectionIds.map((id, i) =>
+                  allOrderedSectionIds.map((id, i) =>
                     renderSectionRow(
                       id,
-                      coreSections[id]?.label || id,
+                      id.startsWith(CORE_SECTION_PREFIX)
+                        ? coreSections[id]?.label || id
+                        : `قسم مُضاف ${allCustomSectionIds.indexOf(id) + 1}`,
                       i,
-                      allCoreSectionIds.length,
-                      moveCoreSection,
+                      allOrderedSectionIds.length,
+                      moveAnySection,
                     ),
                   )
                 )}
               </PanelSection>
 
-              {allCustomSectionIds.length > 0 && (
-                <PanelSection title="أقسام مُضافة يدويًا">
-                  {allCustomSectionIds.map((id, i) =>
-                    renderSectionRow(
-                      id,
-                      `قسم مُضاف ${i + 1}`,
-                      i,
-                      allCustomSectionIds.length,
-                      moveSection,
-                    ),
-                  )}
-                </PanelSection>
-              )}
-
               <div style={hintTextStyle}>
                 رتّب الأقسام هنا بأزرار ▲ و ▼ — التغيير ينعكس فورًا على
-                التصميم. الأقسام المُضافة يدويًا تبقى دائمًا بعد كل الأقسام
-                الأساسية.
+                التصميم. تقدر ترفع أي قسم مُضاف يدويًا فوق الأقسام الجاهزة،
+                أو تنزّله تحتها، بنفس الطريقة بالضبط.
               </div>
             </>
           )}
@@ -2233,11 +2206,11 @@ export function EditPanel() {
                       type="button"
                       style={{
                         ...smallBtnStyle,
-                        opacity: coreSectionIndex <= 0 ? 0.4 : 1,
-                        cursor: coreSectionIndex <= 0 ? "default" : "pointer",
+                        opacity: selectedSectionIndex <= 0 ? 0.4 : 1,
+                        cursor: selectedSectionIndex <= 0 ? "default" : "pointer",
                       }}
-                      disabled={coreSectionIndex <= 0}
-                      onClick={() => moveCoreSection(selectedId!, "up")}
+                      disabled={selectedSectionIndex <= 0}
+                      onClick={() => moveAnySection(selectedId!, "up")}
                     >
                       ▲ لأعلى
                     </button>
@@ -2246,18 +2219,21 @@ export function EditPanel() {
                       style={{
                         ...smallBtnStyle,
                         opacity:
-                          coreSectionIndex === -1 || coreSectionIndex >= coreSectionIds.length - 1
+                          selectedSectionIndex === -1 ||
+                          selectedSectionIndex >= allOrderedSectionIds.length - 1
                             ? 0.4
                             : 1,
                         cursor:
-                          coreSectionIndex === -1 || coreSectionIndex >= coreSectionIds.length - 1
+                          selectedSectionIndex === -1 ||
+                          selectedSectionIndex >= allOrderedSectionIds.length - 1
                             ? "default"
                             : "pointer",
                       }}
                       disabled={
-                        coreSectionIndex === -1 || coreSectionIndex >= coreSectionIds.length - 1
+                        selectedSectionIndex === -1 ||
+                        selectedSectionIndex >= allOrderedSectionIds.length - 1
                       }
-                      onClick={() => moveCoreSection(selectedId!, "down")}
+                      onClick={() => moveAnySection(selectedId!, "down")}
                     >
                       ▼ لأسفل
                     </button>
@@ -2465,11 +2441,11 @@ export function EditPanel() {
                   type="button"
                   style={{
                     ...smallBtnStyle,
-                    opacity: sectionIndex <= 0 ? 0.4 : 1,
-                    cursor: sectionIndex <= 0 ? "default" : "pointer",
+                    opacity: selectedSectionIndex <= 0 ? 0.4 : 1,
+                    cursor: selectedSectionIndex <= 0 ? "default" : "pointer",
                   }}
-                  disabled={sectionIndex <= 0}
-                  onClick={() => moveSection(selectedId!, "up")}
+                  disabled={selectedSectionIndex <= 0}
+                  onClick={() => moveAnySection(selectedId!, "up")}
                 >
                   ▲ لأعلى
                 </button>
@@ -2477,14 +2453,22 @@ export function EditPanel() {
                   type="button"
                   style={{
                     ...smallBtnStyle,
-                    opacity: sectionIndex === -1 || sectionIndex >= sectionIds.length - 1 ? 0.4 : 1,
+                    opacity:
+                      selectedSectionIndex === -1 ||
+                      selectedSectionIndex >= allOrderedSectionIds.length - 1
+                        ? 0.4
+                        : 1,
                     cursor:
-                      sectionIndex === -1 || sectionIndex >= sectionIds.length - 1
+                      selectedSectionIndex === -1 ||
+                      selectedSectionIndex >= allOrderedSectionIds.length - 1
                         ? "default"
                         : "pointer",
                   }}
-                  disabled={sectionIndex === -1 || sectionIndex >= sectionIds.length - 1}
-                  onClick={() => moveSection(selectedId!, "down")}
+                  disabled={
+                    selectedSectionIndex === -1 ||
+                    selectedSectionIndex >= allOrderedSectionIds.length - 1
+                  }
+                  onClick={() => moveAnySection(selectedId!, "down")}
                 >
                   ▼ لأسفل
                 </button>
@@ -2862,14 +2846,13 @@ export function PageBackgroundButton() {
   )
 }
 
-// طبقة الأقسام المُضافة يدويًا — تُوضع مرة وحدة بآخر كل أقسام القالب
-// الجاهزة (بعد قسم تأكيد الحضور)، وكل قسم فيها ياخذ عرض الشاشة كامل
-// ومساحة حقيقية بترتيب الصفحة (بعكس النصوص المُضافة اللي تطفو فوق
-// التصميم بدون ما تاخذ مساحة). لونها قابل للتغيير من لوحة الخصائص مثل أي
-// خلفية عادية، وارتفاعها قابل للتحكم بزيادة/نقصان. ما نستخدم
-// EditableBackground هنا لأنها تضيف BG_PREFIX تلقائيًا لأي id تستقبله،
-// ومفتاح القسم هنا مسبوق أصلاً بـ SECTION_PREFIX — فنبني منطق التحديد
-// والتلوين يدويًا هنا بنفس فكرتها بالضبط.
+// طبقة الأقسام المُضافة يدويًا — كل قسم فيها ياخذ عرض الشاشة كامل ومساحة
+// حقيقية بترتيب الصفحة (بعكس النصوص المُضافة اللي تطفو فوق التصميم بدون
+// ما تاخذ مساحة). لونها قابل للتغيير من لوحة الخصائص مثل أي خلفية عادية،
+// وارتفاعها قابل للتحكم بزيادة/نقصان. ما نستخدم EditableBackground هنا
+// لأنها تضيف BG_PREFIX تلقائيًا لأي id تستقبله، ومفتاح القسم هنا مسبوق
+// أصلاً بـ SECTION_PREFIX — فنبني منطق التحديد والتلوين يدويًا هنا بنفس
+// فكرتها بالضبط.
 export function CustomSectionsLayer() {
   const { editable, styles, selectedId, setSelectedId } = useEditMode()
   // ترتيب الأقسام: حسب order الصريح لو الأدمن حرّكها، وإلا حسب وقت
@@ -2880,11 +2863,14 @@ export function CustomSectionsLayer() {
   )
   if (ids.length === 0) return null
   return (
-    // order كبير جدًا حتى تبقى هالأقسام دائمًا بعد كل الأقسام الأساسية
-    // الجاهزة بالقالب، حتى لو الأدمن بدّل ترتيبها فيما بينها (شوف
-    // ReorderableSection فوق — الحاوية الأب display:flex عمودي، فخاصية
-    // order هي اللي تتحكم بالترتيب الفعلي الظاهر مو ترتيب الـ JSX)
-    <div style={{ order: 9999 }}>
+    // كل قسم مُضاف عنصر مستقل بنفس عمود الفلكس الرئيسي (بعكس السابق لما
+    // كانت كل الأقسام المُضافة ملفوفة سوا بحاوية وحدة وorder ثابت=9999،
+    // يخليها دائمًا بعد كل الأقسام الأساسية بلا استثناء). الآن كل قسم
+    // ياخذ order الصريح المحفوظ له لو الأدمن حرّكه (نفس المساحة الرقمية
+    // المستخدمة للأقسام الأساسية، شوف moveAnySection)، أو 1000 افتراضيًا
+    // حتى يبقى بعد كل الأقسام الجاهزة بشكل افتراضي لو ما تحرّك أبدًا —
+    // بالضبط زي behavior قبل هالتعديل، لكن قابل للتغيير الآن
+    <>
       {ids.map((key) => {
         const st = styles[key] || {}
         const isSelected = selectedId === key
@@ -2893,6 +2879,7 @@ export function CustomSectionsLayer() {
             key={key}
             className="w-full"
             style={{
+              order: st.order ?? 1000,
               height: st.size ?? DEFAULT_SECTION_HEIGHT,
               backgroundColor: st.color || "#FBF3EF",
               cursor: editable ? "pointer" : undefined,
@@ -2912,7 +2899,7 @@ export function CustomSectionsLayer() {
           />
         )
       })}
-    </div>
+    </>
   )
 }
 
