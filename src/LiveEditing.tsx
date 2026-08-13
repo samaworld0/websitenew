@@ -112,7 +112,7 @@ function childrenToPlainText(node: ReactNode): string {
 // أقسام اللوحة الجانبية على طراز Canva: شريط أيقونات ضيّق ثابت، وكل أيقونة
 // تفتح لوحة فرعية (flyout) بجانبه فيها أدواتها. "properties" تتفعّل تلقائيًا
 // لما تضغط على أي عنصر بالتصميم مباشرة (بدل ما يضطر الأدمن يفتحها يدويًا)
-export type SidebarTab = "insert" | "text" | "background" | "properties"
+export type SidebarTab = "insert" | "text" | "background" | "properties" | "sections"
 
 interface EditModeValue {
   editable: boolean
@@ -1429,6 +1429,7 @@ function PanelSection({
 const SIDEBAR_TABS: { id: SidebarTab; icon: string; label: string }[] = [
   { id: "text", icon: "🔤", label: "النص" },
   { id: "insert", icon: "🧩", label: "العناصر" },
+  { id: "sections", icon: "📑", label: "الأقسام" },
   { id: "background", icon: "🎨", label: "التصميم" },
   { id: "properties", icon: "⚙️", label: "الخصائص" },
 ]
@@ -1489,6 +1490,18 @@ export function EditPanel() {
     : []
   const coreSectionIndex =
     isCoreSection && selectedId ? coreSectionIds.indexOf(selectedId) : -1
+  // قائمة كل الأقسام (الأساسية + المُضافة يدويًا) بترتيبها الحالي — نستخدمها
+  // بلوحة "الأقسام" المستقلة اللي تعرض كل الأقسام سوا مع أزرار نقل
+  // لأعلى/أسفل مباشرة، بدون ما يحتاج الأدمن يحدد كل قسم بالتصميم أول
+  const allCoreSectionIds = Object.keys(coreSections).sort((a, b) => {
+    const oa = styles[a]?.order ?? coreSections[a].index
+    const ob = styles[b]?.order ?? coreSections[b].index
+    return oa - ob
+  })
+  const allCustomSectionIds = sortSectionIds(
+    Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX)),
+    styles,
+  )
   const plainId = isBg
     ? selectedId!.slice(BG_PREFIX.length)
     : isIcon
@@ -1599,9 +1612,78 @@ export function EditPanel() {
   const tabTitles: Record<SidebarTab, string> = {
     text: "النص",
     insert: "العناصر",
+    sections: "ترتيب الأقسام",
     background: "التصميم",
     properties: "الخصائص",
   }
+
+  // صف واحد بلوحة "الأقسام": اسم القسم + زري نقل لأعلى/أسفل، معطّلين
+  // تلقائيًا لو القسم بأول أو آخر القائمة
+  const renderSectionRow = (
+    id: string,
+    label: string,
+    index: number,
+    total: number,
+    onMove: (id: string, direction: "up" | "down") => void,
+  ) => (
+    <div
+      key={id}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        padding: "8px 10px",
+        borderRadius: 8,
+        background: "#2A211D",
+        border: "1px solid #B8862F33",
+        marginBottom: 6,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 12,
+          color: "#F5EBE0",
+          fontFamily: "Cairo, sans-serif",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+        <button
+          type="button"
+          style={{
+            ...smallBtnStyle,
+            padding: "4px 8px",
+            opacity: index <= 0 ? 0.4 : 1,
+            cursor: index <= 0 ? "default" : "pointer",
+          }}
+          disabled={index <= 0}
+          onClick={() => onMove(id, "up")}
+          aria-label="نقل لأعلى"
+        >
+          ▲
+        </button>
+        <button
+          type="button"
+          style={{
+            ...smallBtnStyle,
+            padding: "4px 8px",
+            opacity: index >= total - 1 ? 0.4 : 1,
+            cursor: index >= total - 1 ? "default" : "pointer",
+          }}
+          disabled={index >= total - 1}
+          onClick={() => onMove(id, "down")}
+          aria-label="نقل لأسفل"
+        >
+          ▼
+        </button>
+      </div>
+    </div>
+  )
 
   const pageBgKey = BG_PREFIX + "pageBg"
   const pageBgStyle = styles[pageBgKey] || {}
@@ -1854,6 +1936,48 @@ export function EditPanel() {
                   "الخصائص".
                 </div>
               </PanelSection>
+            </>
+          )}
+
+          {activeTab === "sections" && (
+            <>
+              <PanelSection title="الأقسام الأساسية">
+                {allCoreSectionIds.length === 0 ? (
+                  <div style={hintTextStyle}>
+                    لا توجد أقسام مسجّلة بعد — انتظر تحميل التصميم كاملاً.
+                  </div>
+                ) : (
+                  allCoreSectionIds.map((id, i) =>
+                    renderSectionRow(
+                      id,
+                      coreSections[id]?.label || id,
+                      i,
+                      allCoreSectionIds.length,
+                      moveCoreSection,
+                    ),
+                  )
+                )}
+              </PanelSection>
+
+              {allCustomSectionIds.length > 0 && (
+                <PanelSection title="أقسام مُضافة يدويًا">
+                  {allCustomSectionIds.map((id, i) =>
+                    renderSectionRow(
+                      id,
+                      `قسم مُضاف ${i + 1}`,
+                      i,
+                      allCustomSectionIds.length,
+                      moveSection,
+                    ),
+                  )}
+                </PanelSection>
+              )}
+
+              <div style={hintTextStyle}>
+                رتّب الأقسام هنا بأزرار ▲ و ▼ — التغيير ينعكس فورًا على
+                التصميم. الأقسام المُضافة يدويًا تبقى دائمًا بعد كل الأقسام
+                الأساسية.
+              </div>
             </>
           )}
 
