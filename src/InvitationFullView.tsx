@@ -1,7 +1,6 @@
 import { useEffect } from "react"
 import { Invitation } from "./types"
 import { WisalTemplateView } from "./WisalTemplateView"
-import { LamsaTemplateView } from "./LamsaTemplateView"
 import { EditModeProvider } from "./LiveEditing"
 
 export function InvitationFullView({
@@ -43,10 +42,6 @@ export function InvitationFullView({
       {inv.templateType === "wisal" ? (
         <EditModeProvider editable={false} initialStyles={inv.textStyles || {}}>
           <WisalTemplateView inv={inv} />
-        </EditModeProvider>
-      ) : inv.templateType === "lamsa" ? (
-        <EditModeProvider editable={false} initialStyles={inv.textStyles || {}}>
-          <LamsaTemplateView inv={inv} />
         </EditModeProvider>
       ) : (
         <div
