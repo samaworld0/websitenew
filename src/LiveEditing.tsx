@@ -72,6 +72,11 @@ function childrenToPlainText(node: ReactNode): string {
   return ""
 }
 
+// أقسام اللوحة الجانبية على طراز Canva: شريط أيقونات ضيّق ثابت، وكل أيقونة
+// تفتح لوحة فرعية (flyout) بجانبه فيها أدواتها. "properties" تتفعّل تلقائيًا
+// لما تضغط على أي عنصر بالتصميم مباشرة (بدل ما يضطر الأدمن يفتحها يدويًا)
+export type SidebarTab = "insert" | "text" | "background" | "properties"
+
 interface EditModeValue {
   editable: boolean
   styles: Record<string, TextStyle>
@@ -91,6 +96,14 @@ interface EditModeValue {
   // يضيف قسم جديد بآخر الدعوة (بعد كل الأقسام الجاهزة) ويحدده فورًا حتى
   // يقدر الأدمن يغيّر لونه/ارتفاعه من لوحة الخصائص مباشرة
   addCustomSection: () => void
+  // التبويب المفتوح حاليًا بشريط الأيقونات (null = الشريط مقفول، ما فيه
+  // لوحة فرعية ظاهرة) + دالة تغييره
+  activeTab: SidebarTab | null
+  setActiveTab: (tab: SidebarTab | null) => void
+  // عرض اللوحة الجانبية الكلي بالبكسل الآن (الشريط + اللوحة الفرعية إذا
+  // كانت مفتوحة) — تستخدمه الصفحة اللي تحتوي المحرر حتى تزيح المعاينة
+  // بنفس المقدار بالضبط
+  sidebarWidth: number
 }
 
 const EditModeContext = createContext<EditModeValue>({
@@ -105,6 +118,9 @@ const EditModeContext = createContext<EditModeValue>({
   registerDefaultText: () => {},
   addCustomText: () => {},
   addCustomSection: () => {},
+  activeTab: null,
+  setActiveTab: () => {},
+  sidebarWidth: 0,
 })
 
 export function useEditMode() {
@@ -176,8 +192,23 @@ export function EditModeProvider({
   const [styles, setStyles] = useState<Record<string, TextStyle>>(
     initialStyles,
   )
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedIdRaw] = useState<string | null>(null)
   const [defaultTexts, setDefaultTexts] = useState<Record<string, string>>({})
+  const [activeTab, setActiveTab] = useState<SidebarTab | null>(null)
+
+  // تحديد أي عنصر مباشرة بالتصميم (نص/خلفية/أيقونة) يفتح تبويب "الخصائص"
+  // بشريط الأيقونات تلقائيًا — بالضبط زي ما يصير بفيغما/كانفا لما تضغط على
+  // عنصر بلوحة الرسم. إلغاء التحديد (id = null) يقفل التبويب لو كان
+  // "الخصائص" هو المفتوح حاليًا (ما نلمس تبويب ثاني فتحه الأدمن يدويًا،
+  // مثل "العناصر" أو "التصميم")
+  const setSelectedId = (id: string | null) => {
+    setSelectedIdRaw(id)
+    if (id) {
+      setActiveTab("properties")
+    } else {
+      setActiveTab((prev) => (prev === "properties" ? null : prev))
+    }
+  }
 
   const updateStyle = (id: string, patch: Partial<TextStyle>) => {
     setStyles((prev) => {
@@ -220,6 +251,8 @@ export function EditModeProvider({
     setSelectedId(id)
   }
 
+  const sidebarWidth = editable ? RAIL_WIDTH + (activeTab ? FLYOUT_WIDTH : 0) : 0
+
   return (
     <EditModeContext.Provider
       value={{
@@ -234,6 +267,9 @@ export function EditModeProvider({
         registerDefaultText,
         addCustomText,
         addCustomSection,
+        activeTab,
+        setActiveTab,
+        sidebarWidth,
       }}
     >
       {children}
@@ -784,7 +820,11 @@ export function EditableIcon({
 // تعرض عناصر التحكم المناسبة حسب نوع العنصر المحدد حاليًا (نص أو خلفية).
 // ============================================================================
 
-export const PANEL_WIDTH = 268
+// عرض شريط الأيقونات الثابت (زي شريط Canva الجانبي) + عرض اللوحة الفرعية
+// (flyout) اللي تنفتح بجانبه لما تختار تبويب. الاثنين يتجمعوا بـ sidebarWidth
+// بالسياق فوق حتى تعرف الصفحة اللي تحتوي المحرر كم تزيح المعاينة.
+export const RAIL_WIDTH = 84
+export const FLYOUT_WIDTH = 280
 
 function swatchStyle(color: string, active: boolean): React.CSSProperties {
   return {
@@ -824,6 +864,16 @@ function PanelSection({
   )
 }
 
+// تعريف تبويبات شريط الأيقونات — نفس فكرة شريط Canva الجانبي (أيقونة +
+// تسمية تحتها). "properties" ينفتح تلقائيًا لما تحدد عنصر بالتصميم
+// مباشرة (شوف setSelectedId بالمزوّد فوق)، والبقية تنفتح يدويًا بالضغط.
+const SIDEBAR_TABS: { id: SidebarTab; icon: string; label: string }[] = [
+  { id: "text", icon: "🔤", label: "النص" },
+  { id: "insert", icon: "🧩", label: "العناصر" },
+  { id: "background", icon: "🎨", label: "التصميم" },
+  { id: "properties", icon: "⚙️", label: "الخصائص" },
+]
+
 export function EditPanel() {
   const {
     editable,
@@ -834,10 +884,15 @@ export function EditPanel() {
     defaultTexts,
     updateStyle,
     resetStyle,
+    activeTab,
+    setActiveTab,
+    addCustomText,
+    addCustomSection,
   } = useEditMode()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [uploadingFont, setUploadingFont] = useState(false)
   const [customColor, setCustomColor] = useState("#B8862F")
+  const [pageBgCustomColor, setPageBgCustomColor] = useState("#FBF3EF")
 
   if (!editable) return null
 
@@ -914,6 +969,40 @@ export function EditPanel() {
     cursor: "pointer",
   }
 
+  const tabTitles: Record<SidebarTab, string> = {
+    text: "النص",
+    insert: "العناصر",
+    background: "التصميم",
+    properties: "الخصائص",
+  }
+
+  const pageBgKey = BG_PREFIX + "pageBg"
+  const pageBgStyle = styles[pageBgKey] || {}
+
+  const flyoutHeaderStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  }
+
+  const primaryBtnStyle: React.CSSProperties = {
+    ...smallBtnStyle,
+    width: "100%",
+    padding: "10px 12px",
+    background: "#B8862F",
+    color: "#1A1210",
+    fontWeight: 700,
+    textAlign: "center",
+  }
+
+  const hintTextStyle: React.CSSProperties = {
+    fontSize: 11.5,
+    color: "#B8A99A",
+    lineHeight: 1.8,
+    marginTop: 10,
+  }
+
   return (
     <div
       style={{
@@ -921,48 +1010,200 @@ export function EditPanel() {
         top: 0,
         insetInlineStart: 0,
         height: "100%",
-        width: PANEL_WIDTH,
-        background: "#1A1210",
-        borderInlineEnd: "1px solid #B8862F3D",
+        display: "flex",
         zIndex: 520,
-        overflowY: "auto",
-        padding: "70px 16px 24px",
-        boxShadow: "4px 0 24px rgba(0,0,0,.35)",
         fontFamily: "Cairo, sans-serif",
       }}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* شريط الأيقونات الثابت — نفس فكرة شريط Canva الجانبي: أيقونة +
+          تسمية تحتها، وتضغط عليها فتفتح/تقفل اللوحة الفرعية بجانبها */}
       <div
         style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: "#F1D989",
-          marginBottom: 4,
+          width: RAIL_WIDTH,
+          height: "100%",
+          background: "#150E0C",
+          borderInlineEnd: "1px solid #B8862F3D",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          paddingTop: 78,
+          gap: 4,
+          flexShrink: 0,
         }}
       >
-        خصائص العنصر
+        {SIDEBAR_TABS.map((tab) => {
+          const isActive = activeTab === tab.id
+          const isDisabled = tab.id === "properties" && !selectedId
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => setActiveTab(isActive ? null : tab.id)}
+              style={{
+                width: 64,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                padding: "10px 4px",
+                borderRadius: 12,
+                border: "none",
+                cursor: isDisabled ? "default" : "pointer",
+                background: isActive ? "#2A211D" : "transparent",
+                opacity: isDisabled ? 0.4 : 1,
+              }}
+            >
+              <span style={{ fontSize: 19, lineHeight: 1 }}>{tab.icon}</span>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? "#F1D989" : "#D8C7BE",
+                }}
+              >
+                {tab.label}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
-      {!selectedId ? (
-        <div style={{ fontSize: 12, color: "#B8A99A", lineHeight: 1.8, marginTop: 12 }}>
-          اضغط على أي نص أو خلفية بالتصميم حتى تظهر خصائصه هنا — تقدر تغيّر
-          لونه، تخفيه، تكبّره، أو تغيّر خطه.
-        </div>
-      ) : (
-        <>
-          <div
-            style={{
-              fontSize: 10,
-              color: "#8C6B6F",
-              marginBottom: 18,
-              wordBreak: "break-all",
-            }}
-          >
-            {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : isCustom || isSection ? "" : "نص: "}
-            {plainId}
+      {/* اللوحة الفرعية (flyout) — تنفتح بجانب الشريط لما تختار تبويب، وتاخذ
+          مساحتها الخاصة (مو عائمة فوق المعاينة) حتى ما تحجب أي شي */}
+      {activeTab && (
+        <div
+          style={{
+            width: FLYOUT_WIDTH,
+            height: "100%",
+            background: "#1A1210",
+            borderInlineEnd: "1px solid #B8862F3D",
+            overflowY: "auto",
+            padding: "70px 16px 24px",
+            boxShadow: "4px 0 24px rgba(0,0,0,.35)",
+            flexShrink: 0,
+          }}
+        >
+          <div style={flyoutHeaderStyle}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#F1D989" }}>
+              {tabTitles[activeTab]}
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#B8A99A",
+                fontSize: 16,
+                cursor: "pointer",
+                lineHeight: 1,
+                padding: 4,
+              }}
+              aria-label="إغلاق اللوحة"
+            >
+              ✕
+            </button>
           </div>
 
-          {!isBg && !isIcon && !isSection && (
+          {activeTab === "text" && (
+            <>
+              <button type="button" onClick={addCustomText} style={primaryBtnStyle}>
+                ✚ إضافة مربع نص جديد
+              </button>
+              <div style={hintTextStyle}>
+                يضيف مربع نص فوق التصميم تقدر تكتب فيه وتسحبه لأي مكان. أو
+                اضغط على أي نص موجود بالتصميم مباشرة حتى يفتح تبويب
+                "الخصائص" وتقدر تعدّله من هناك.
+              </div>
+            </>
+          )}
+
+          {activeTab === "insert" && (
+            <>
+              <button type="button" onClick={addCustomSection} style={primaryBtnStyle}>
+                ➕ إضافة قسم جديد
+              </button>
+              <div style={hintTextStyle}>
+                يضيف قسمًا كاملاً بعرض الشاشة بآخر الدعوة (بعد كل الأقسام
+                الجاهزة)، وتقدر تغيّر لونه وارتفاعه بعد إضافته من تبويب
+                "الخصائص".
+              </div>
+            </>
+          )}
+
+          {activeTab === "background" && (
+            <>
+              <PanelSection title="لون خلفية الدعوة كاملة">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {COLOR_PRESETS.map((c) => (
+                    <span
+                      key={c}
+                      onClick={() => updateStyle(pageBgKey, { color: c })}
+                      style={swatchStyle(c, pageBgStyle.color === c)}
+                      title={c}
+                    />
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    type="color"
+                    value={pageBgStyle.color || pageBgCustomColor}
+                    onChange={(e) => {
+                      setPageBgCustomColor(e.target.value)
+                      updateStyle(pageBgKey, { color: e.target.value })
+                    }}
+                    style={{
+                      width: 34,
+                      height: 30,
+                      border: "1px solid #B8862F55",
+                      borderRadius: 6,
+                      background: "transparent",
+                      cursor: "pointer",
+                      padding: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: 11, color: "#B8A99A" }}>لون حر</span>
+                  {pageBgStyle.color && (
+                    <button
+                      type="button"
+                      onClick={() => resetStyle(pageBgKey)}
+                      style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
+                    >
+                      ↺ الأصلي
+                    </button>
+                  )}
+                </div>
+              </PanelSection>
+              <div style={hintTextStyle}>
+                لتغيير لون قسم معيّن بس (مو الدعوة كاملة)، اضغط عليه مباشرة
+                بالتصميم فيفتح تبويب "الخصائص".
+              </div>
+            </>
+          )}
+
+          {activeTab === "properties" &&
+            (!selectedId ? (
+              <div style={{ fontSize: 12, color: "#B8A99A", lineHeight: 1.8, marginTop: 4 }}>
+                اضغط على أي نص أو خلفية بالتصميم حتى تظهر خصائصه هنا — تقدر
+                تغيّر لونه، تخفيه، تكبّره، أو تغيّر خطه.
+              </div>
+            ) : (
+              <>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#8C6B6F",
+                    marginBottom: 18,
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : isCustom || isSection ? "" : "نص: "}
+                  {plainId}
+                </div>
+
+                {!isBg && !isIcon && !isSection && (
             <PanelSection title="النص">
               <textarea
                 value={st.text ?? defaultTexts[selectedId] ?? ""}
@@ -1302,7 +1543,9 @@ export function EditPanel() {
           >
             إلغاء التحديد
           </button>
-        </>
+              </>
+            ))}
+        </div>
       )}
     </div>
   )
