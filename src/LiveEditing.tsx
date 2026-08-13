@@ -73,6 +73,14 @@ const DEFAULT_SECTION_HEIGHT = 220
 const MIN_SECTION_HEIGHT = 80
 const MAX_SECTION_HEIGHT = 900
 
+// أقسام القالب الأساسية الجاهزة (الافتتاحية، العد التنازلي، برنامج
+// الحفل...) — كل قالب (وصال/لمسة) يلف كل قسم أساسي فيه بمكوّن
+// ReorderableSection ومعرّف ثابت مسبوق بـ"core:"، حتى يقدر الأدمن يبدّل
+// ترتيبها فيما بينها من لوحة الخصائص (زر تحديد صغير يطلع فوق كل قسم بوضع
+// التعديل). القيمة (order) تتخزّن بنفس كائن الأنماط العام مثل باقي
+// العناصر، فما تحتاج عمود قاعدة بيانات جديد.
+export const CORE_SECTION_PREFIX = "core:"
+
 // ترتيب معرّفات الأقسام المُضافة يدويًا: نعتمد على حقل order الصريح إذا
 // كان موجود على القسمين المُقارَنين (يتغيّر بأزرار نقل لأعلى/أسفل)، وإلا
 // نرجع لنفس الترتيب الزمني القديم حسب المعرّف (وقت الإضافة) — بذا الأقسام
@@ -135,6 +143,19 @@ interface EditModeValue {
   // (يبدّل ترتيبه مع القسم المجاور بنفس الاتجاه مباشرة). بدون تأثير لو
   // كان أول قسم وطلبت "لأعلى"، أو آخر قسم وطلبت "لأسفل"
   moveSection: (id: string, direction: "up" | "down") => void
+  // سجل أقسام القالب الأساسية الجاهزة المُركّبة حاليًا (وصال أو لمسة) —
+  // كل قسم يسجّل نفسه فيه تلقائيًا (معرّفه، تسمية عربية له، وترتيبه
+  // الافتراضي) عبر registerCoreSection وقت رسمه. نعتمد عليه حتى نعرف قائمة
+  // الأقسام الأساسية الحالية وترتيبها الافتراضي بدون ما نربط هالملف بأي
+  // قالب معيّن
+  coreSections: Record<string, { label: string; index: number }>
+  registerCoreSection: (id: string, label: string, index: number) => void
+  // يبدّل ترتيب قسم أساسي جاهز مع القسم الأساسي المجاور بنفس الاتجاه —
+  // نفس فكرة moveSection بالضبط بس مصدر قائمة الأقسام هنا coreSections
+  // (مسجّلة تلقائيًا) بدل مفاتيح كائن الأنماط (لأن الأقسام الأساسية موجودة
+  // دائمًا، بعكس الأقسام المُضافة يدويًا اللي وجودها بالأنماط هو دليل
+  // وجودها أصلاً)
+  moveCoreSection: (id: string, direction: "up" | "down") => void
   // تراجع/إعادة لآخر تعديل على الأنماط (styles) — يغطي كل التغييرات: نص،
   // لون، حجم، موضع، إضافة/حذف عنصر... إلخ. مفعّلة باختصارات لوحة المفاتيح
   // (Ctrl/Cmd+Z للتراجع، Ctrl/Cmd+Shift+Z أو Ctrl/Cmd+Y للإعادة) وبزرين
@@ -168,6 +189,9 @@ const EditModeContext = createContext<EditModeValue>({
   addCustomImage: () => {},
   addCustomSection: () => {},
   moveSection: () => {},
+  coreSections: {},
+  registerCoreSection: () => {},
+  moveCoreSection: () => {},
   undo: () => {},
   redo: () => {},
   canUndo: false,
@@ -249,6 +273,9 @@ export function EditModeProvider({
   const [selectedId, setSelectedIdRaw] = useState<string | null>(null)
   const [defaultTexts, setDefaultTexts] = useState<Record<string, string>>({})
   const [activeTab, setActiveTab] = useState<SidebarTab | null>(null)
+  const [coreSections, setCoreSections] = useState<
+    Record<string, { label: string; index: number }>
+  >({})
 
   // سجل التراجع/الإعادة — كل عنصر عبارة عن "لقطة" كاملة لكائن الأنماط قبل
   // تعديل معيّن. نحتفظ بمرجع (ref) يواكب آخر قيمة لـ styles أول بأول حتى
@@ -424,6 +451,46 @@ export function EditModeProvider({
     })
   }
 
+  // كل قسم أساسي (ReorderableSection) يسجّل نفسه هنا وقت رسمه — نتفادى أي
+  // تحديث/رسم إضافي لو نفس المعلومات مسجّلة مسبقًا (نفس القالب ما يتغيّر
+  // بمنتصف جلسة تعديل وحدة أصلاً، بس نحتاط لإعادة الرسم العادية)
+  const registerCoreSection = (id: string, label: string, index: number) => {
+    setCoreSections((prev) => {
+      const existing = prev[id]
+      if (existing && existing.label === label && existing.index === index) return prev
+      return { ...prev, [id]: { label, index } }
+    })
+  }
+
+  // نفس فكرة moveSection بالضبط، بس قائمة الأقسام هنا مصدرها سجل
+  // coreSections (الأقسام الأساسية مسجّلة دائمًا بغض النظر عن وجودها
+  // بكائن الأنماط من عدمه)، وترتيبها الافتراضي هو index وقت التسجيل لو ما
+  // كان لها order صريح بعد
+  const moveCoreSection = (id: string, direction: "up" | "down") => {
+    const sortedIds = Object.keys(coreSections).sort((a, b) => {
+      const oa = stylesRef.current[a]?.order ?? coreSections[a].index
+      const ob = stylesRef.current[b]?.order ?? coreSections[b].index
+      return oa - ob
+    })
+    const idx = sortedIds.indexOf(id)
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1
+    if (idx === -1 || swapIdx < 0 || swapIdx >= sortedIds.length) return
+    pushHistory()
+    setStyles((prev) => {
+      const next = { ...prev }
+      sortedIds.forEach((key, i) => {
+        next[key] = { ...next[key], order: i }
+      })
+      const a = sortedIds[idx]
+      const b = sortedIds[swapIdx]
+      const orderA = next[a].order
+      next[a] = { ...next[a], order: next[b].order }
+      next[b] = { ...next[b], order: orderA }
+      onStylesChange?.(next)
+      return next
+    })
+  }
+
   const sidebarWidth = editable ? RAIL_WIDTH + (activeTab ? FLYOUT_WIDTH : 0) : 0
 
   return (
@@ -443,6 +510,9 @@ export function EditModeProvider({
         addCustomImage,
         addCustomSection,
         moveSection,
+        coreSections,
+        registerCoreSection,
+        moveCoreSection,
         undo,
         redo,
         canUndo: past.length > 0,
@@ -464,6 +534,73 @@ export function DeselectSurface({ children }: { children: ReactNode }) {
   if (!editable) return <>{children}</>
   return (
     <div className="w-full h-full" onClick={() => setSelectedId(null)}>
+      {children}
+    </div>
+  )
+}
+
+// يلف أي قسم أساسي جاهز بالقالب (الافتتاحية، العد التنازلي، برنامج
+// الحفل...) ويسجّله بسجل coreSections تلقائيًا وقت رسمه، حتى يقدر الأدمن
+// يبدّل ترتيبه مع باقي الأقسام الأساسية من لوحة الخصائص. بوضع المعاينة
+// العادي (editable=false) ما يضيف أي عنصر إضافي للـ DOM — يرجّع
+// children كما هي مباشرة، بدون أي تأثير على تصميم القالب للضيف.
+// آلية الترتيب نفسها: خاصية CSS "order" (تحتاج الحاوية الأب تكون
+// display:flex بالاتجاه العمودي حتى تشتغل — القالبين معدّلين لذلك أصلاً)
+// بدل إعادة ترتيب الـ JSX فعليًا، حتى يبقى كل قسم بمكانه بالكود ونتفادى
+// أي تعقيد إضافي بمنطق كل قسم الداخلي (state، refs...).
+export function ReorderableSection({
+  id,
+  label,
+  index,
+  children,
+}: {
+  id: string
+  label: string
+  index: number
+  children: ReactNode
+}) {
+  const { editable, styles, selectedId, setSelectedId, registerCoreSection } = useEditMode()
+
+  useEffect(() => {
+    if (editable) registerCoreSection(id, label, index)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable, id, label, index])
+
+  if (!editable) return <>{children}</>
+
+  const order = styles[id]?.order ?? index
+  const isSelected = selectedId === id
+
+  return (
+    <div className="relative w-full" style={{ order }}>
+      {/* شارة صغيرة "لاصقة" (sticky) تبقى ظاهرة طول ما القسم على الشاشة،
+          الضغط عليها يحدد القسم كامل فتفتح لوحة الخصائص بزر "▲ لأعلى /
+          ▼ لأسفل" لتحريكه */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          setSelectedId(id)
+        }}
+        className="absolute z-40 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white border backdrop-blur-sm shadow-lg"
+        style={{
+          position: "sticky",
+          top: 8,
+          insetInlineStart: 8,
+          background: isSelected ? "#3B82F6" : "rgba(0,0,0,0.55)",
+          borderColor: isSelected ? "#3B82F6" : "rgba(255,255,255,0.25)",
+          fontFamily: "Cairo, sans-serif",
+        }}
+        title={`تحريك قسم: ${label}`}
+      >
+        ✥ {label}
+      </button>
+      {isSelected && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ boxShadow: "inset 0 0 0 3px #3B82F6", zIndex: 35 }}
+        />
+      )}
       {children}
     </div>
   )
@@ -1313,6 +1450,8 @@ export function EditPanel() {
     addCustomImage,
     addCustomSection,
     moveSection,
+    coreSections,
+    moveCoreSection,
     undo,
     redo,
     canUndo,
@@ -1332,12 +1471,24 @@ export function EditPanel() {
   const isCustom = !!selectedId?.startsWith(CUSTOM_PREFIX)
   const isSection = !!selectedId?.startsWith(SECTION_PREFIX)
   const isImage = !!selectedId?.startsWith(CUSTOM_IMAGE_PREFIX)
+  const isCoreSection = !!selectedId?.startsWith(CORE_SECTION_PREFIX)
   // ترتيب القسم المحدد حاليًا بين باقي الأقسام — نحتاجه حتى نعطّل زر
   // "لأعلى" لو كان أول قسم، وزر "لأسفل" لو كان آخر قسم
   const sectionIds = isSection
     ? sortSectionIds(Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX)), styles)
     : []
   const sectionIndex = isSection && selectedId ? sectionIds.indexOf(selectedId) : -1
+  // نفس فكرة sectionIndex بالضبط بس للأقسام الأساسية الجاهزة بالقالب
+  // (سجل coreSections بدل مفاتيح الأنماط)
+  const coreSectionIds = isCoreSection
+    ? Object.keys(coreSections).sort((a, b) => {
+        const oa = styles[a]?.order ?? coreSections[a].index
+        const ob = styles[b]?.order ?? coreSections[b].index
+        return oa - ob
+      })
+    : []
+  const coreSectionIndex =
+    isCoreSection && selectedId ? coreSectionIds.indexOf(selectedId) : -1
   const plainId = isBg
     ? selectedId!.slice(BG_PREFIX.length)
     : isIcon
@@ -1348,7 +1499,9 @@ export function EditPanel() {
           ? "قسم مُضاف يدويًا"
           : isImage
             ? "صورة مُضافة يدويًا"
-            : selectedId
+            : isCoreSection
+              ? coreSections[selectedId!]?.label || selectedId
+              : selectedId
   const st = selectedId ? styles[selectedId] || {} : {}
   const ICON_MIN_PCT = 40
   const ICON_MAX_PCT = 220
@@ -1758,8 +1911,78 @@ export function EditPanel() {
             (!selectedId ? (
               <div style={{ fontSize: 12, color: "#B8A99A", lineHeight: 1.8, marginTop: 4 }}>
                 اضغط على أي نص أو خلفية بالتصميم حتى تظهر خصائصه هنا — تقدر
-                تغيّر لونه، تخفيه، تكبّره، أو تغيّر خطه.
+                تغيّر لونه، تخفيه، تكبّره، أو تغيّر خطه. تقدر أيضًا تضغط على
+                الشارة الصغيرة (✥) أعلى أي قسم أساسي حتى تبدّل ترتيبه.
               </div>
+            ) : isCoreSection ? (
+              <>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "#8C6B6F",
+                    marginBottom: 18,
+                    wordBreak: "break-all",
+                  }}
+                >
+                  قسم أساسي: {plainId}
+                </div>
+
+                <PanelSection title="الترتيب بين الأقسام">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      style={{
+                        ...smallBtnStyle,
+                        opacity: coreSectionIndex <= 0 ? 0.4 : 1,
+                        cursor: coreSectionIndex <= 0 ? "default" : "pointer",
+                      }}
+                      disabled={coreSectionIndex <= 0}
+                      onClick={() => moveCoreSection(selectedId!, "up")}
+                    >
+                      ▲ لأعلى
+                    </button>
+                    <button
+                      type="button"
+                      style={{
+                        ...smallBtnStyle,
+                        opacity:
+                          coreSectionIndex === -1 || coreSectionIndex >= coreSectionIds.length - 1
+                            ? 0.4
+                            : 1,
+                        cursor:
+                          coreSectionIndex === -1 || coreSectionIndex >= coreSectionIds.length - 1
+                            ? "default"
+                            : "pointer",
+                      }}
+                      disabled={
+                        coreSectionIndex === -1 || coreSectionIndex >= coreSectionIds.length - 1
+                      }
+                      onClick={() => moveCoreSection(selectedId!, "down")}
+                    >
+                      ▼ لأسفل
+                    </button>
+                  </div>
+                </PanelSection>
+
+                <div style={hintTextStyle}>
+                  هذا قسم جاهز بالقالب — تقدر تبدّل ترتيبه بين باقي الأقسام
+                  الأساسية بس، مو حذفه. لتغيير لونه أو نصوصه، اضغط على
+                  العنصر نفسه بالتصميم مباشرة.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(null)}
+                  style={{
+                    ...smallBtnStyle,
+                    width: "100%",
+                    marginTop: 8,
+                    background: "transparent",
+                  }}
+                >
+                  إلغاء التحديد
+                </button>
+              </>
             ) : (
               <>
                 <div
@@ -2270,7 +2493,11 @@ export function CustomSectionsLayer() {
   )
   if (ids.length === 0) return null
   return (
-    <>
+    // order كبير جدًا حتى تبقى هالأقسام دائمًا بعد كل الأقسام الأساسية
+    // الجاهزة بالقالب، حتى لو الأدمن بدّل ترتيبها فيما بينها (شوف
+    // ReorderableSection فوق — الحاوية الأب display:flex عمودي، فخاصية
+    // order هي اللي تتحكم بالترتيب الفعلي الظاهر مو ترتيب الـ JSX)
+    <div style={{ order: 9999 }}>
       {ids.map((key) => {
         const st = styles[key] || {}
         const isSelected = selectedId === key
@@ -2296,7 +2523,7 @@ export function CustomSectionsLayer() {
           />
         )
       })}
-    </>
+    </div>
   )
 }
 
