@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Invitation } from "./types"
 import { WisalTemplateView } from "./WisalTemplateView"
-import { LamsaTemplateView } from "./LamsaTemplateView"
 import {
   EditModeProvider,
   DeselectSurface,
@@ -58,11 +57,7 @@ function EditorShell({
             transition: "padding-inline-start .15s ease",
           }}
         >
-          {inv.templateType === "wisal" ? (
-            <WisalTemplateView inv={inv} />
-          ) : (
-            <LamsaTemplateView inv={inv} />
-          )}
+          <WisalTemplateView inv={inv} />
         </div>
       </DeselectSurface>
       <EditPanel />
