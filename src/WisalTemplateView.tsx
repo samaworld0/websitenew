@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomSectionsLayer } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomImageLayer, CustomSectionsLayer } from "./LiveEditing"
 
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
 // لما يوصله السكرول — أنيميشن خفيف ولطيف بدون أي مكتبات خارجية.
@@ -346,6 +346,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               بالشاشة الأولى (القسم الأول وحده overflow-hidden فيقص أي شي
               ينسحب برّا حدوده) */}
           <CustomTextLayer />
+          <CustomImageLayer />
 
           {/* القسم الأول مع الخلفية والزهور — يعرض الفيديو لو الأدمن رفع
               واحد (doorBgVideo)، وإلا يعرض صورة الخلفية (heroBg) فقط.
