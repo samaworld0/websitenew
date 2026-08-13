@@ -24,9 +24,8 @@ export interface Invitation {
   verse: string
   sheetId?: string
   sheetUrl?: string
-  // حقول اختيارية خاصة بقالب "وصال" (باب متحرك) — لو الدعوة تستخدمه
-  // أو قالب "لمسة" (خطوبة بدون فيديو، تصميم CSS فقط)
-  templateType?: "wisal" | "lamsa"
+  // حقل اختياري خاص بقالب "وصال" (باب متحرك) — لو الدعوة تستخدمه
+  templateType?: "wisal"
   heroBg?: string
   doorBgVideo?: string
   introVideo?: string
