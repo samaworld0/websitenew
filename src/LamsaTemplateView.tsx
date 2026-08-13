@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_LAMSA_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomImageLayer, CustomSectionsLayer } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomImageLayer, CustomSectionsLayer, ReorderableSection } from "./LiveEditing"
 
 // نفس فكرة الظهور التدريجي عند السكرول المستخدمة بقالب "وصال"
 function useRevealOnScroll(active: boolean) {
@@ -240,7 +240,7 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
         style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
       >
         <div
-          className={`relative transition-all duration-1000 w-full ${
+          className={`relative transition-all duration-1000 w-full flex flex-col ${
             isOpen ? "opacity-100" : "opacity-0"
           }`}
         >
@@ -252,6 +252,12 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
           <CustomTextLayer />
           <CustomImageLayer />
 
+          {/* الأقسام الأساسية الأربعة بالقالب ملفوفة بـReorderableSection
+              حتى يقدر الأدمن يبدّل ترتيبها من لوحة الخصائص (خاصية CSS
+              "order" — الحاوية الأب فوق display:flex عمودي لأجل هذا). كل
+              قسم يحتفظ بنفس محتواه بالضبط، بس صار له معرّف ثابت وترتيب
+              افتراضي (index) يعتمد عليه لو الأدمن ما حرّكه أبدًا. */}
+          <ReorderableSection id="core:hero" label="الافتتاحية" index={0}>
           {/* القسم الأول — خلفية متدرجة (صورة اختيارية + تدرج وردي/ذهبي CSS)، مع فيديو خلفية اختياري فوقها لو الأدمن رفع واحد */}
           <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDF6F2] animate-[lamsaFadeInUp_1s] bg-cover bg-center bg-black"
@@ -357,9 +363,11 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
           >
             <div className="h-[80px]" />
           </EditableBackground>
+          </ReorderableSection>
 
-          <div className="w-full bg-[#FBF3EF] text-[#3D2B2E] relative z-20">
-            <section className="py-24 px-6 flex flex-col items-center">
+          <ReorderableSection id="core:countdown" label="العد التنازلي" index={1}>
+          <div className="w-full">
+            <section className="py-24 px-6 flex flex-col items-center bg-[#FBF3EF] text-[#3D2B2E] relative z-20">
               <div className="text-center w-full max-w-lg mb-16 lamsa-reveal">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A2B32] mb-10 lamsa-heading">
                   <EditableText id="countdownHeading">باقي على خطوبتنا</EditableText>
@@ -411,13 +419,16 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                 </div>
               </div>
             </section>
+          </div>
+          </ReorderableSection>
 
+          <ReorderableSection id="core:program" label="برنامج الحفل والمكان" index={2}>
             {/* برنامج الحفل والمكان — خلفية عنّابية مع خط ذهبي فاصل،
                 والزهرة الحمراء بالمنتصف تتحرك رأسياً حسب نسبة تقدم السكرول */}
             <EditableBackground
               id="programSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A9A0]"
+              className="py-20 px-6 flex flex-col items-center bg-[#5C2A38] text-[#F5E9E4] border-t-2 border-[#C9A9A0] relative z-20"
             >
               <div className="text-center max-w-lg w-full mb-24 lamsa-reveal">
                 <h3 className="text-3xl font-bold text-[#F1D4B8] mb-12 lamsa-heading">
@@ -533,12 +544,14 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                 </EditableText>
               </div>
             </EditableBackground>
+          </ReorderableSection>
 
+          <ReorderableSection id="core:rsvp" label="تأكيد الحضور" index={3}>
             {/* قسم تأكيد الحضور */}
             <EditableBackground
               id="rsvpSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#FBF3EF] border-t-2 border-[#8C6B6F]"
+              className="py-20 px-6 flex flex-col items-center bg-[#FBF3EF] border-t-2 border-[#8C6B6F] relative z-20"
             >
               <EditableBackground
                 id="rsvpCardBg"
@@ -678,10 +691,11 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
                 )}
               </EditableBackground>
             </EditableBackground>
-          </div>
+          </ReorderableSection>
 
           {/* الأقسام اللي يضيفها الأدمن يدويًا (زر "➕ إضافة قسم") — تنضاف
-              دائمًا بعد كل الأقسام الجاهزة أعلاه */}
+              دائمًا بعد كل الأقسام الجاهزة أعلاه (بغض النظر عن ترتيب
+              الأقسام الأساسية فوق — order:9999 داخل CustomSectionsLayer) */}
           <CustomSectionsLayer />
         </div>
       </div>
