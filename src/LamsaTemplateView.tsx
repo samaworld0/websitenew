@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_LAMSA_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, CustomTextLayer } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomSectionsLayer } from "./LiveEditing"
 
 // نفس فكرة الظهور التدريجي عند السكرول المستخدمة بقالب "وصال"
 function useRevealOnScroll(active: boolean) {
@@ -678,6 +678,10 @@ export function LamsaTemplateView({ inv }: { inv: Invitation }) {
               </EditableBackground>
             </EditableBackground>
           </div>
+
+          {/* الأقسام اللي يضيفها الأدمن يدويًا (زر "➕ إضافة قسم") — تنضاف
+              دائمًا بعد كل الأقسام الجاهزة أعلاه */}
+          <CustomSectionsLayer />
         </div>
       </div>
 
