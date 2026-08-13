@@ -49,6 +49,15 @@ const ICON_PREFIX = "icon:"
 // عنصر مكتوب مسبقًا بالقالب، فكل معلوماتها (النص نفسه، موضعها، لونها...)
 // تتخزّن بالكامل تحت مفتاح مسبوق بـ"custom:"، وتُعرض عبر CustomTextLayer
 export const CUSTOM_PREFIX = "custom:"
+// أقسام جديدة يضيفها الأدمن يدويًا (زر "➕ إضافة قسم") — كل قسم عبارة عن
+// صندوق بعرض الشاشة كامل، ياخذ مساحة حقيقية بترتيب الصفحة (مو عائم زي
+// النصوص المُضافة)، ينضاف بآخر الدعوة بعد كل الأقسام الجاهزة. لونه يتخزّن
+// بحقل color العادي وارتفاعه بحقل size (كبكسل)، بنفس كائن الأنماط، بمفتاح
+// مسبوق بـ"section:"
+export const SECTION_PREFIX = "section:"
+const DEFAULT_SECTION_HEIGHT = 220
+const MIN_SECTION_HEIGHT = 80
+const MAX_SECTION_HEIGHT = 900
 
 // يحوّل شجرة children لنص عادي (يهتم بالنصوص الفعلية بس، يتجاهل أي عنصر
 // زخرفي متداخل) — نستخدمه حتى نعرف "النص الأصلي" الحالي لأي EditableText
@@ -79,6 +88,9 @@ interface EditModeValue {
   // يضيف مربع نص جديد فوق التصميم ويحدده فورًا حتى يقدر الأدمن يكتب فيه
   // ويسحبه لأي مكان
   addCustomText: () => void
+  // يضيف قسم جديد بآخر الدعوة (بعد كل الأقسام الجاهزة) ويحدده فورًا حتى
+  // يقدر الأدمن يغيّر لونه/ارتفاعه من لوحة الخصائص مباشرة
+  addCustomSection: () => void
 }
 
 const EditModeContext = createContext<EditModeValue>({
@@ -92,6 +104,7 @@ const EditModeContext = createContext<EditModeValue>({
   resetStyle: () => {},
   registerDefaultText: () => {},
   addCustomText: () => {},
+  addCustomSection: () => {},
 })
 
 export function useEditMode() {
@@ -197,6 +210,16 @@ export function EditModeProvider({
     setSelectedId(id)
   }
 
+  // معرّف فريد للقسم الجديد + ارتفاع ابتدائي معقول (بدون لون مخصص حتى
+  // ياخذ لون خلفي فاتح افتراضي من CustomSectionsLayer) — ونحدده فورًا حتى
+  // تفتح لوحة الخصائص عليه ويقدر الأدمن يغيّر لونه/ارتفاعه على طول
+  const addCustomSection = () => {
+    const id =
+      SECTION_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+    updateStyle(id, { size: DEFAULT_SECTION_HEIGHT })
+    setSelectedId(id)
+  }
+
   return (
     <EditModeContext.Provider
       value={{
@@ -210,6 +233,7 @@ export function EditModeProvider({
         resetStyle,
         registerDefaultText,
         addCustomText,
+        addCustomSection,
       }}
     >
       {children}
@@ -231,10 +255,28 @@ export function DeselectSurface({ children }: { children: ReactNode }) {
 
 const MIN_PX = 8
 const MAX_PX = 220
-// أقصى مسافة تحريك مسموحة (بكسل) بأي اتجاه — رقم كبير جداً عملياً يعني
-// حرية تحريك كاملة بأي مكان بالشاشة، مع بقاء حد أقصى احترازي بسيط يمنع بس
-// قيم تالفة/غير منطقية (لو انحفظت غلط) من تكسير التصميم بشكل متطرف
-const MAX_OFFSET = 4000
+// أقصى مسافة تحريك مسموحة (بالنسبة المئوية من عرض الشاشة) بأي اتجاه — رقم
+// كبير جداً عملياً يعني حرية تحريك كاملة بأي مكان، مع بقاء حد أقصى احترازي
+// بسيط يمنع بس قيم تالفة/غير منطقية (لو انحفظت غلط) من تكسير التصميم
+// بشكل متطرف
+const MAX_OFFSET = 500
+
+// إحداثيات السحب (x, y) تتخزّن كنسبة مئوية من عرض الشاشة، مو كبكسل ثابت —
+// حتى لو الأدمن سحب عنصر وهو يشتغل على شاشة كمبيوتر عريضة، نفس النسبة
+// تنطبّق صح على شاشة جوال ضيقة بدل ما تطلع القيمة المطلقة (مثلاً 300px)
+// نسبة ضخمة من عرض شاشة الجوال الصغيرة وتدفع العنصر برّه حدود الشاشة.
+// نستخدم عرض الشاشة (window.innerWidth) كمرجع للاتجاهين الأفقي والرأسي
+// معًا (بدل ارتفاع الحاوية اللي يختلف بشكل كبير وغير منطقي بسبب السكرول)
+// حتى تنسحب العناصر بنفس مقياس التكبير/التصغير بالاتجاهين بدون تشويه.
+function referenceWidth() {
+  return typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1200
+}
+function pxToPercent(px: number) {
+  return (px / referenceWidth()) * 100
+}
+function percentToPx(percent: number) {
+  return (percent / 100) * referenceWidth()
+}
 
 export function EditableText({
   id,
@@ -315,13 +357,17 @@ export function EditableText({
     // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
     // الحجم/الموضع/الخط/اللون المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية —
     // مع حد أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد)
-    // ما تطلع النص برّه حدود الشاشة
-    const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
-    const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
+    // ما تطلع النص برّه حدود الشاشة. القيم المحفوظة نسبة مئوية من عرض
+    // الشاشة، فنحوّلها لبكسل فعلي حسب عرض شاشة الجهاز الحالي (جوال أو
+    // كمبيوتر) — هذا اللي يخلي نفس الموضع يبان صح على كل المقاسات
+    const clampedXPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
+    const clampedYPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
+    const clampedX = percentToPx(clampedXPct)
+    const clampedY = percentToPx(clampedYPct)
     // لو النص انسحب لمكان بعيد عن موضعه الأصلي، نرفع طبقته (z-index) حتى
     // ما يختفي وراء القسم اللي بعده لما يتداخل بصرياً معه (القسم التالي له
     // خلفية خاصة تُرسم فوقه بترتيب DOM العادي وإلا)
-    const isMoved = clampedX !== 0 || clampedY !== 0
+    const isMoved = clampedXPct !== 0 || clampedYPct !== 0
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
@@ -437,10 +483,12 @@ export function EditableText({
       if (Math.abs(snapped - next) < 4) next = snapped % 360
       updateStyle(id, { rotation: next })
     } else {
-      const dx = ev.clientX - d.startX
-      const dy = ev.clientY - d.startY
-      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dx))
-      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dy))
+      // d.startX0/d.startY0 محفوظة كنسبة مئوية — نحوّل فرق حركة الماوس
+      // بالبكسل لنفس النسبة قبل ما نضيفه لهم، حتى يبقى كل شي بنفس الوحدة
+      const dxPct = pxToPercent(ev.clientX - d.startX)
+      const dyPct = pxToPercent(ev.clientY - d.startY)
+      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dxPct))
+      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dyPct))
       updateStyle(id, { x: nextX, y: nextY })
     }
   }
@@ -457,7 +505,9 @@ export function EditableText({
     ...(px ? { fontSize: `${px}px` } : null),
     ...(st.font ? { fontFamily: st.font } : null),
     ...(st.color ? { color: st.color } : null),
-    transform: `translate(${offX}px, ${offY}px)`,
+    // offX/offY نسبة مئوية من عرض الشاشة — نحوّلها لبكسل فعلي للعرض بوضع
+    // التعديل (نفس التحويل المطبّق بالمعاينة النهائية عند الضيف)
+    transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)`,
     ...(rotation ? { rotate: `${rotation}deg` } : null),
     display: "inline-block",
     position: "relative",
@@ -794,13 +844,16 @@ export function EditPanel() {
   const isBg = !!selectedId?.startsWith(BG_PREFIX)
   const isIcon = !!selectedId?.startsWith(ICON_PREFIX)
   const isCustom = !!selectedId?.startsWith(CUSTOM_PREFIX)
+  const isSection = !!selectedId?.startsWith(SECTION_PREFIX)
   const plainId = isBg
     ? selectedId!.slice(BG_PREFIX.length)
     : isIcon
       ? selectedId!.slice(ICON_PREFIX.length)
       : isCustom
         ? "نص مُضاف يدويًا"
-        : selectedId
+        : isSection
+          ? "قسم مُضاف يدويًا"
+          : selectedId
   const st = selectedId ? styles[selectedId] || {} : {}
   const ICON_MIN_PCT = 40
   const ICON_MAX_PCT = 220
@@ -905,11 +958,11 @@ export function EditPanel() {
               wordBreak: "break-all",
             }}
           >
-            {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : isCustom ? "" : "نص: "}
+            {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : isCustom || isSection ? "" : "نص: "}
             {plainId}
           </div>
 
-          {!isBg && !isIcon && (
+          {!isBg && !isIcon && !isSection && (
             <PanelSection title="النص">
               <textarea
                 value={st.text ?? defaultTexts[selectedId] ?? ""}
@@ -942,7 +995,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          {(!isBg) && (
+          {(!isBg && !isSection) && (
             <PanelSection title="الإظهار">
               <button
                 type="button"
@@ -960,7 +1013,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          {!isBg && (
+          {!isBg && !isSection && (
             <PanelSection title="الدوران">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
@@ -1006,7 +1059,39 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          <PanelSection title={isBg ? "لون الخلفية" : isIcon ? "اللون" : "لون النص"}>
+          {isSection && (
+            <PanelSection title="الارتفاع">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      size: Math.max(MIN_SECTION_HEIGHT, (st.size ?? DEFAULT_SECTION_HEIGHT) - 20),
+                    })
+                  }
+                >
+                  −
+                </button>
+                <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 50, textAlign: "center" }}>
+                  {Math.round(st.size ?? DEFAULT_SECTION_HEIGHT)}px
+                </span>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      size: Math.min(MAX_SECTION_HEIGHT, (st.size ?? DEFAULT_SECTION_HEIGHT) + 20),
+                    })
+                  }
+                >
+                  +
+                </button>
+              </div>
+            </PanelSection>
+          )}
+
+          <PanelSection title={isBg || isSection ? "لون الخلفية" : isIcon ? "اللون" : "لون النص"}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
               {COLOR_PRESETS.map((c) => (
                 <span
@@ -1080,7 +1165,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          {!isBg && !isIcon && (
+          {!isBg && !isIcon && !isSection && (
             <>
               <PanelSection title="حجم الخط">
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1186,9 +1271,9 @@ export function EditPanel() {
             type="button"
             onClick={() => {
               resetStyle(selectedId)
-              // النص المُضاف ما له "وضع أصلي" يرجع له — رجوعه هو حذفه
-              // بالكامل، فنلغي تحديده لأنه ما عاد موجود
-              if (isCustom) setSelectedId(null)
+              // النص/القسم المُضاف ما له "وضع أصلي" يرجع له — رجوعه هو
+              // حذفه بالكامل، فنلغي تحديده لأنه ما عاد موجود
+              if (isCustom || isSection) setSelectedId(null)
             }}
             style={{
               ...smallBtnStyle,
@@ -1198,7 +1283,11 @@ export function EditPanel() {
               fontWeight: 700,
             }}
           >
-            {isCustom ? "🗑 حذف هذا النص" : "↺ استرجاع الوضع الأصلي لهذا العنصر"}
+            {isSection
+              ? "🗑 حذف هذا القسم"
+              : isCustom
+                ? "🗑 حذف هذا النص"
+                : "↺ استرجاع الوضع الأصلي لهذا العنصر"}
           </button>
 
           <button
@@ -1240,6 +1329,22 @@ export function AddTextButton() {
   )
 }
 
+// زر "➕ إضافة قسم" — يوضع بشريط أدوات محرر التصميم (LiveTemplateEditor)
+export function AddSectionButton() {
+  const { editable, addCustomSection } = useEditMode()
+  if (!editable) return null
+  return (
+    <button
+      type="button"
+      onClick={addCustomSection}
+      className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#2A211D] text-[#F1D989] border border-[#B8862F]"
+      style={{ fontFamily: "Cairo, sans-serif" }}
+    >
+      ➕ إضافة قسم
+    </button>
+  )
+}
+
 // زر "🎨 لون خلفية الدعوة" — يوضع بشريط أدوات محرر التصميم (LiveTemplateEditor)
 // ويفتح مباشرة لوحة خصائص خلفية الصفحة الكاملة (bg:pageBg) بضغطة وحدة،
 // بدل ما يحتاج الأدمن يدوّر على فراغ فاضي بالتصميم يضغط عليه حتى يحددها
@@ -1257,6 +1362,53 @@ export function PageBackgroundButton() {
     >
       🎨 لون خلفية الدعوة
     </button>
+  )
+}
+
+// طبقة الأقسام المُضافة يدويًا — تُوضع مرة وحدة بآخر كل أقسام القالب
+// الجاهزة (بعد قسم تأكيد الحضور)، وكل قسم فيها ياخذ عرض الشاشة كامل
+// ومساحة حقيقية بترتيب الصفحة (بعكس النصوص المُضافة اللي تطفو فوق
+// التصميم بدون ما تاخذ مساحة). لونها قابل للتغيير من لوحة الخصائص مثل أي
+// خلفية عادية، وارتفاعها قابل للتحكم بزيادة/نقصان. ما نستخدم
+// EditableBackground هنا لأنها تضيف BG_PREFIX تلقائيًا لأي id تستقبله،
+// ومفتاح القسم هنا مسبوق أصلاً بـ SECTION_PREFIX — فنبني منطق التحديد
+// والتلوين يدويًا هنا بنفس فكرتها بالضبط.
+export function CustomSectionsLayer() {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const ids = Object.keys(styles)
+    .filter((k) => k.startsWith(SECTION_PREFIX))
+    // ترتيب زمني حسب وقت الإضافة (الجزء الأول من المعرّف مبني على
+    // Date.now().toString(36)) حتى تظهر الأقسام بنفس ترتيب إضافتها
+    .sort()
+  if (ids.length === 0) return null
+  return (
+    <>
+      {ids.map((key) => {
+        const st = styles[key] || {}
+        const isSelected = selectedId === key
+        return (
+          <section
+            key={key}
+            className="w-full"
+            style={{
+              height: st.size ?? DEFAULT_SECTION_HEIGHT,
+              backgroundColor: st.color || "#FBF3EF",
+              cursor: editable ? "pointer" : undefined,
+              boxShadow: isSelected ? "inset 0 0 0 3px #3B82F6" : "inset 0 0 0 0px transparent",
+              transition: "box-shadow .15s ease",
+            }}
+            onClick={
+              editable
+                ? (e) => {
+                    e.stopPropagation()
+                    setSelectedId(key)
+                  }
+                : undefined
+            }
+          />
+        )
+      })}
+    </>
   )
 }
 
