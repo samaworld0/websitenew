@@ -97,6 +97,7 @@ const MEDIA_FIELDS = [
   "introPoster",
   "musicUrl",
   "coverImage",
+  "logoUrl",
 ] as const
 
 // تحويل رابط Base64 (data:...) إلى File جاهز للرفع
@@ -178,6 +179,7 @@ function toDatabaseInvitation(inv: Invitation) {
     introPoster: inv.introPoster ?? null,
     musicUrl: inv.musicUrl ?? null,
     coverImage: inv.coverImage ?? null,
+    logoUrl: inv.logoUrl ?? null,
     unlisted: inv.unlisted ?? false,
     countdownDate: inv.countdownDate ?? null,
     mapUrl: inv.mapUrl ?? null,
