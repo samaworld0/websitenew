@@ -390,6 +390,13 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div className="text-center px-2">
+                {inv.logoUrl && (
+                  <img
+                    src={inv.logoUrl}
+                    alt=""
+                    className="h-16 md:h-20 w-auto mx-auto mb-4 drop-shadow-2xl"
+                  />
+                )}
                 {inv.verse && (
                   <EditableText
                     id="openingVerse"
