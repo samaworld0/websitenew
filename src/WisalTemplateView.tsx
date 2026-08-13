@@ -873,7 +873,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             playsInline
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           >
             <source
               src={inv.introVideo || "/videos/intro.mp4"}
