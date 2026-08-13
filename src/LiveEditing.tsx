@@ -194,6 +194,23 @@ interface EditModeValue {
   // الأقسام الجاهزة أو العكس بنفس الزرين. بدون تأثير لو كان أول قسم
   // وطلبت "لأعلى"، أو آخر قسم وطلبت "لأسفل"
   moveAnySection: (id: string, direction: "up" | "down") => void
+  // يكرّر قسم كامل (أساسي جاهز أو مُضاف يدويًا) كقسم جديد يتحط مباشرة تحته:
+  // - قسم مُضاف يدويًا: ينسخ لونه وارتفاعه بالضبط (نفس فكرة "قسم جديد
+  //   مطابق له")
+  // - قسم أساسي جاهز بالقالب (الافتتاحية، العد التنازلي...): محتواه
+  //   مُبرمج ثابت بكل قالب، فما نقدر نكرره كبيانات — بدل هذا ننشئ قسم
+  //   مُضاف جديد بنفس الارتفاع المقاس فعليًا
+  // بالحالتين: أي عنصر مُضاف يدويًا (نص/أيقونة/صورة) كان يقع بصريًا داخل
+  // حدود القسم الأصلي وقت الضغط على "نسخ" يُنسخ هو الثاني وينزل لنفس
+  // الموضع النسبي بس داخل القسم الجديد تحته — قياس الحدود يعتمد على
+  // registerElRef (شوف تعريفها بالأسفل)
+  duplicateSection: (id: string) => void
+  // يسجّل مرجع DOM حقيقي (ref) لأي قسم أو عنصر عائم مُضاف يدويًا، بمعرّفه
+  // (id) كمفتاح — نحتاجه فقط حتى نقدر نقيس حدود القسم فعليًا على الشاشة
+  // (getBoundingClientRect) لحظة الضغط على "نسخ هذا القسم"، ونعرف أي
+  // عناصر عائمة تقع بصريًا داخله حاليًا. لا يسبب أي إعادة رسم (ref عادي
+  // مو state) لأنه مايهمنا إلا وقت الاستدعاء الفعلي لـ duplicateSection
+  registerElRef: (id: string, el: HTMLElement | null) => void
   // سجل أقسام القالب الأساسية الجاهزة المُركّبة حاليًا (وصال أو لمسة) —
   // كل قسم يسجّل نفسه فيه تلقائيًا (معرّفه، تسمية عربية له، وترتيبه
   // الافتراضي) عبر registerCoreSection وقت رسمه. نعتمد عليه حتى نعرف قائمة
@@ -234,6 +251,8 @@ const EditModeContext = createContext<EditModeValue>({
   addCustomImage: () => {},
   addCustomSection: () => {},
   moveAnySection: () => {},
+  duplicateSection: () => {},
+  registerElRef: () => {},
   coreSections: {},
   registerCoreSection: () => {},
   undo: () => {},
@@ -506,6 +525,96 @@ export function EditModeProvider({
     })
   }
 
+  // مراجع DOM حقيقية لكل قسم وعنصر عائم مُضاف يدويًا حاليًا على الشاشة —
+  // مو state (ما نحتاج أي إعادة رسم لما تتغيّر)، فقط نقرأها لحظة الضغط
+  // على "نسخ هذا القسم" حتى نعرف حدود القسم فعليًا والعناصر اللي بداخله
+  const elRefsRef = useRef<Record<string, HTMLElement | null>>({})
+  const registerElRef = (id: string, el: HTMLElement | null) => {
+    elRefsRef.current[id] = el
+  }
+
+  // يكرّر قسم كامل — شوف الشرح الكامل بتعريف duplicateSection بالواجهة
+  // (EditModeValue) فوق. الفكرة: نقيس حدود القسم الأصلي فعليًا على الشاشة
+  // (getBoundingClientRect)، نلقى أي عنصر عائم (نص/أيقونة/صورة، غير
+  // الشعار) مركزه الرأسي يقع بين حدود القسم، وننسخهم كلهم مع بعض —
+  // القسم كقسم جديد بترتيب مباشرة بعد الأصلي، والعناصر بنفس موضعها لكن
+  // منزّلة لتحت بمقدار ارتفاع القسم بالضبط حتى تقع بالضبط داخل النسخة
+  // الجديدة تحته
+  const duplicateSection = (id: string) => {
+    const sectionEl = elRefsRef.current[id]
+    if (!sectionEl) return
+
+    const rect = sectionEl.getBoundingClientRect()
+    const sectionTop = rect.top
+    const sectionBottom = rect.bottom
+    const sectionHeight = rect.height
+
+    const isCore = id.startsWith(CORE_SECTION_PREFIX)
+
+    const floatingIds = Object.keys(stylesRef.current).filter(
+      (k) =>
+        (k.startsWith(CUSTOM_PREFIX) || k.startsWith(CUSTOM_IMAGE_PREFIX)) &&
+        k !== LOGO_ID,
+    )
+    const matchedIds = floatingIds.filter((elId) => {
+      const el = elRefsRef.current[elId]
+      if (!el) return false
+      const r = el.getBoundingClientRect()
+      const centerY = r.top + r.height / 2
+      return centerY >= sectionTop && centerY <= sectionBottom
+    })
+
+    const newSectionId =
+      SECTION_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+
+    const orderedIds = getOrderedSectionIds(stylesRef.current, coreSections)
+    const insertAt = orderedIds.indexOf(id) + 1
+    const newOrderedIds = [
+      ...orderedIds.slice(0, insertAt),
+      newSectionId,
+      ...orderedIds.slice(insertAt),
+    ]
+
+    pushHistory()
+    setStyles((prev) => {
+      const next = { ...prev }
+
+      // نطبّع ترتيب كل الأقسام الحالية + القسم الجديد بنفس اللحظة، حتى
+      // القسم الجديد يتحط بالضبط بعد الأصلي بغض النظر عن ترتيبه القديم
+      newOrderedIds.forEach((key, i) => {
+        next[key] = { ...next[key], order: i }
+      })
+
+      // القسم الجديد نفسه: لو الأصلي قسم مُضاف يدويًا ننسخ لونه وارتفاعه
+      // بالضبط. لو الأصلي قسم أساسي جاهز (ما نقدر نكرر محتواه المُبرمج)
+      // نسوي قسم مُضاف جديد بنفس الارتفاع المقاس فعليًا ولون فاتح
+      // افتراضي، يصير مكان لاستضافة نسخة العناصر اليدوية اللي كانت بداخله
+      next[newSectionId] = {
+        ...next[newSectionId],
+        size: isCore ? Math.round(sectionHeight) : prev[id]?.size ?? DEFAULT_SECTION_HEIGHT,
+        color: isCore ? undefined : prev[id]?.color,
+      }
+
+      // نسخ كل عنصر عائم كان بصريًا داخل القسم الأصلي، وننزّله لنفس
+      // الموضع الأفقي لكن بعمق القسم الجديد (يزيح لتحت بمقدار ارتفاع
+      // القسم الأصلي بالضبط)
+      matchedIds.forEach((elId, i) => {
+        const src = prev[elId] || {}
+        const newElId =
+          (elId.startsWith(CUSTOM_IMAGE_PREFIX) ? CUSTOM_IMAGE_PREFIX : CUSTOM_PREFIX) +
+          Date.now().toString(36) +
+          i +
+          Math.random().toString(36).slice(2, 6)
+        next[newElId] = { ...src, y: (src.y ?? 0) + sectionHeight }
+      })
+
+      onStylesChange?.(next)
+      return next
+    })
+
+    setSelectedId(newSectionId)
+  }
+
   const sidebarWidth = editable ? RAIL_WIDTH + (activeTab ? FLYOUT_WIDTH : 0) : 0
 
   return (
@@ -525,6 +634,8 @@ export function EditModeProvider({
         addCustomImage,
         addCustomSection,
         moveAnySection,
+        duplicateSection,
+        registerElRef,
         coreSections,
         registerCoreSection,
         undo,
@@ -573,7 +684,8 @@ export function ReorderableSection({
   index: number
   children: ReactNode
 }) {
-  const { editable, styles, selectedId, setSelectedId, registerCoreSection } = useEditMode()
+  const { editable, styles, selectedId, setSelectedId, registerCoreSection, registerElRef } =
+    useEditMode()
 
   useEffect(() => {
     if (editable) registerCoreSection(id, label, index)
@@ -599,6 +711,7 @@ export function ReorderableSection({
 
   return (
     <div
+      ref={(el) => registerElRef(id, el)}
       className="relative w-full"
       style={{
         order,
@@ -1613,6 +1726,7 @@ export function EditPanel() {
     addCustomImage,
     addCustomSection,
     moveAnySection,
+    duplicateSection,
     coreSections,
     undo,
     redo,
@@ -2261,6 +2375,21 @@ export function EditPanel() {
                   </button>
                 </PanelSection>
 
+                <PanelSection title="نسخ القسم">
+                  <button
+                    type="button"
+                    onClick={() => duplicateSection(selectedId!)}
+                    style={{ ...smallBtnStyle, width: "100%" }}
+                  >
+                    ⧉ نسخ هذا القسم لقسم جديد تحته
+                  </button>
+                  <div style={{ ...hintTextStyle, marginTop: 6 }}>
+                    محتوى هذا القسم مُبرمج بالقالب فما يُنسخ بنفس تصميمه
+                    بالضبط — بس أي نص/أيقونة/صورة أضفتها يدويًا وتقع
+                    بصريًا داخله الآن تُنسخ لك بقسم جديد فاضي تحته مباشرة.
+                  </div>
+                </PanelSection>
+
                 <div style={hintTextStyle}>
                   هذا قسم جاهز بالقالب — تقدر تبدّل ترتيبه بين باقي الأقسام
                   الأساسية، أو تخفيه كامل لو ما تحتاجه (زر "إخفاء هذا القسم"
@@ -2477,6 +2606,22 @@ export function EditPanel() {
                 >
                   ▼ لأسفل
                 </button>
+              </div>
+            </PanelSection>
+          )}
+
+          {isSection && (
+            <PanelSection title="نسخ القسم">
+              <button
+                type="button"
+                onClick={() => duplicateSection(selectedId!)}
+                style={{ ...smallBtnStyle, width: "100%" }}
+              >
+                ⧉ نسخ هذا القسم بكل عناصره
+              </button>
+              <div style={{ ...hintTextStyle, marginTop: 6 }}>
+                ينسخ لون القسم وارتفاعه، وأي نص/أيقونة/صورة أضفتها يدويًا
+                وتقع بصريًا داخله الآن، لقسم جديد مطابق يتحط تحته مباشرة.
               </div>
             </PanelSection>
           )}
@@ -2859,7 +3004,7 @@ export function PageBackgroundButton() {
 // أصلاً بـ SECTION_PREFIX — فنبني منطق التحديد والتلوين يدويًا هنا بنفس
 // فكرتها بالضبط.
 export function CustomSectionsLayer() {
-  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const { editable, styles, selectedId, setSelectedId, registerElRef } = useEditMode()
   // ترتيب الأقسام: حسب order الصريح لو الأدمن حرّكها، وإلا حسب وقت
   // الإضافة كالمعتاد (شوف sortSectionIds بالأعلى)
   const ids = sortSectionIds(
@@ -2882,6 +3027,7 @@ export function CustomSectionsLayer() {
         return (
           <section
             key={key}
+            ref={(el) => registerElRef(key, el)}
             className="w-full"
             style={{
               order: st.order ?? 1000,
@@ -2916,7 +3062,7 @@ export function CustomSectionsLayer() {
 // من هالنقطة، وبعدها ينتقل بنفس آلية السحب العادية (transform translate)
 // المستخدمة لباقي عناصر EditableText، فيقدر ينزل لأي قسم تحت بحرية.
 export function CustomTextLayer() {
-  const { styles } = useEditMode()
+  const { styles, registerElRef } = useEditMode()
   const ids = Object.keys(styles).filter((k) => k.startsWith(CUSTOM_PREFIX))
   if (ids.length === 0) return null
   return (
@@ -2924,6 +3070,7 @@ export function CustomTextLayer() {
       {ids.map((key, i) => (
         <div
           key={key}
+          ref={(el) => registerElRef(key, el)}
           className="absolute z-30"
           style={{
             top: `${90 + i * 60}px`,
@@ -2951,7 +3098,7 @@ export function CustomTextLayer() {
 // فوق التصميم، مو جزء من ترتيب الصفحة)، بس تعرض <img> بدل نص عبر
 // EditableImage. تُرسم بنفس الحاوية المشتركة (ارتفاع صفر، أعلى الصفحة).
 export function CustomImageLayer() {
-  const { styles } = useEditMode()
+  const { styles, registerElRef } = useEditMode()
   const ids = Object.keys(styles).filter((k) => k.startsWith(CUSTOM_IMAGE_PREFIX))
   if (ids.length === 0) return null
   return (
@@ -2959,6 +3106,7 @@ export function CustomImageLayer() {
       {ids.map((key, i) => (
         <div
           key={key}
+          ref={(el) => registerElRef(key, el)}
           className="absolute z-30"
           style={{
             top: `${90 + i * 60}px`,
