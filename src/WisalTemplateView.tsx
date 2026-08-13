@@ -468,7 +468,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           <ReorderableSection id="core:saveDate" label="احفظ الموعد والعد التنازلي" index={1}>
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full">
-            <section className="py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
+            <section className="pt-10 pb-10 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
               {/* بطاقة احفظ الموعد */}
               <div className="text-center w-full max-w-sm mb-20 reveal-on-scroll">
                 <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-8 custom-font-heading flex items-center justify-center gap-2">
@@ -529,7 +529,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               </div>
 
               {/* العداد التنازلي المكبر */}
-              <div className="text-center w-full max-w-lg mb-16 reveal-on-scroll">
+              <div className="text-center w-full max-w-lg mb-0 reveal-on-scroll">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-heading">
                   <EditableText id="countdownHeading">باقي على فرحنا</EditableText>
                 </h4>
