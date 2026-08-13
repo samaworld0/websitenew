@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomImageLayer, CustomSectionsLayer, ReorderableSection } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, EditableImage, LOGO_ID, CustomTextLayer, CustomImageLayer, CustomSectionsLayer, ReorderableSection } from "./LiveEditing"
 
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
 // لما يوصله السكرول — أنيميشن خفيف ولطيف بدون أي مكتبات خارجية.
@@ -390,12 +390,19 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div className="text-center px-2">
+                {/* الشعار: رابطه يجي من نموذج بيانات الدعوة (inv.logoUrl)
+                    زي قبل، بس صار عنصر EditableImage كامل — بوضع التعديل
+                    المباشر تقدر تحدده وتسحبه لأي مكان وتكبّره/تصغّره
+                    وتدوّره، بنفس حرية أي صورة تُضاف يدويًا */}
                 {inv.logoUrl && (
-                  <img
-                    src={inv.logoUrl}
-                    alt=""
-                    className="h-16 md:h-20 w-auto mx-auto mb-4 drop-shadow-2xl"
-                  />
+                  <div className="mb-4">
+                    <EditableImage
+                      id={LOGO_ID}
+                      url={inv.logoUrl}
+                      defaultSize={110}
+                      imgClassName="drop-shadow-2xl"
+                    />
+                  </div>
                 )}
                 {inv.verse && (
                   <EditableText
