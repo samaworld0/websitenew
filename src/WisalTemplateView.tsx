@@ -846,11 +846,16 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         </div>
       </div>
 
-      {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر — تنشال كلياً من الـ DOM بعد الفتح */}
+      {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر — تنشال كلياً من الـ DOM بعد الفتح.
+          fixed (مو absolute) عمداً حتى تغطي كامل الشاشة دايمًا بالضبط، بغض
+          النظر عن ارتفاع الحاوية الأب الفعلي (اللي ممكن ينحسب أقصر من
+          ارتفاع الشاشة الحقيقي على بعض المتصفحات/الشاشات العريضة قبل ما
+          يكتمل تحميل باقي محتوى الصفحة) — قبل هذا التعديل كان ممكن يبين
+          جزء من خلفية الصفحة تحت الفيديو مباشرة من أول ثانية فتح */}
       {overlayMounted && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
