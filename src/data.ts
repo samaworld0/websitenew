@@ -51,25 +51,4 @@ export const invitations: Invitation[] = [
     coverImage: "/mnbra/wedding-02.jpg",
     countdownDate: "2026-11-20T19:00",
   },
-  {
-    id: 12,
-    category: "engagement",
-    title: "دعوة خطوبة — لمسة",
-    subtitle: "سلطان ونوف",
-    groom: "سلطان",
-    bride: "نوف",
-    dateGreg: "١٥ ديسمبر ٢٠٢٦",
-    time: "٦:٠٠ مساءً",
-    venue: "قاعة الأمير الذهبية",
-    gradient: ["#5C2A38", "#7A3546", "#5C2A38"],
-    accentColor: "#C9A227",
-    tag: "جديد",
-    price: "٩٠ ريال",
-    verse:
-      "وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً",
-    templateType: "lamsa",
-    // بدون فيديو أو صور مرفوعة بعد — القالب يعتمد بالكامل على تدرجات CSS
-    // حتى تُرفع الأصول لاحقاً (heroBg / musicUrl / coverImage اختيارية)
-    countdownDate: "2026-12-15T18:00",
-  },
 ]
