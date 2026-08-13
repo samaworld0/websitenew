@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, CustomTextLayer } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, CustomTextLayer, CustomSectionsLayer } from "./LiveEditing"
 
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
 // لما يوصله السكرول — أنيميشن خفيف ولطيف بدون أي مكتبات خارجية.
@@ -824,6 +824,10 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               </EditableBackground>
             </EditableBackground>
           </div>
+
+          {/* الأقسام اللي يضيفها الأدمن يدويًا (زر "➕ إضافة قسم") — تنضاف
+              دائمًا بعد كل الأقسام الجاهزة أعلاه */}
+          <CustomSectionsLayer />
         </div>
       </div>
 
