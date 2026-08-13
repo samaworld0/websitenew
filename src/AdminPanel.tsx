@@ -548,8 +548,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                   >
                     {editingId === inv.id ? "إغلاق التعديل" : "تعديل"}
                   </button>
-                  {(inv.templateType === "wisal" ||
-                    inv.templateType === "lamsa") && (
+                  {inv.templateType === "wisal" && (
                     <button
                       onClick={() => setDesignEditingInv(inv)}
                       className="px-4 py-2 rounded-full text-xs font-bold bg-[#4A2B32] text-white inline-flex items-center gap-1.5"
