@@ -49,15 +49,6 @@ const ICON_PREFIX = "icon:"
 // عنصر مكتوب مسبقًا بالقالب، فكل معلوماتها (النص نفسه، موضعها، لونها...)
 // تتخزّن بالكامل تحت مفتاح مسبوق بـ"custom:"، وتُعرض عبر CustomTextLayer
 export const CUSTOM_PREFIX = "custom:"
-// أقسام جديدة يضيفها الأدمن يدويًا (زر "➕ إضافة قسم") — كل قسم عبارة عن
-// صندوق بعرض الشاشة كامل، ياخذ مساحة حقيقية بترتيب الصفحة (مو عائم زي
-// النصوص المُضافة)، ينضاف بآخر الدعوة بعد كل الأقسام الجاهزة. لونه يتخزّن
-// بحقل color العادي وارتفاعه بحقل size (كبكسل)، بنفس كائن الأنماط، بمفتاح
-// مسبوق بـ"section:"
-export const SECTION_PREFIX = "section:"
-const DEFAULT_SECTION_HEIGHT = 220
-const MIN_SECTION_HEIGHT = 80
-const MAX_SECTION_HEIGHT = 900
 
 // يحوّل شجرة children لنص عادي (يهتم بالنصوص الفعلية بس، يتجاهل أي عنصر
 // زخرفي متداخل) — نستخدمه حتى نعرف "النص الأصلي" الحالي لأي EditableText
@@ -71,11 +62,6 @@ function childrenToPlainText(node: ReactNode): string {
   }
   return ""
 }
-
-// أقسام اللوحة الجانبية على طراز Canva: شريط أيقونات ضيّق ثابت، وكل أيقونة
-// تفتح لوحة فرعية (flyout) بجانبه فيها أدواتها. "properties" تتفعّل تلقائيًا
-// لما تضغط على أي عنصر بالتصميم مباشرة (بدل ما يضطر الأدمن يفتحها يدويًا)
-export type SidebarTab = "insert" | "text" | "background" | "properties"
 
 interface EditModeValue {
   editable: boolean
@@ -93,17 +79,6 @@ interface EditModeValue {
   // يضيف مربع نص جديد فوق التصميم ويحدده فورًا حتى يقدر الأدمن يكتب فيه
   // ويسحبه لأي مكان
   addCustomText: () => void
-  // يضيف قسم جديد بآخر الدعوة (بعد كل الأقسام الجاهزة) ويحدده فورًا حتى
-  // يقدر الأدمن يغيّر لونه/ارتفاعه من لوحة الخصائص مباشرة
-  addCustomSection: () => void
-  // التبويب المفتوح حاليًا بشريط الأيقونات (null = الشريط مقفول، ما فيه
-  // لوحة فرعية ظاهرة) + دالة تغييره
-  activeTab: SidebarTab | null
-  setActiveTab: (tab: SidebarTab | null) => void
-  // عرض اللوحة الجانبية الكلي بالبكسل الآن (الشريط + اللوحة الفرعية إذا
-  // كانت مفتوحة) — تستخدمه الصفحة اللي تحتوي المحرر حتى تزيح المعاينة
-  // بنفس المقدار بالضبط
-  sidebarWidth: number
 }
 
 const EditModeContext = createContext<EditModeValue>({
@@ -117,10 +92,6 @@ const EditModeContext = createContext<EditModeValue>({
   resetStyle: () => {},
   registerDefaultText: () => {},
   addCustomText: () => {},
-  addCustomSection: () => {},
-  activeTab: null,
-  setActiveTab: () => {},
-  sidebarWidth: 0,
 })
 
 export function useEditMode() {
@@ -192,23 +163,8 @@ export function EditModeProvider({
   const [styles, setStyles] = useState<Record<string, TextStyle>>(
     initialStyles,
   )
-  const [selectedId, setSelectedIdRaw] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [defaultTexts, setDefaultTexts] = useState<Record<string, string>>({})
-  const [activeTab, setActiveTab] = useState<SidebarTab | null>(null)
-
-  // تحديد أي عنصر مباشرة بالتصميم (نص/خلفية/أيقونة) يفتح تبويب "الخصائص"
-  // بشريط الأيقونات تلقائيًا — بالضبط زي ما يصير بفيغما/كانفا لما تضغط على
-  // عنصر بلوحة الرسم. إلغاء التحديد (id = null) يقفل التبويب لو كان
-  // "الخصائص" هو المفتوح حاليًا (ما نلمس تبويب ثاني فتحه الأدمن يدويًا،
-  // مثل "العناصر" أو "التصميم")
-  const setSelectedId = (id: string | null) => {
-    setSelectedIdRaw(id)
-    if (id) {
-      setActiveTab("properties")
-    } else {
-      setActiveTab((prev) => (prev === "properties" ? null : prev))
-    }
-  }
 
   const updateStyle = (id: string, patch: Partial<TextStyle>) => {
     setStyles((prev) => {
@@ -241,18 +197,6 @@ export function EditModeProvider({
     setSelectedId(id)
   }
 
-  // معرّف فريد للقسم الجديد + ارتفاع ابتدائي معقول (بدون لون مخصص حتى
-  // ياخذ لون خلفي فاتح افتراضي من CustomSectionsLayer) — ونحدده فورًا حتى
-  // تفتح لوحة الخصائص عليه ويقدر الأدمن يغيّر لونه/ارتفاعه على طول
-  const addCustomSection = () => {
-    const id =
-      SECTION_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
-    updateStyle(id, { size: DEFAULT_SECTION_HEIGHT })
-    setSelectedId(id)
-  }
-
-  const sidebarWidth = editable ? RAIL_WIDTH + (activeTab ? FLYOUT_WIDTH : 0) : 0
-
   return (
     <EditModeContext.Provider
       value={{
@@ -266,10 +210,6 @@ export function EditModeProvider({
         resetStyle,
         registerDefaultText,
         addCustomText,
-        addCustomSection,
-        activeTab,
-        setActiveTab,
-        sidebarWidth,
       }}
     >
       {children}
@@ -291,28 +231,10 @@ export function DeselectSurface({ children }: { children: ReactNode }) {
 
 const MIN_PX = 8
 const MAX_PX = 220
-// أقصى مسافة تحريك مسموحة (بالنسبة المئوية من عرض الشاشة) بأي اتجاه — رقم
-// كبير جداً عملياً يعني حرية تحريك كاملة بأي مكان، مع بقاء حد أقصى احترازي
-// بسيط يمنع بس قيم تالفة/غير منطقية (لو انحفظت غلط) من تكسير التصميم
-// بشكل متطرف
-const MAX_OFFSET = 500
-
-// إحداثيات السحب (x, y) تتخزّن كنسبة مئوية من عرض الشاشة، مو كبكسل ثابت —
-// حتى لو الأدمن سحب عنصر وهو يشتغل على شاشة كمبيوتر عريضة، نفس النسبة
-// تنطبّق صح على شاشة جوال ضيقة بدل ما تطلع القيمة المطلقة (مثلاً 300px)
-// نسبة ضخمة من عرض شاشة الجوال الصغيرة وتدفع العنصر برّه حدود الشاشة.
-// نستخدم عرض الشاشة (window.innerWidth) كمرجع للاتجاهين الأفقي والرأسي
-// معًا (بدل ارتفاع الحاوية اللي يختلف بشكل كبير وغير منطقي بسبب السكرول)
-// حتى تنسحب العناصر بنفس مقياس التكبير/التصغير بالاتجاهين بدون تشويه.
-function referenceWidth() {
-  return typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1200
-}
-function pxToPercent(px: number) {
-  return (px / referenceWidth()) * 100
-}
-function percentToPx(percent: number) {
-  return (percent / 100) * referenceWidth()
-}
+// أقصى مسافة تحريك مسموحة (بكسل) بأي اتجاه — رقم كبير جداً عملياً يعني
+// حرية تحريك كاملة بأي مكان بالشاشة، مع بقاء حد أقصى احترازي بسيط يمنع بس
+// قيم تالفة/غير منطقية (لو انحفظت غلط) من تكسير التصميم بشكل متطرف
+const MAX_OFFSET = 4000
 
 export function EditableText({
   id,
@@ -393,17 +315,13 @@ export function EditableText({
     // برّه وضع التعديل (المعاينة الحقيقية أو رابط الدعوة النهائي) نطبّق
     // الحجم/الموضع/الخط/اللون المحفوظ فقط، بدون أي إطار أو مقابض تفاعلية —
     // مع حد أقصى احترازي حتى لو انحفظت قيمة كبيرة قديمة (قبل إضافة القيد)
-    // ما تطلع النص برّه حدود الشاشة. القيم المحفوظة نسبة مئوية من عرض
-    // الشاشة، فنحوّلها لبكسل فعلي حسب عرض شاشة الجهاز الحالي (جوال أو
-    // كمبيوتر) — هذا اللي يخلي نفس الموضع يبان صح على كل المقاسات
-    const clampedXPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
-    const clampedYPct = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
-    const clampedX = percentToPx(clampedXPct)
-    const clampedY = percentToPx(clampedYPct)
+    // ما تطلع النص برّه حدود الشاشة
+    const clampedX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.x || 0))
+    const clampedY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, savedStyle.y || 0))
     // لو النص انسحب لمكان بعيد عن موضعه الأصلي، نرفع طبقته (z-index) حتى
     // ما يختفي وراء القسم اللي بعده لما يتداخل بصرياً معه (القسم التالي له
     // خلفية خاصة تُرسم فوقه بترتيب DOM العادي وإلا)
-    const isMoved = clampedXPct !== 0 || clampedYPct !== 0
+    const isMoved = clampedX !== 0 || clampedY !== 0
     const readOnlyStyle: React.CSSProperties = {
       ...style,
       ...(savedStyle.size ? { fontSize: `${savedStyle.size}px` } : null),
@@ -519,12 +437,10 @@ export function EditableText({
       if (Math.abs(snapped - next) < 4) next = snapped % 360
       updateStyle(id, { rotation: next })
     } else {
-      // d.startX0/d.startY0 محفوظة كنسبة مئوية — نحوّل فرق حركة الماوس
-      // بالبكسل لنفس النسبة قبل ما نضيفه لهم، حتى يبقى كل شي بنفس الوحدة
-      const dxPct = pxToPercent(ev.clientX - d.startX)
-      const dyPct = pxToPercent(ev.clientY - d.startY)
-      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dxPct))
-      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dyPct))
+      const dx = ev.clientX - d.startX
+      const dy = ev.clientY - d.startY
+      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dx))
+      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dy))
       updateStyle(id, { x: nextX, y: nextY })
     }
   }
@@ -541,9 +457,7 @@ export function EditableText({
     ...(px ? { fontSize: `${px}px` } : null),
     ...(st.font ? { fontFamily: st.font } : null),
     ...(st.color ? { color: st.color } : null),
-    // offX/offY نسبة مئوية من عرض الشاشة — نحوّلها لبكسل فعلي للعرض بوضع
-    // التعديل (نفس التحويل المطبّق بالمعاينة النهائية عند الضيف)
-    transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)`,
+    transform: `translate(${offX}px, ${offY}px)`,
     ...(rotation ? { rotate: `${rotation}deg` } : null),
     display: "inline-block",
     position: "relative",
@@ -820,11 +734,7 @@ export function EditableIcon({
 // تعرض عناصر التحكم المناسبة حسب نوع العنصر المحدد حاليًا (نص أو خلفية).
 // ============================================================================
 
-// عرض شريط الأيقونات الثابت (زي شريط Canva الجانبي) + عرض اللوحة الفرعية
-// (flyout) اللي تنفتح بجانبه لما تختار تبويب. الاثنين يتجمعوا بـ sidebarWidth
-// بالسياق فوق حتى تعرف الصفحة اللي تحتوي المحرر كم تزيح المعاينة.
-export const RAIL_WIDTH = 84
-export const FLYOUT_WIDTH = 280
+export const PANEL_WIDTH = 268
 
 function swatchStyle(color: string, active: boolean): React.CSSProperties {
   return {
@@ -864,16 +774,6 @@ function PanelSection({
   )
 }
 
-// تعريف تبويبات شريط الأيقونات — نفس فكرة شريط Canva الجانبي (أيقونة +
-// تسمية تحتها). "properties" ينفتح تلقائيًا لما تحدد عنصر بالتصميم
-// مباشرة (شوف setSelectedId بالمزوّد فوق)، والبقية تنفتح يدويًا بالضغط.
-const SIDEBAR_TABS: { id: SidebarTab; icon: string; label: string }[] = [
-  { id: "text", icon: "🔤", label: "النص" },
-  { id: "insert", icon: "🧩", label: "العناصر" },
-  { id: "background", icon: "🎨", label: "التصميم" },
-  { id: "properties", icon: "⚙️", label: "الخصائص" },
-]
-
 export function EditPanel() {
   const {
     editable,
@@ -884,31 +784,23 @@ export function EditPanel() {
     defaultTexts,
     updateStyle,
     resetStyle,
-    activeTab,
-    setActiveTab,
-    addCustomText,
-    addCustomSection,
   } = useEditMode()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [uploadingFont, setUploadingFont] = useState(false)
   const [customColor, setCustomColor] = useState("#B8862F")
-  const [pageBgCustomColor, setPageBgCustomColor] = useState("#FBF3EF")
 
   if (!editable) return null
 
   const isBg = !!selectedId?.startsWith(BG_PREFIX)
   const isIcon = !!selectedId?.startsWith(ICON_PREFIX)
   const isCustom = !!selectedId?.startsWith(CUSTOM_PREFIX)
-  const isSection = !!selectedId?.startsWith(SECTION_PREFIX)
   const plainId = isBg
     ? selectedId!.slice(BG_PREFIX.length)
     : isIcon
       ? selectedId!.slice(ICON_PREFIX.length)
       : isCustom
         ? "نص مُضاف يدويًا"
-        : isSection
-          ? "قسم مُضاف يدويًا"
-          : selectedId
+        : selectedId
   const st = selectedId ? styles[selectedId] || {} : {}
   const ICON_MIN_PCT = 40
   const ICON_MAX_PCT = 220
@@ -969,40 +861,6 @@ export function EditPanel() {
     cursor: "pointer",
   }
 
-  const tabTitles: Record<SidebarTab, string> = {
-    text: "النص",
-    insert: "العناصر",
-    background: "التصميم",
-    properties: "الخصائص",
-  }
-
-  const pageBgKey = BG_PREFIX + "pageBg"
-  const pageBgStyle = styles[pageBgKey] || {}
-
-  const flyoutHeaderStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  }
-
-  const primaryBtnStyle: React.CSSProperties = {
-    ...smallBtnStyle,
-    width: "100%",
-    padding: "10px 12px",
-    background: "#B8862F",
-    color: "#1A1210",
-    fontWeight: 700,
-    textAlign: "center",
-  }
-
-  const hintTextStyle: React.CSSProperties = {
-    fontSize: 11.5,
-    color: "#B8A99A",
-    lineHeight: 1.8,
-    marginTop: 10,
-  }
-
   return (
     <div
       style={{
@@ -1010,200 +868,48 @@ export function EditPanel() {
         top: 0,
         insetInlineStart: 0,
         height: "100%",
-        display: "flex",
+        width: PANEL_WIDTH,
+        background: "#1A1210",
+        borderInlineEnd: "1px solid #B8862F3D",
         zIndex: 520,
+        overflowY: "auto",
+        padding: "70px 16px 24px",
+        boxShadow: "4px 0 24px rgba(0,0,0,.35)",
         fontFamily: "Cairo, sans-serif",
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* شريط الأيقونات الثابت — نفس فكرة شريط Canva الجانبي: أيقونة +
-          تسمية تحتها، وتضغط عليها فتفتح/تقفل اللوحة الفرعية بجانبها */}
       <div
         style={{
-          width: RAIL_WIDTH,
-          height: "100%",
-          background: "#150E0C",
-          borderInlineEnd: "1px solid #B8862F3D",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 78,
-          gap: 4,
-          flexShrink: 0,
+          fontSize: 13,
+          fontWeight: 700,
+          color: "#F1D989",
+          marginBottom: 4,
         }}
       >
-        {SIDEBAR_TABS.map((tab) => {
-          const isActive = activeTab === tab.id
-          const isDisabled = tab.id === "properties" && !selectedId
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              disabled={isDisabled}
-              onClick={() => setActiveTab(isActive ? null : tab.id)}
-              style={{
-                width: 64,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 4,
-                padding: "10px 4px",
-                borderRadius: 12,
-                border: "none",
-                cursor: isDisabled ? "default" : "pointer",
-                background: isActive ? "#2A211D" : "transparent",
-                opacity: isDisabled ? 0.4 : 1,
-              }}
-            >
-              <span style={{ fontSize: 19, lineHeight: 1 }}>{tab.icon}</span>
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? "#F1D989" : "#D8C7BE",
-                }}
-              >
-                {tab.label}
-              </span>
-            </button>
-          )
-        })}
+        خصائص العنصر
       </div>
 
-      {/* اللوحة الفرعية (flyout) — تنفتح بجانب الشريط لما تختار تبويب، وتاخذ
-          مساحتها الخاصة (مو عائمة فوق المعاينة) حتى ما تحجب أي شي */}
-      {activeTab && (
-        <div
-          style={{
-            width: FLYOUT_WIDTH,
-            height: "100%",
-            background: "#1A1210",
-            borderInlineEnd: "1px solid #B8862F3D",
-            overflowY: "auto",
-            padding: "70px 16px 24px",
-            boxShadow: "4px 0 24px rgba(0,0,0,.35)",
-            flexShrink: 0,
-          }}
-        >
-          <div style={flyoutHeaderStyle}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#F1D989" }}>
-              {tabTitles[activeTab]}
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveTab(null)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#B8A99A",
-                fontSize: 16,
-                cursor: "pointer",
-                lineHeight: 1,
-                padding: 4,
-              }}
-              aria-label="إغلاق اللوحة"
-            >
-              ✕
-            </button>
+      {!selectedId ? (
+        <div style={{ fontSize: 12, color: "#B8A99A", lineHeight: 1.8, marginTop: 12 }}>
+          اضغط على أي نص أو خلفية بالتصميم حتى تظهر خصائصه هنا — تقدر تغيّر
+          لونه، تخفيه، تكبّره، أو تغيّر خطه.
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              fontSize: 10,
+              color: "#8C6B6F",
+              marginBottom: 18,
+              wordBreak: "break-all",
+            }}
+          >
+            {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : isCustom ? "" : "نص: "}
+            {plainId}
           </div>
 
-          {activeTab === "text" && (
-            <>
-              <button type="button" onClick={addCustomText} style={primaryBtnStyle}>
-                ✚ إضافة مربع نص جديد
-              </button>
-              <div style={hintTextStyle}>
-                يضيف مربع نص فوق التصميم تقدر تكتب فيه وتسحبه لأي مكان. أو
-                اضغط على أي نص موجود بالتصميم مباشرة حتى يفتح تبويب
-                "الخصائص" وتقدر تعدّله من هناك.
-              </div>
-            </>
-          )}
-
-          {activeTab === "insert" && (
-            <>
-              <button type="button" onClick={addCustomSection} style={primaryBtnStyle}>
-                ➕ إضافة قسم جديد
-              </button>
-              <div style={hintTextStyle}>
-                يضيف قسمًا كاملاً بعرض الشاشة بآخر الدعوة (بعد كل الأقسام
-                الجاهزة)، وتقدر تغيّر لونه وارتفاعه بعد إضافته من تبويب
-                "الخصائص".
-              </div>
-            </>
-          )}
-
-          {activeTab === "background" && (
-            <>
-              <PanelSection title="لون خلفية الدعوة كاملة">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                  {COLOR_PRESETS.map((c) => (
-                    <span
-                      key={c}
-                      onClick={() => updateStyle(pageBgKey, { color: c })}
-                      style={swatchStyle(c, pageBgStyle.color === c)}
-                      title={c}
-                    />
-                  ))}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input
-                    type="color"
-                    value={pageBgStyle.color || pageBgCustomColor}
-                    onChange={(e) => {
-                      setPageBgCustomColor(e.target.value)
-                      updateStyle(pageBgKey, { color: e.target.value })
-                    }}
-                    style={{
-                      width: 34,
-                      height: 30,
-                      border: "1px solid #B8862F55",
-                      borderRadius: 6,
-                      background: "transparent",
-                      cursor: "pointer",
-                      padding: 0,
-                    }}
-                  />
-                  <span style={{ fontSize: 11, color: "#B8A99A" }}>لون حر</span>
-                  {pageBgStyle.color && (
-                    <button
-                      type="button"
-                      onClick={() => resetStyle(pageBgKey)}
-                      style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
-                    >
-                      ↺ الأصلي
-                    </button>
-                  )}
-                </div>
-              </PanelSection>
-              <div style={hintTextStyle}>
-                لتغيير لون قسم معيّن بس (مو الدعوة كاملة)، اضغط عليه مباشرة
-                بالتصميم فيفتح تبويب "الخصائص".
-              </div>
-            </>
-          )}
-
-          {activeTab === "properties" &&
-            (!selectedId ? (
-              <div style={{ fontSize: 12, color: "#B8A99A", lineHeight: 1.8, marginTop: 4 }}>
-                اضغط على أي نص أو خلفية بالتصميم حتى تظهر خصائصه هنا — تقدر
-                تغيّر لونه، تخفيه، تكبّره، أو تغيّر خطه.
-              </div>
-            ) : (
-              <>
-                <div
-                  style={{
-                    fontSize: 10,
-                    color: "#8C6B6F",
-                    marginBottom: 18,
-                    wordBreak: "break-all",
-                  }}
-                >
-                  {isBg ? "خلفية: " : isIcon ? "عنصر زخرفي: " : isCustom || isSection ? "" : "نص: "}
-                  {plainId}
-                </div>
-
-                {!isBg && !isIcon && !isSection && (
+          {!isBg && !isIcon && (
             <PanelSection title="النص">
               <textarea
                 value={st.text ?? defaultTexts[selectedId] ?? ""}
@@ -1236,7 +942,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          {(!isBg && !isSection) && (
+          {(!isBg) && (
             <PanelSection title="الإظهار">
               <button
                 type="button"
@@ -1254,7 +960,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          {!isBg && !isSection && (
+          {!isBg && (
             <PanelSection title="الدوران">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
@@ -1300,39 +1006,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          {isSection && (
-            <PanelSection title="الارتفاع">
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button
-                  type="button"
-                  style={smallBtnStyle}
-                  onClick={() =>
-                    updateStyle(selectedId, {
-                      size: Math.max(MIN_SECTION_HEIGHT, (st.size ?? DEFAULT_SECTION_HEIGHT) - 20),
-                    })
-                  }
-                >
-                  −
-                </button>
-                <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 50, textAlign: "center" }}>
-                  {Math.round(st.size ?? DEFAULT_SECTION_HEIGHT)}px
-                </span>
-                <button
-                  type="button"
-                  style={smallBtnStyle}
-                  onClick={() =>
-                    updateStyle(selectedId, {
-                      size: Math.min(MAX_SECTION_HEIGHT, (st.size ?? DEFAULT_SECTION_HEIGHT) + 20),
-                    })
-                  }
-                >
-                  +
-                </button>
-              </div>
-            </PanelSection>
-          )}
-
-          <PanelSection title={isBg || isSection ? "لون الخلفية" : isIcon ? "اللون" : "لون النص"}>
+          <PanelSection title={isBg ? "لون الخلفية" : isIcon ? "اللون" : "لون النص"}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
               {COLOR_PRESETS.map((c) => (
                 <span
@@ -1406,7 +1080,7 @@ export function EditPanel() {
             </PanelSection>
           )}
 
-          {!isBg && !isIcon && !isSection && (
+          {!isBg && !isIcon && (
             <>
               <PanelSection title="حجم الخط">
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1512,9 +1186,9 @@ export function EditPanel() {
             type="button"
             onClick={() => {
               resetStyle(selectedId)
-              // النص/القسم المُضاف ما له "وضع أصلي" يرجع له — رجوعه هو
-              // حذفه بالكامل، فنلغي تحديده لأنه ما عاد موجود
-              if (isCustom || isSection) setSelectedId(null)
+              // النص المُضاف ما له "وضع أصلي" يرجع له — رجوعه هو حذفه
+              // بالكامل، فنلغي تحديده لأنه ما عاد موجود
+              if (isCustom) setSelectedId(null)
             }}
             style={{
               ...smallBtnStyle,
@@ -1524,11 +1198,7 @@ export function EditPanel() {
               fontWeight: 700,
             }}
           >
-            {isSection
-              ? "🗑 حذف هذا القسم"
-              : isCustom
-                ? "🗑 حذف هذا النص"
-                : "↺ استرجاع الوضع الأصلي لهذا العنصر"}
+            {isCustom ? "🗑 حذف هذا النص" : "↺ استرجاع الوضع الأصلي لهذا العنصر"}
           </button>
 
           <button
@@ -1543,9 +1213,7 @@ export function EditPanel() {
           >
             إلغاء التحديد
           </button>
-              </>
-            ))}
-        </div>
+        </>
       )}
     </div>
   )
@@ -1572,22 +1240,6 @@ export function AddTextButton() {
   )
 }
 
-// زر "➕ إضافة قسم" — يوضع بشريط أدوات محرر التصميم (LiveTemplateEditor)
-export function AddSectionButton() {
-  const { editable, addCustomSection } = useEditMode()
-  if (!editable) return null
-  return (
-    <button
-      type="button"
-      onClick={addCustomSection}
-      className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-[#2A211D] text-[#F1D989] border border-[#B8862F]"
-      style={{ fontFamily: "Cairo, sans-serif" }}
-    >
-      ➕ إضافة قسم
-    </button>
-  )
-}
-
 // زر "🎨 لون خلفية الدعوة" — يوضع بشريط أدوات محرر التصميم (LiveTemplateEditor)
 // ويفتح مباشرة لوحة خصائص خلفية الصفحة الكاملة (bg:pageBg) بضغطة وحدة،
 // بدل ما يحتاج الأدمن يدوّر على فراغ فاضي بالتصميم يضغط عليه حتى يحددها
@@ -1605,53 +1257,6 @@ export function PageBackgroundButton() {
     >
       🎨 لون خلفية الدعوة
     </button>
-  )
-}
-
-// طبقة الأقسام المُضافة يدويًا — تُوضع مرة وحدة بآخر كل أقسام القالب
-// الجاهزة (بعد قسم تأكيد الحضور)، وكل قسم فيها ياخذ عرض الشاشة كامل
-// ومساحة حقيقية بترتيب الصفحة (بعكس النصوص المُضافة اللي تطفو فوق
-// التصميم بدون ما تاخذ مساحة). لونها قابل للتغيير من لوحة الخصائص مثل أي
-// خلفية عادية، وارتفاعها قابل للتحكم بزيادة/نقصان. ما نستخدم
-// EditableBackground هنا لأنها تضيف BG_PREFIX تلقائيًا لأي id تستقبله،
-// ومفتاح القسم هنا مسبوق أصلاً بـ SECTION_PREFIX — فنبني منطق التحديد
-// والتلوين يدويًا هنا بنفس فكرتها بالضبط.
-export function CustomSectionsLayer() {
-  const { editable, styles, selectedId, setSelectedId } = useEditMode()
-  const ids = Object.keys(styles)
-    .filter((k) => k.startsWith(SECTION_PREFIX))
-    // ترتيب زمني حسب وقت الإضافة (الجزء الأول من المعرّف مبني على
-    // Date.now().toString(36)) حتى تظهر الأقسام بنفس ترتيب إضافتها
-    .sort()
-  if (ids.length === 0) return null
-  return (
-    <>
-      {ids.map((key) => {
-        const st = styles[key] || {}
-        const isSelected = selectedId === key
-        return (
-          <section
-            key={key}
-            className="w-full"
-            style={{
-              height: st.size ?? DEFAULT_SECTION_HEIGHT,
-              backgroundColor: st.color || "#FBF3EF",
-              cursor: editable ? "pointer" : undefined,
-              boxShadow: isSelected ? "inset 0 0 0 3px #3B82F6" : "inset 0 0 0 0px transparent",
-              transition: "box-shadow .15s ease",
-            }}
-            onClick={
-              editable
-                ? (e) => {
-                    e.stopPropagation()
-                    setSelectedId(key)
-                  }
-                : undefined
-            }
-          />
-        )
-      })}
-    </>
   )
 }
 
