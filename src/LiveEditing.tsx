@@ -111,6 +111,14 @@ interface EditModeValue {
   // يضيف قسم جديد بآخر الدعوة (بعد كل الأقسام الجاهزة) ويحدده فورًا حتى
   // يقدر الأدمن يغيّر لونه/ارتفاعه من لوحة الخصائص مباشرة
   addCustomSection: () => void
+  // تراجع/إعادة لآخر تعديل على الأنماط (styles) — يغطي كل التغييرات: نص،
+  // لون، حجم، موضع، إضافة/حذف عنصر... إلخ. مفعّلة باختصارات لوحة المفاتيح
+  // (Ctrl/Cmd+Z للتراجع، Ctrl/Cmd+Shift+Z أو Ctrl/Cmd+Y للإعادة) وبزرين
+  // بأعلى شريط الأيقونات
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
   // التبويب المفتوح حاليًا بشريط الأيقونات (null = الشريط مقفول، ما فيه
   // لوحة فرعية ظاهرة) + دالة تغييره
   activeTab: SidebarTab | null
@@ -135,6 +143,10 @@ const EditModeContext = createContext<EditModeValue>({
   addCustomIcon: () => {},
   addCustomImage: () => {},
   addCustomSection: () => {},
+  undo: () => {},
+  redo: () => {},
+  canUndo: false,
+  canRedo: false,
   activeTab: null,
   setActiveTab: () => {},
   sidebarWidth: 0,
@@ -213,6 +225,28 @@ export function EditModeProvider({
   const [defaultTexts, setDefaultTexts] = useState<Record<string, string>>({})
   const [activeTab, setActiveTab] = useState<SidebarTab | null>(null)
 
+  // سجل التراجع/الإعادة — كل عنصر عبارة عن "لقطة" كاملة لكائن الأنماط قبل
+  // تعديل معيّن. نحتفظ بمرجع (ref) يواكب آخر قيمة لـ styles أول بأول حتى
+  // نقدر نلتقطها من داخل updateStyle/resetStyle وقت الاستدعاء بالضبط (بدل
+  // الاعتماد على قيمة styles بإغلاق دالة قديمة، اللي ممكن تكون غير محدّثة
+  // لو انسحب العنصر بسرعة/تكرر النداء بنفس اللحظة)
+  const stylesRef = useRef(styles)
+  stylesRef.current = styles
+  const [past, setPast] = useState<Record<string, TextStyle>[]>([])
+  const [future, setFuture] = useState<Record<string, TextStyle>[]>([])
+  // حد أقصى لعدد الخطوات المحفوظة حتى ما تكبر الذاكرة المستخدمة بلا داعي
+  // بجلسة تعديل طويلة (تعديلات أقدم من هذا العدد تنمحي تلقائيًا)
+  const MAX_HISTORY = 100
+
+  const pushHistory = () => {
+    setPast((p) => {
+      const next = [...p, stylesRef.current]
+      return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next
+    })
+    // أي تعديل جديد يلغي فرع "الإعادة" القديم (نفس سلوك كل برامج التحرير)
+    setFuture([])
+  }
+
   // تحديد أي عنصر مباشرة بالتصميم (نص/خلفية/أيقونة) يفتح تبويب "الخصائص"
   // بشريط الأيقونات تلقائيًا — بالضبط زي ما يصير بفيغما/كانفا لما تضغط على
   // عنصر بلوحة الرسم. إلغاء التحديد (id = null) يقفل التبويب لو كان
@@ -228,6 +262,7 @@ export function EditModeProvider({
   }
 
   const updateStyle = (id: string, patch: Partial<TextStyle>) => {
+    pushHistory()
     setStyles((prev) => {
       const next = { ...prev, [id]: { ...prev[id], ...patch } }
       onStylesChange?.(next)
@@ -236,6 +271,7 @@ export function EditModeProvider({
   }
 
   const resetStyle = (id: string) => {
+    pushHistory()
     setStyles((prev) => {
       const next = { ...prev }
       delete next[id]
@@ -243,6 +279,54 @@ export function EditModeProvider({
       return next
     })
   }
+
+  // يرجّع لآخر لقطة محفوظة بسجل "الماضي" ويحط الوضع الحالي بسجل "المستقبل"
+  // حتى تقدر تعيده لو غيّرت رأيك (نفس سلوك Ctrl+Z بأي برنامج تحرير)
+  const undo = () => {
+    if (past.length === 0) return
+    const prevSnapshot = past[past.length - 1]
+    setFuture((f) => [...f, stylesRef.current])
+    setPast((p) => p.slice(0, -1))
+    setStyles(prevSnapshot)
+    onStylesChange?.(prevSnapshot)
+  }
+
+  // عكس undo تمامًا — يرجّع آخر لقطة انلغت بالتراجع
+  const redo = () => {
+    if (future.length === 0) return
+    const nextSnapshot = future[future.length - 1]
+    setPast((p) => [...p, stylesRef.current])
+    setFuture((f) => f.slice(0, -1))
+    setStyles(nextSnapshot)
+    onStylesChange?.(nextSnapshot)
+  }
+
+  // اختصارات لوحة المفاتيح: Ctrl/Cmd+Z للتراجع، Ctrl/Cmd+Shift+Z أو
+  // Ctrl/Cmd+Y للإعادة — نتجاهلها تمامًا لو التركيز حاليًا داخل حقل كتابة
+  // (input/textarea/select أو أي عنصر contentEditable) حتى ما نصادم
+  // تراجع/إعادة الكتابة الطبيعي بالمتصفح داخل مربعات لوحة الخصائص
+  useEffect(() => {
+    if (!editable) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.ctrlKey || e.metaKey
+      if (!isMod) return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      const isTypingField =
+        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || !!target?.isContentEditable
+      if (isTypingField) return
+      const key = e.key.toLowerCase()
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      } else if (key === "y" || (key === "z" && e.shiftKey)) {
+        e.preventDefault()
+        redo()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  })
 
   const registerDefaultText = (id: string, text: string) => {
     setDefaultTexts((prev) => (prev[id] === text ? prev : { ...prev, [id]: text }))
@@ -305,6 +389,10 @@ export function EditModeProvider({
         addCustomIcon,
         addCustomImage,
         addCustomSection,
+        undo,
+        redo,
+        canUndo: past.length > 0,
+        canRedo: future.length > 0,
         activeTab,
         setActiveTab,
         sidebarWidth,
@@ -1170,6 +1258,10 @@ export function EditPanel() {
     addCustomIcon,
     addCustomImage,
     addCustomSection,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useEditMode()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
@@ -1353,6 +1445,54 @@ export function EditPanel() {
           flexShrink: 0,
         }}
       >
+        {/* تراجع/إعادة — نفس تأثير Ctrl/Cmd+Z و Ctrl/Cmd+Shift+Z، بس بزر
+            ظاهر لمن ما يعرف الاختصار. تتعطّل تلقائيًا لو ما فيه شي
+            نتراجع/نعيد عنه */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+          <button
+            type="button"
+            title="تراجع (Ctrl+Z)"
+            disabled={!canUndo}
+            onClick={undo}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              border: "none",
+              background: "#2A211D",
+              color: canUndo ? "#F1D989" : "#6B5D54",
+              cursor: canUndo ? "pointer" : "default",
+              fontSize: 15,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ↺
+          </button>
+          <button
+            type="button"
+            title="إعادة (Ctrl+Shift+Z)"
+            disabled={!canRedo}
+            onClick={redo}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 8,
+              border: "none",
+              background: "#2A211D",
+              color: canRedo ? "#F1D989" : "#6B5D54",
+              cursor: canRedo ? "pointer" : "default",
+              fontSize: 15,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ↻
+          </button>
+        </div>
+
         {SIDEBAR_TABS.map((tab) => {
           const isActive = activeTab === tab.id
           const isDisabled = tab.id === "properties" && !selectedId
