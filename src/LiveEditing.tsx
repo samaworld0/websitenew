@@ -55,6 +55,14 @@ export interface TextStyle {
   // يستخدم أزرار "نقل لأعلى/أسفل" أول مرة — قبلها الترتيب يعتمد على وقت
   // الإضافة (نفس السلوك القديم) عبر sortSectionIds بالأسفل
   order?: number
+  // نسخة HTML ثابتة (تصوير) من محتوى قسم أساسي جاهز بالقالب، تتحط بقسم
+  // مُضاف جديد (SECTION_PREFIX) عبر duplicateSectionFull بالأسفل. تُستخدم
+  // فقط للعناصر المسبوقة بـ SECTION_PREFIX كبديل عن قسم فاضي، حتى يطلع
+  // القسم الجديد مطابق بصريًا للأصلي بكل ما فيه (نصوص/صور/تصميم). نسخة
+  // مجمّدة غير تفاعلية — أي عدّاد تنازلي أو زر بداخلها يبقى بحالته وقت
+  // النسخ ولا يشتغل، وتعديل النصوص بالمحرر ما يشتغل عليها لأنها مو عناصر
+  // React حقيقية
+  rawHtml?: string
 }
 
 const BG_PREFIX = "bg:"
@@ -205,6 +213,14 @@ interface EditModeValue {
   // الموضع النسبي بس داخل القسم الجديد تحته — قياس الحدود يعتمد على
   // registerElRef (شوف تعريفها بالأسفل)
   duplicateSection: (id: string) => void
+  // نفس فكرة duplicateSection بالضبط، بس بدل ما يسوي قسم فاضي للأقسام
+  // الأساسية الجاهزة بالقالب، يصوّر محتوى القسم فعليًا (outerHTML) كما
+  // يظهر على الشاشة وقت الضغط ويحطه بالقسم الجديد — فيطلع نسخة مطابقة
+  // بصريًا بكل ما فيها (نصوص/صور/تصميم) بدل قسم فاضي بنفس الارتفاع بس.
+  // نسخة مجمّدة غير تفاعلية (شوف شرح rawHtml بالأعلى). للأقسام المُضافة
+  // يدويًا أصلاً (مو أساسية) تتصرف بالضبط زي duplicateSection العادية
+  // لأنها أصلاً بيانات بسيطة (لون/ارتفاع) تُنسخ كاملة بدون الحاجة لتصوير
+  duplicateSectionFull: (id: string) => void
   // يسجّل مرجع DOM حقيقي (ref) لأي قسم أو عنصر عائم مُضاف يدويًا، بمعرّفه
   // (id) كمفتاح — نحتاجه فقط حتى نقدر نقيس حدود القسم فعليًا على الشاشة
   // (getBoundingClientRect) لحظة الضغط على "نسخ هذا القسم"، ونعرف أي
@@ -252,6 +268,7 @@ const EditModeContext = createContext<EditModeValue>({
   addCustomSection: () => {},
   moveAnySection: () => {},
   duplicateSection: () => {},
+  duplicateSectionFull: () => {},
   registerElRef: () => {},
   coreSections: {},
   registerCoreSection: () => {},
@@ -533,14 +550,17 @@ export function EditModeProvider({
     elRefsRef.current[id] = el
   }
 
-  // يكرّر قسم كامل — شوف الشرح الكامل بتعريف duplicateSection بالواجهة
-  // (EditModeValue) فوق. الفكرة: نقيس حدود القسم الأصلي فعليًا على الشاشة
-  // (getBoundingClientRect)، نلقى أي عنصر عائم (نص/أيقونة/صورة، غير
-  // الشعار) مركزه الرأسي يقع بين حدود القسم، وننسخهم كلهم مع بعض —
-  // القسم كقسم جديد بترتيب مباشرة بعد الأصلي، والعناصر بنفس موضعها لكن
-  // منزّلة لتحت بمقدار ارتفاع القسم بالضبط حتى تقع بالضبط داخل النسخة
-  // الجديدة تحته
-  const duplicateSection = (id: string) => {
+  // يكرّر قسم كامل — شوف الشرح الكامل بتعريف duplicateSection/
+  // duplicateSectionFull بالواجهة (EditModeValue) فوق. الفكرة: نقيس حدود
+  // القسم الأصلي فعليًا على الشاشة (getBoundingClientRect)، نلقى أي عنصر
+  // عائم (نص/أيقونة/صورة، غير الشعار) مركزه الرأسي يقع بين حدود القسم،
+  // وننسخهم كلهم مع بعض — القسم كقسم جديد بترتيب مباشرة بعد الأصلي،
+  // والعناصر بنفس موضعها لكن منزّلة لتحت بمقدار ارتفاع القسم بالضبط حتى
+  // تقع بالضبط داخل النسخة الجديدة تحته.
+  // لو captureHtml=true وكان القسم أساسي جاهز بالقالب: نصوّر outerHTML
+  // الفعلي للقسم (كما يظهر بالضبط لحظة الضغط) ونحطه بحقل rawHtml للقسم
+  // الجديد بدل ما يطلع فاضي — شوف شرح rawHtml بالأعلى للتفاصيل والقيود
+  const runDuplicateSection = (id: string, captureHtml: boolean) => {
     const sectionEl = elRefsRef.current[id]
     if (!sectionEl) return
 
@@ -550,6 +570,7 @@ export function EditModeProvider({
     const sectionHeight = rect.height
 
     const isCore = id.startsWith(CORE_SECTION_PREFIX)
+    const htmlSnapshot = captureHtml && isCore ? sectionEl.outerHTML : undefined
 
     const floatingIds = Object.keys(stylesRef.current).filter(
       (k) =>
@@ -586,13 +607,16 @@ export function EditModeProvider({
       })
 
       // القسم الجديد نفسه: لو الأصلي قسم مُضاف يدويًا ننسخ لونه وارتفاعه
-      // بالضبط. لو الأصلي قسم أساسي جاهز (ما نقدر نكرر محتواه المُبرمج)
-      // نسوي قسم مُضاف جديد بنفس الارتفاع المقاس فعليًا ولون فاتح
-      // افتراضي، يصير مكان لاستضافة نسخة العناصر اليدوية اللي كانت بداخله
+      // بالضبط. لو الأصلي قسم أساسي جاهز وما طلبنا تصوير محتواه (captureHtml
+      // false أو فشل القياس) نسوي قسم مُضاف جديد بنفس الارتفاع المقاس فعليًا
+      // ولون فاتح افتراضي، يصير مكان لاستضافة نسخة العناصر اليدوية اللي
+      // كانت بداخله. لو صوّرنا المحتوى فعلاً (htmlSnapshot موجود) نخلي
+      // الارتفاع تلقائي حتى يتحدد حسب المحتوى المنسوخ نفسه بالضبط
       next[newSectionId] = {
         ...next[newSectionId],
         size: isCore ? Math.round(sectionHeight) : prev[id]?.size ?? DEFAULT_SECTION_HEIGHT,
         color: isCore ? undefined : prev[id]?.color,
+        rawHtml: htmlSnapshot,
       }
 
       // نسخ كل عنصر عائم كان بصريًا داخل القسم الأصلي، وننزّله لنفس
@@ -615,6 +639,9 @@ export function EditModeProvider({
     setSelectedId(newSectionId)
   }
 
+  const duplicateSection = (id: string) => runDuplicateSection(id, false)
+  const duplicateSectionFull = (id: string) => runDuplicateSection(id, true)
+
   const sidebarWidth = editable ? RAIL_WIDTH + (activeTab ? FLYOUT_WIDTH : 0) : 0
 
   return (
@@ -635,6 +662,7 @@ export function EditModeProvider({
         addCustomSection,
         moveAnySection,
         duplicateSection,
+        duplicateSectionFull,
         registerElRef,
         coreSections,
         registerCoreSection,
@@ -1727,6 +1755,7 @@ export function EditPanel() {
     addCustomSection,
     moveAnySection,
     duplicateSection,
+    duplicateSectionFull,
     coreSections,
     undo,
     redo,
@@ -2378,15 +2407,30 @@ export function EditPanel() {
                 <PanelSection title="نسخ القسم">
                   <button
                     type="button"
+                    onClick={() => duplicateSectionFull(selectedId!)}
+                    style={{ ...smallBtnStyle, width: "100%", background: "#B8862F", color: "#1A1210", fontWeight: 700 }}
+                  >
+                    ⧉ نسخ القسم كامل بالي فيه
+                  </button>
+                  <div style={{ ...hintTextStyle, marginTop: 6, marginBottom: 12 }}>
+                    ينسخ القسم بكل محتواه كما تشوفه بالضبط الآن (نصوص/صور/
+                    تصميم) لقسم جديد تحته مباشرة. النسخة ثابتة (تصوير) —
+                    أي عدّاد تنازلي أو زر بداخلها يبقى بحالته وقت النسخ ولا
+                    يشتغل، وتعديل نصوصها من هنا ما يشتغل عليها؛ لتغييرها
+                    تقدر تحذفها وتنسخ من جديد.
+                  </div>
+
+                  <button
+                    type="button"
                     onClick={() => duplicateSection(selectedId!)}
                     style={{ ...smallBtnStyle, width: "100%" }}
                   >
-                    ⧉ نسخ هذا القسم لقسم جديد تحته
+                    ⧉ نسخ لقسم جديد فاضي تحته
                   </button>
                   <div style={{ ...hintTextStyle, marginTop: 6 }}>
-                    محتوى هذا القسم مُبرمج بالقالب فما يُنسخ بنفس تصميمه
-                    بالضبط — بس أي نص/أيقونة/صورة أضفتها يدويًا وتقع
-                    بصريًا داخله الآن تُنسخ لك بقسم جديد فاضي تحته مباشرة.
+                    قسم فاضي بنفس ارتفاع هذا القسم بالضبط، تبدأ فيه من
+                    الصفر — بس أي نص/أيقونة/صورة أضفتها يدويًا وتقع بصريًا
+                    داخل القسم الأصلي الآن تُنسخ لك معه.
                   </div>
                 </PanelSection>
 
@@ -3024,6 +3068,45 @@ export function CustomSectionsLayer() {
       {ids.map((key) => {
         const st = styles[key] || {}
         const isSelected = selectedId === key
+        // لو القسم عبارة عن نسخة مصوّرة من قسم أساسي (rawHtml موجود، شوف
+        // duplicateSectionFull) نعرض المحتوى المنسوخ نفسه بدل صندوق فاضي،
+        // وارتفاعه تلقائي حسب المحتوى مو الحقل size — نفس فكرة "نسخة طبق
+        // الأصل" مجمّدة (بدون تفاعل: عدّادات/أزرار بداخلها ما تشتغل)
+        if (st.rawHtml) {
+          return (
+            <section
+              key={key}
+              ref={(el) => registerElRef(key, el)}
+              className="w-full relative"
+              style={{
+                order: st.order ?? 1000,
+                cursor: editable ? "pointer" : undefined,
+                boxShadow: isSelected ? "inset 0 0 0 3px #3B82F6" : "inset 0 0 0 0px transparent",
+                outline: editable ? "1px dashed rgba(184,134,47,0.35)" : undefined,
+                outlineOffset: -1,
+                transition: "box-shadow .15s ease",
+              }}
+              onClick={
+                editable
+                  ? (e) => {
+                      e.stopPropagation()
+                      setSelectedId(key)
+                    }
+                  : undefined
+              }
+            >
+              {/* نسخة ثابتة (مو عناصر React حقيقية) — عرض بصري فقط. بوضع
+                  التعديل نعطّل التفاعل بداخلها (pointer-events: none) حتى
+                  الضغط يوصّل دايمًا لتحديد القسم نفسه بدل تشغيل أي رابط/
+                  زر جوّاها (زر واتساب، رابط الخريطة...)، وما يتوهم الأدمن
+                  إنها عناصر قابلة للتعديل المباشر مثل الأصلية */}
+              <div
+                style={{ pointerEvents: editable ? "none" : "auto" }}
+                dangerouslySetInnerHTML={{ __html: st.rawHtml }}
+              />
+            </section>
+          )
+        }
         return (
           <section
             key={key}
