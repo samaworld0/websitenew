@@ -1,112 +1,237 @@
-// يحسب الأيام/الساعات/الدقائق/الثواني المتبقية بشكل حقيقي حتى تاريخ الهدف
-// (countdownDate). لو ما فيه تاريخ محدد أو التاريخ فات، يرجّع كلها أصفار.
-export function getTimeLeft(targetIso?: string) {
-  if (!targetIso) return { days: 0, hours: 0, minutes: 0, seconds: 0 }
-  const target = new Date(targetIso).getTime()
-  if (Number.isNaN(target)) return { days: 0, hours: 0, minutes: 0, seconds: 0 }
-  const diff = Math.max(0, target - Date.now())
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-  return { days, hours, minutes, seconds }
+import { useEffect, type ReactNode } from "react"
+import {
+  useEditMode,
+  EditableText,
+  EditableImage,
+  CUSTOM_PREFIX,
+  CUSTOM_IMAGE_PREFIX,
+  SECTION_PREFIX,
+  type TextStyle,
+} from "./LiveEditing"
+
+const DEFAULT_SECTION_HEIGHT = 220
+
+function sortSectionIds(ids: string[], styles: Record<string, TextStyle>): string[] {
+  return [...ids].sort((a, b) => {
+    const oa = styles[a]?.order
+    const ob = styles[b]?.order
+    if (oa != null && ob != null) return oa - ob
+    if (oa != null) return -1
+    if (ob != null) return 1
+    return a < b ? -1 : a > b ? 1 : 0
+  })
 }
 
-// يحوّل لون Hex (مثال: "#FFC400") إلى صيغة rgba() بنفس درجة الشفافية
-// المطلوبة — نستخدمها حتى نبني تدرّج اللمعة (الفلاش) بأي لون يختاره الأدمن
-// بدل ما يكون أبيض ثابت دائماً.
-export function hexToRgba(hex: string, alpha: number): string {
-  const clean = (hex || "").replace("#", "")
-  const full =
-    clean.length === 3
-      ? clean
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : clean
-  const num = parseInt(full, 16)
-  if (Number.isNaN(num) || full.length !== 6) return `rgba(255,255,255,${alpha})`
-  const r = (num >> 16) & 255
-  const g = (num >> 8) & 255
-  const b = num & 255
-  return `rgba(${r},${g},${b},${alpha})`
-}
+export function ReorderableSection({
+  id,
+  label,
+  index,
+  children,
+}: {
+  id: string
+  label: string
+  index: number
+  children: ReactNode
+}) {
+  const { editable, styles, selectedId, setSelectedId, registerCoreSection, registerElRef } =
+    useEditMode()
 
-// يفتّح أو يغمّق أي لون Hex بنسبة معيّنة — نستخدمها حتى نولّد درجات لون
-// كاملة (فاتح/غامق) من لون واحد يختاره الأدمن من لوحة التحكم، بدل ما نطلب
-// منه يحدد كل درجة يدوياً.
-// percent موجب = تفتيح، سالب = تغميق (مثلاً -20 تعني أغمق بنسبة 20%)
-export function shadeColor(hex: string, percent: number): string {
-  const clean = hex.replace("#", "")
-  const full =
-    clean.length === 3
-      ? clean
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : clean
-  const num = parseInt(full, 16)
-  if (Number.isNaN(num)) return hex
+  useEffect(() => {
+    if (editable) registerCoreSection(id, label, index)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable, id, label, index])
 
-  let r = (num >> 16) & 0xff
-  let g = (num >> 8) & 0xff
-  let b = num & 0xff
+  const isHidden = !!styles[id]?.hidden
+  const order = styles[id]?.order ?? index
 
-  const amt = Math.round(2.55 * percent)
-  r = Math.max(0, Math.min(255, r + amt))
-  g = Math.max(0, Math.min(255, g + amt))
-  b = Math.max(0, Math.min(255, b + amt))
+  if (!editable) {
+    if (isHidden) return null
+    return <div style={{ order }}>{children}</div>
+  }
+
+  const isSelected = selectedId === id
 
   return (
-    "#" +
-    [r, g, b]
-      .map((v) => v.toString(16).padStart(2, "0"))
-      .join("")
+    <div
+      ref={(el) => registerElRef(id, el)}
+      className="relative w-full"
+      style={{
+        order,
+        outline: "1px dashed rgba(184,134,47,0.35)",
+        outlineOffset: -1,
+        opacity: isHidden ? 0.35 : 1,
+        transition: "opacity .15s ease",
+      }}
+    >
+      {/* حاوية بارتفاع صفر عشان الزر (sticky) ما ياخذ مساحة فعلية
+          بتدفق الصفحة ويدفع محتوى القسم لتحت (كان يسبب فراغ أبيض فوق
+          كل قسم بوضع التحرير) — overflow: visible يخلي الزر يظهر
+          طبيعي رغم إن ارتفاع حاويته صفر */}
+      <div style={{ height: 0, overflow: "visible", position: "relative" }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setSelectedId(id)
+          }}
+          className="z-40 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white border backdrop-blur-sm shadow-lg"
+          style={{
+            position: "sticky",
+            top: 8,
+            insetInlineStart: 8,
+            background: isSelected ? "#3B82F6" : "rgba(0,0,0,0.55)",
+            borderColor: isSelected ? "#3B82F6" : "rgba(255,255,255,0.25)",
+            fontFamily: "Cairo, sans-serif",
+          }}
+          title={`تحريك قسم: ${label}`}
+        >
+          {isHidden && "⊘ "}
+          ✥ {label}
+        </button>
+      </div>
+      {isSelected && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ boxShadow: "inset 0 0 0 3px #3B82F6", zIndex: 35 }}
+        />
+      )}
+      {children}
+    </div>
   )
 }
 
-// خيارات حجم خط أسماء العروسين — تُستخدم بلوحة التحكم (اختيار) وبقوالب
-// العرض (تطبيق الكلاس المطابق فعلياً بالشاشة الأولى)
-export const NAME_FONT_SIZE_OPTIONS: { value: "sm" | "md" | "lg" | "xl"; label: string }[] = [
-  { value: "sm", label: "صغير" },
-  { value: "md", label: "متوسط" },
-  { value: "lg", label: "كبير" },
-  { value: "xl", label: "كبير جداً" },
-]
+export function CustomSectionsLayer() {
+  const { editable, styles, selectedId, setSelectedId, registerElRef } = useEditMode()
+  const ids = sortSectionIds(
+    Object.keys(styles).filter((k) => k.startsWith(SECTION_PREFIX)),
+    styles,
+  )
+  if (ids.length === 0) return null
 
-// أحجام أسماء العروسين: كانت مبنية على md:text-* (نسبة لعرض الشاشة نفسها)
-// وهذا كان صحيح وقت ما كان القسم الأول يمتد بعرض الشاشة كامل بالكمبيوتر.
-// بعد ما صار محتوى الصفحة داخل بطاقة بعرض ثابت (max-w-[560px]) على كل
-// الأجهزة، أي حجم "md:" كان يكبر حسب عرض المتصفح مو حسب عرض البطاقة
-// الفعلي — فيصير النص أكبر من البطاقة نفسها ويطفح أو ينكسر بشكل سيء على
-// الشاشات الواسعة. الحل: clamp() يخلي الحجم يتدرج بسلاسة حسب عرض الشاشة
-// (vw) لغاية حد أقصى مضبوط على عرض البطاقة، فما يكبر أكثر من اللازم مهما
-// كانت الشاشة عريضة، وبنفس الوقت يصغر بأمان على أضيق جوال بدون قص.
-const NAME_FONT_SIZE_CLASSES: Record<"sm" | "md" | "lg" | "xl", string> = {
-  sm: "text-[clamp(2.25rem,9vw,3.75rem)]",
-  md: "text-[clamp(2.75rem,11vw,4.5rem)]",
-  lg: "text-[clamp(3.25rem,13vw,5.5rem)]",
-  xl: "text-[clamp(3.75rem,15vw,6.5rem)]",
+  return (
+    <>
+      {ids.map((key) => {
+        const st = styles[key] || {}
+        const isSelected = selectedId === key
+
+        if (st.rawHtml) {
+          return (
+            <section
+              key={key}
+              ref={(el) => registerElRef(key, el)}
+              className="w-full relative"
+              style={{
+                order: st.order ?? 1000,
+                cursor: editable ? "pointer" : undefined,
+                boxShadow: isSelected
+                  ? "inset 0 0 0 3px #3B82F6"
+                  : "inset 0 0 0 0px transparent",
+                outline: editable ? "1px dashed rgba(184,134,47,0.35)" : undefined,
+                outlineOffset: -1,
+                transition: "box-shadow .15s ease",
+              }}
+              onClick={
+                editable
+                  ? (e) => {
+                      e.stopPropagation()
+                      setSelectedId(key)
+                    }
+                  : undefined
+              }
+            >
+              <div style={{ pointerEvents: editable ? "none" : "auto" }}
+                dangerouslySetInnerHTML={{ __html: st.rawHtml }} />
+            </section>
+          )
+        }
+
+        return (
+          <section
+            key={key}
+            ref={(el) => registerElRef(key, el)}
+            className="w-full"
+            style={{
+              order: st.order ?? 1000,
+              height: st.size ?? DEFAULT_SECTION_HEIGHT,
+              backgroundColor: st.color || "#FBF3EF",
+              cursor: editable ? "pointer" : undefined,
+              boxShadow: isSelected
+                ? "inset 0 0 0 3px #3B82F6"
+                : "inset 0 0 0 0px transparent",
+              outline: editable ? "1px dashed rgba(184,134,47,0.35)" : undefined,
+              outlineOffset: -1,
+              transition: "box-shadow .15s ease",
+            }}
+            onClick={
+              editable
+                ? (e) => {
+                    e.stopPropagation()
+                    setSelectedId(key)
+                  }
+                : undefined
+            }
+          />
+        )
+      })}
+    </>
+  )
 }
 
-// يرجّع كلاس Tailwind المطابق لحجم اسم العروسين. لو الدعوة ما محدد فيها
-// حجم، نرجع الحجم الافتراضي حسب القالب (defaultSize) حتى الدعوات
-// القديمة تضل بنفس شكلها الأصلي بالضبط.
-export function getNameFontSizeClass(
-  size: "sm" | "md" | "lg" | "xl" | undefined,
-  defaultSize: "sm" | "md" | "lg" | "xl",
-): string {
-  return NAME_FONT_SIZE_CLASSES[size || defaultSize]
+export function CustomTextLayer() {
+  const { styles, registerElRef } = useEditMode()
+  const ids = Object.keys(styles).filter((k) => k.startsWith(CUSTOM_PREFIX))
+  if (ids.length === 0) return null
+
+  return (
+    <div className="relative w-full" style={{ height: 0 }}>
+      {ids.map((key, i) => (
+        <div
+          key={key}
+          ref={(el) => registerElRef(key, el)}
+          className="absolute z-30"
+          style={{
+            top: `${90 + i * 60}px`,
+            insetInlineStart: "50%",
+            transform: "translateX(-50%)",
+            maxWidth: "90%",
+            width: "max-content",
+          }}
+        >
+          <EditableText
+            id={key}
+            as="div"
+            className="whitespace-pre-wrap text-center px-3"
+            style={{ fontSize: 22, color: "#2A211D", fontFamily: "Cairo, sans-serif" }}
+          >
+            {styles[key]?.text || "نص جديد"}
+          </EditableText>
+        </div>
+      ))}
+    </div>
+  )
 }
 
-// برنامج الحفل الافتراضي — يستخدمه قالب وصال نفسه ولوحة تحكم التعديل
-// (AdminEditForm) حتى تبتدي بنفس القيم لو الدعوة ما فيها برنامج مخصص بعد
-export const DEFAULT_WISAL_PROGRAM = [
-  { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
-  { label: "عقد القران", time: "٧:٣٠ مساءً" },
-  { label: "العشاء", time: "٩:٠٠ مساءً" },
-]
+export function CustomImageLayer() {
+  const { styles, registerElRef } = useEditMode()
+  const ids = Object.keys(styles).filter((k) => k.startsWith(CUSTOM_IMAGE_PREFIX))
+  if (ids.length === 0) return null
 
-export function getDefaultProgramItems(templateType: "wisal" | undefined) {
-  return DEFAULT_WISAL_PROGRAM
+  return (
+    <div className="relative w-full" style={{ height: 0 }}>
+      {ids.map((key, i) => (
+        <div
+          key={key}
+          ref={(el) => registerElRef(key, el)}
+          className="absolute z-30"
+          style={{
+            top: `${90 + i * 60}px`,
+            insetInlineStart: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          <EditableImage id={key} />
+        </div>
+      ))}
+    </div>
+  )
 }
