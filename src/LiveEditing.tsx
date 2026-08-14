@@ -63,6 +63,13 @@ export interface TextStyle {
   // النسخ ولا يشتغل، وتعديل النصوص بالمحرر ما يشتغل عليها لأنها مو عناصر
   // React حقيقية
   rawHtml?: string
+  // نسبة تكبير/تصغير القسم كامل (بالنسبة المئوية، ١٠٠ = الحجم الأصلي) —
+  // تُستخدم فقط للعناصر المسبوقة بـ CORE_SECTION_PREFIX (وبعض النسخ
+  // المصوّرة section:). تُطبَّق بخاصية CSS "zoom" على حاوية القسم كاملة،
+  // فتكبّر/تصغّر كل محتواه (نصوص، صور، تباعد) دفعة وحدة بنفس النسبة، بعكس
+  // "transform: scale" ما تأثر على المساحة الفعلية اللي ياخذها القسم
+  // بالصفحة (فما تسبب تراكب مع القسم اللي بعده)
+  scale?: number
 }
 
 const BG_PREFIX = "bg:"
@@ -93,6 +100,10 @@ export const SECTION_PREFIX = "section:"
 const DEFAULT_SECTION_HEIGHT = 220
 const MIN_SECTION_HEIGHT = 80
 const MAX_SECTION_HEIGHT = 900
+// حدود نسبة تكبير/تصغير القسم كامل (شوف حقل scale بـ TextStyle فوق)
+const DEFAULT_SECTION_SCALE = 100
+const MIN_SECTION_SCALE = 60
+const MAX_SECTION_SCALE = 160
 
 // أقسام القالب الأساسية الجاهزة (الافتتاحية، العد التنازلي، برنامج
 // الحفل...) — كل قالب (وصال/لمسة) يلف كل قسم أساسي فيه بمكوّن
@@ -749,6 +760,8 @@ export function ReorderableSection({
   const isHidden = !!styles[id]?.hidden
 
   const order = styles[id]?.order ?? index
+  // نسبة تكبير/تصغير القسم (شوف حقل scale بواجهة TextStyle فوق)
+  const zoom = (styles[id]?.scale ?? DEFAULT_SECTION_SCALE) / 100
 
   if (!editable) {
     // برّه وضع التعديل: القسم المخفي ما ينعرض إطلاقاً عند الضيف، وما ياخذ
@@ -758,7 +771,7 @@ export function ReorderableSection({
     // اللي حرّكه الأدمن بالمحرر (وانحفظ فعلياً بـ textStyles) ما ينعكس
     // أبداً عند الضيف أو بالمعاينة الحقيقية — يضل يعرض الترتيب الافتراضي
     // بالكود فقط، رغم إن القيمة محفوظة صح بقاعدة البيانات
-    return <div style={{ order }}>{children}</div>
+    return <div style={{ order, zoom }}>{children}</div>
   }
 
   const isSelected = selectedId === id
@@ -769,6 +782,7 @@ export function ReorderableSection({
       className="relative w-full"
       style={{
         order,
+        zoom,
         // خط متقطع خفيف يوضّح حدود كل قسم أساسي أثناء التعديل بس (ما يأثر
         // على المساحة الفعلية لأنه outline مو border) — يمنع الالتباس
         // اللي يصير لما توصل بالسكرول بالضبط لحد الفاصل بين قسمين، حتى لو
@@ -2474,6 +2488,55 @@ export function EditPanel() {
                   </button>
                 </PanelSection>
 
+                <PanelSection title="حجم القسم (تكبير/تصغير)">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      style={smallBtnStyle}
+                      onClick={() =>
+                        updateStyle(selectedId, {
+                          scale: Math.max(
+                            MIN_SECTION_SCALE,
+                            (st.scale ?? DEFAULT_SECTION_SCALE) - 10,
+                          ),
+                        })
+                      }
+                    >
+                      −
+                    </button>
+                    <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 50, textAlign: "center" }}>
+                      {Math.round(st.scale ?? DEFAULT_SECTION_SCALE)}٪
+                    </span>
+                    <button
+                      type="button"
+                      style={smallBtnStyle}
+                      onClick={() =>
+                        updateStyle(selectedId, {
+                          scale: Math.min(
+                            MAX_SECTION_SCALE,
+                            (st.scale ?? DEFAULT_SECTION_SCALE) + 10,
+                          ),
+                        })
+                      }
+                    >
+                      +
+                    </button>
+                    {st.scale != null && st.scale !== DEFAULT_SECTION_SCALE && (
+                      <button
+                        type="button"
+                        style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
+                        onClick={() => updateStyle(selectedId, { scale: undefined })}
+                      >
+                        ↺ الأصلي
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ ...hintTextStyle, marginTop: 6 }}>
+                    يكبّر أو يصغّر كل محتوى القسم دفعة وحدة (النصوص والصور
+                    والتباعد) بنفس النسبة، بدون ما يأثر على باقي الأقسام.
+                  </div>
+                </PanelSection>
+
                 <PanelSection title="نسخ القسم">
                   <button
                     type="button"
@@ -2647,6 +2710,53 @@ export function EditPanel() {
               >
                 ↺ إرجاع للموضع الأصلي
               </button>
+            </PanelSection>
+          )}
+
+          {isSection && st.rawHtml && (
+            <PanelSection title="حجم القسم (تكبير/تصغير)">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      scale: Math.max(
+                        MIN_SECTION_SCALE,
+                        (st.scale ?? DEFAULT_SECTION_SCALE) - 10,
+                      ),
+                    })
+                  }
+                >
+                  −
+                </button>
+                <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 50, textAlign: "center" }}>
+                  {Math.round(st.scale ?? DEFAULT_SECTION_SCALE)}٪
+                </span>
+                <button
+                  type="button"
+                  style={smallBtnStyle}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      scale: Math.min(
+                        MAX_SECTION_SCALE,
+                        (st.scale ?? DEFAULT_SECTION_SCALE) + 10,
+                      ),
+                    })
+                  }
+                >
+                  +
+                </button>
+                {st.scale != null && st.scale !== DEFAULT_SECTION_SCALE && (
+                  <button
+                    type="button"
+                    style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
+                    onClick={() => updateStyle(selectedId, { scale: undefined })}
+                  >
+                    ↺ الأصلي
+                  </button>
+                )}
+              </div>
             </PanelSection>
           )}
 
@@ -3150,6 +3260,7 @@ export function CustomSectionsLayer() {
               className="w-full relative"
               style={{
                 order: st.order ?? 1000,
+                zoom: (st.scale ?? DEFAULT_SECTION_SCALE) / 100,
                 cursor: editable ? "pointer" : undefined,
                 boxShadow: isSelected ? "inset 0 0 0 3px #3B82F6" : "inset 0 0 0 0px transparent",
                 outline: editable ? "1px dashed rgba(184,134,47,0.35)" : undefined,
