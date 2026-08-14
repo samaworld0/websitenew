@@ -21,7 +21,10 @@ export function InvitationFullView({
   }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-[#0D0706]">
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center w-full h-full bg-[#0D0706]"
+      dir="ltr"
+    >
       <div className="absolute top-6 left-6 z-[100] flex items-center gap-2">
         {isTrial && (
           <span
@@ -40,27 +43,16 @@ export function InvitationFullView({
         </button>
       </div>
 
-      {/* حاوية البطاقة: مقاس ثابت بنسبة 1080×1920 (9:16) دائمًا — زي لوحة
-          تصميم بكانفا — تتمدد أو تتقلص لتناسب أي شاشة بس تحافظ على نفس
-          النسبة تمامًا (بعكس السلوك القديم اللي كان ياخذ عرض/ارتفاع الشاشة
-          كامل بالجوال، فتختلف النسبة الظاهرة من جهاز لآخر). صيغة
-          max-width/max-height أدناه (بدلالة ارتفاع/عرض الشاشة الحقيقيين)
-          هي الحيلة القياسية لعمل "letterbox" — تكبّر البطاقة لأقصى حجم
-          ممكن بدون ما تتجاوز حدود الشاشة بأي اتجاه، و aspect-ratio يضمن
-          النسبة صح حتى لو انحسبت width/height بشكل منفصل بأي متصفح.
-          خلفية داكنة حواليها (bg-[#0D0706] بالحاوية الأب) تبين كـ"حواف"
-          سوداء (letterbox) لو نسبة شاشة الجهاز مختلفة عن 9:16.
-          [transform:translateZ(0)] يخلي هذي الحاوية "containing block" لأي
-          عنصر بداخلها معرّف position:fixed (زر كتم الصوت، طبقة فتح
-          الدعوة، الفلاش...) عشان يتحددوا بالنسبة لعرض البطاقة نفسها، مو
-          الشاشة كاملة. */}
+      {/* حاوية البطاقة: عرض كامل بالجوال، وبعرض ثابت يشبه شاشة الجوال
+          ويتوسط الشاشة بالكمبيوتر (md وفوق)، مع خلفية داكنة حواليها
+          (bg-[#0D0706] بالحاوية الأب). [transform:translateZ(0)] يخلي هذي
+          الحاوية "containing block" لأي عنصر بداخلها معرّف position:fixed
+          (زر كتم الصوت، طبقة فتح الدعوة، الفلاش...) عشان يتحددوا بالنسبة
+          لعرض البطاقة نفسها، مو الشاشة كاملة — نفس سلوك الجوال بالضبط. */}
       <div
-        className="relative w-full h-full shadow-2xl overflow-hidden [transform:translateZ(0)]"
-        style={{
-          aspectRatio: "1080 / 1920",
-          maxWidth: "calc(100vh * 1080 / 1920)",
-          maxHeight: "calc(100vw * 1920 / 1080)",
-        }}
+        data-invitation-viewport
+        dir="rtl"
+        className="relative w-full h-full min-w-0 md:w-[480px] md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
       >
         {inv.templateType === "wisal" ? (
           <EditModeProvider editable={false} initialStyles={inv.textStyles || {}}>
