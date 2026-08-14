@@ -97,33 +97,26 @@ function EditorShell({
 
       <DeselectSurface>
         <div
-          className="w-full h-full flex items-center justify-center overflow-auto"
+          className="w-full h-full flex justify-center overflow-auto"
           style={{
             paddingInlineStart: sidebarWidth,
             transition: "padding-inline-start .15s ease",
           }}
         >
-          {/* حاوية البطاقة: مقاس ثابت بنسبة 1080×1920 (9:16) دائمًا — زي
-              لوحة تصميم بكانفا — تتمدد أو تتقلص لتناسب المساحة المتاحة
-              (بعد خصم الشريط الجانبي) بس تحافظ على نفس النسبة تمامًا، على
-              أي جهاز. خلفية داكنة حواليها من كل الاتجاهات تبين كحواف
-              (letterbox) لو المساحة المتاحة نسبتها مختلفة عن 9:16.
-              [transform:translateZ(0)] يخلي هذي الحاوية "containing
-              block" لأي عنصر position:fixed بداخلها (زر كتم الصوت، طبقة
-              فتح الدعوة...) عشان يتحدد بالنسبة لعرض البطاقة نفسها، نفس
-              سلوك صفحة عرض الضيف بالضبط — بما فيها صيغة max-width/
-              max-height نفسها بالضبط.
+          {/* حاوية البطاقة: عرض كامل بالجوال، وبعرض ثابت يشبه شاشة الجوال
+              ويتوسط المساحة المتبقية (بعد الشريط الجانبي) بالكمبيوتر، مع
+              خلفية داكنة حواليها. [transform:translateZ(0)] يخلي هذي
+              الحاوية "containing block" لأي عنصر position:fixed بداخلها
+              (زر كتم الصوت، طبقة فتح الدعوة...) عشان يتحدد بالنسبة لعرض
+              البطاقة نفسها، نفس سلوك صفحة عرض الضيف بالضبط.
               خاصية zoom (منفصلة تمامًا عن transform) تكبّر/تصغّر البطاقة
               كاملة بمحرر التصميم فقط — تحافظ على مساحتها الحقيقية بالتخطيط
               (بعكس transform:scale) فيبقى التوسيط والسكرول الداخلي صحيحين
               تلقائيًا بأي مستوى تكبير */}
           <div
-            className="relative w-full h-full min-w-[280px] shrink-0 rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden [transform:translateZ(0)]"
+            className="relative h-full w-full min-w-[320px] shrink-0 md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
             style={
               {
-                aspectRatio: "1080 / 1920",
-                maxWidth: "calc(100vh * 1080 / 1920)",
-                maxHeight: "calc(100vw * 1920 / 1080)",
                 zoom,
                 transition: "zoom .15s ease",
               } as React.CSSProperties & { zoom?: number }
