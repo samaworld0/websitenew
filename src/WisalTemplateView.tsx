@@ -367,9 +367,10 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               لو رابط الفيديو انكسر أو الملف ما وصل (بدل ما تطلع الشاشة
               فاضية/بيضاء زي قبل). */}
           <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center bg-black"
+            className="relative w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center bg-black"
             style={{
               backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
+              minHeight: "min(100vh, 177.7777778cqw)",
             }}
           >
             <div className="absolute inset-0 opacity-20 pointer-events-none">
@@ -389,7 +390,8 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
               </video>
             )}
 
-            <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
+            <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full"
+              style={{ minHeight: "min(100vh, 177.7777778cqw)" }}>
               <div className="text-center px-2">
                 {/* الشعار: رابطه يجي من نموذج بيانات الدعوة (inv.logoUrl)
                     زي قبل، بس صار عنصر EditableImage كامل — بوضع التعديل
