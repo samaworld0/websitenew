@@ -97,24 +97,26 @@ function EditorShell({
 
       <DeselectSurface>
         <div
-          className="w-full h-full flex justify-center overflow-auto"
+          className="w-full h-full flex justify-center overflow-auto md:items-center md:py-6"
           style={{
             paddingInlineStart: sidebarWidth,
             transition: "padding-inline-start .15s ease",
           }}
         >
-          {/* حاوية البطاقة: عرض كامل بالجوال، وبعرض ثابت يشبه شاشة الجوال
-              ويتوسط المساحة المتبقية (بعد الشريط الجانبي) بالكمبيوتر، مع
-              خلفية داكنة حواليها. [transform:translateZ(0)] يخلي هذي
-              الحاوية "containing block" لأي عنصر position:fixed بداخلها
-              (زر كتم الصوت، طبقة فتح الدعوة...) عشان يتحدد بالنسبة لعرض
-              البطاقة نفسها، نفس سلوك صفحة عرض الضيف بالضبط.
+          {/* حاوية البطاقة: عرض كامل بالجوال، وبعرض وارتفاع ثابتين تشبه
+              نافذة/شاشة جوال حقيقية وتتوسط المساحة المتبقية (بعد الشريط
+              الجانبي) بالكمبيوتر، مع خلفية داكنة حواليها من كل الجهات —
+              فوق وتحت زي ما هو يمين ويسار، حتى تبين حدود العمل واضحة من
+              كل الاتجاهات مو بس الجوانب. [transform:translateZ(0)] يخلي
+              هذي الحاوية "containing block" لأي عنصر position:fixed
+              بداخلها (زر كتم الصوت، طبقة فتح الدعوة...) عشان يتحدد
+              بالنسبة لعرض البطاقة نفسها، نفس سلوك صفحة عرض الضيف بالضبط.
               خاصية zoom (منفصلة تمامًا عن transform) تكبّر/تصغّر البطاقة
               كاملة بمحرر التصميم فقط — تحافظ على مساحتها الحقيقية بالتخطيط
               (بعكس transform:scale) فيبقى التوسيط والسكرول الداخلي صحيحين
               تلقائيًا بأي مستوى تكبير */}
           <div
-            className="relative h-full w-full min-w-[320px] shrink-0 md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
+            className="relative h-full w-full min-w-[320px] shrink-0 md:h-[88vh] md:max-h-[880px] md:max-w-[480px] md:rounded-[2rem] md:border md:border-white/10 md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
             style={
               {
                 zoom,
