@@ -119,6 +119,7 @@ function EditorShell({
             style={
               {
                 zoom,
+                containerType: "inline-size",
                 transition: "zoom .15s ease",
               } as React.CSSProperties & { zoom?: number }
             }
