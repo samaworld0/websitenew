@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, EditableImage, LOGO_ID, CustomTextLayer, CustomImageLayer, CustomSectionsLayer, ReorderableSection } from "./LiveEditing"
+import { EditableText, EditableBackground, EditableIcon, EditableImage, LOGO_ID } from "./LiveEditing"
+import { CustomTextLayer, CustomImageLayer, CustomSectionsLayer, ReorderableSection } from "./InvitationLayers"
 
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
 // لما يوصله السكرول — أنيميشن خفيف ولطيف بدون أي مكتبات خارجية.
