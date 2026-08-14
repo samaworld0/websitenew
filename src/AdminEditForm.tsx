@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Invitation, categories } from "./types"
 import { NAME_FONT_SIZE_OPTIONS, getDefaultProgramItems } from "./utils"
 import { uploadInvitationFile } from "./backend"
+import { CUSTOM_IMAGE_PREFIX } from "./LiveEditing"
 
 type EditableInvitation = Omit<Invitation, "gradient"> & {
   gradientFrom: string
@@ -88,6 +89,59 @@ export function AdminEditForm({
     } finally {
       setUploadingField(null)
     }
+  }
+
+  // ٦ خانات "شعارات/عناصر إضافية" — تترفع من هنا (نموذج التعديل الثابت)
+  // بدل التصميم المباشر، بس تُخزَّن بنفس آلية الصور المُضافة يدويًا
+  // بالمحرر المباشر (مفتاح مسبوق بـ CUSTOM_IMAGE_PREFIX داخل textStyles،
+  // بحقل imageUrl) — وهذا يخليها تلقائياً عناصر قابلة للسحب/التكبير/
+  // التدوير بالتصميم المباشر بعد الرفع، بدون أي كود عرض إضافي، وبدون
+  // حاجة لأعمدة جديدة بقاعدة البيانات (نفس عمود textStyles الموجود أصلاً)
+  const EXTRA_LOGO_SLOTS = [
+    "formLogo1",
+    "formLogo2",
+    "formLogo3",
+    "formLogo4",
+    "formLogo5",
+    "formLogo6",
+  ] as const
+
+  const getExtraLogoUrl = (slot: string): string | undefined =>
+    form.textStyles?.[CUSTOM_IMAGE_PREFIX + slot]?.imageUrl
+
+  const handleExtraLogoUpload = async (slot: string, file: File | null) => {
+    if (!file) return
+    const fieldKey = "extraLogo:" + slot
+    setUploadingField(fieldKey)
+    try {
+      const url = await uploadInvitationFile(file, form.id, slot)
+      setForm((f) => ({
+        ...f,
+        textStyles: {
+          ...(f.textStyles || {}),
+          [CUSTOM_IMAGE_PREFIX + slot]: {
+            ...(f.textStyles?.[CUSTOM_IMAGE_PREFIX + slot] || {}),
+            imageUrl: url,
+          },
+        },
+      }))
+    } catch (err) {
+      console.error("Extra logo upload error:", err)
+      alert(
+        "فشل رفع الملف. تأكد من إنشاء bucket عام باسم \"invitation-media\" داخل Supabase Storage، أو استخدم رابط مباشر بدل الرفع.",
+      )
+    } finally {
+      setUploadingField(null)
+    }
+  }
+
+  const handleExtraLogoRemove = (slot: string) => {
+    setForm((f) => {
+      if (!f.textStyles) return f
+      const next = { ...f.textStyles }
+      delete next[CUSTOM_IMAGE_PREFIX + slot]
+      return { ...f, textStyles: next }
+    })
   }
 
   // خلفية القسم الأول صارت خيار واحد بس (صورة أو فيديو، مو الاثنين):
@@ -419,6 +473,65 @@ export function AdminEditForm({
           لو رفعت شعار، يظهر أعلى الشاشة الأولى فوق الآية والأسماء. اتركه
           فاضي عشان ما يظهر أي شعار (قالب "وصال" فقط حاليًا).
         </p>
+      </div>
+
+      <div className="md:col-span-2">
+        <label className="block text-sm font-bold mb-2">
+          شعارات / عناصر إضافية (حتى ٦)
+        </label>
+        <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+          كل خانة شعار مستقل — بعد الرفع تقدر تدخل التصميم المباشر وتسحبه
+          لأي مكان بالدعوة وتكبّره/تصغّره/تدوّره (نفس أي عنصر يُضاف من
+          التصميم المباشر). خله فاضي لو ما تحتاجه.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {EXTRA_LOGO_SLOTS.map((slot, i) => {
+            const url = getExtraLogoUrl(slot)
+            const fieldKey = "extraLogo:" + slot
+            return (
+              <div
+                key={slot}
+                className="border border-border rounded-xl p-3 bg-white flex flex-col items-center gap-2"
+              >
+                <span className="text-[11px] text-muted-foreground font-bold">
+                  شعار {i + 1}
+                </span>
+                <div className="w-full h-16 rounded-lg bg-[#FAF7F2] border border-border flex items-center justify-center overflow-hidden">
+                  {url ? (
+                    <img src={url} alt="" className="max-w-full max-h-full object-contain" />
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">فاضي</span>
+                  )}
+                </div>
+                <label className="w-full text-center px-2 py-2 bg-[#B8862F] hover:bg-[#9E7024] text-white rounded-lg font-bold cursor-pointer transition text-[11px] aria-disabled:opacity-60 aria-disabled:cursor-not-allowed">
+                  {uploadingField === fieldKey
+                    ? "⏳ جارِ الرفع..."
+                    : url
+                      ? "📎 استبدال"
+                      : "📎 رفع"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingField !== null}
+                    onChange={(e) =>
+                      handleExtraLogoUpload(slot, e.target.files?.[0] || null)
+                    }
+                  />
+                </label>
+                {url && (
+                  <button
+                    type="button"
+                    onClick={() => handleExtraLogoRemove(slot)}
+                    className="text-[10px] text-red-500 hover:underline"
+                  >
+                    ✕ حذف
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="md:col-span-2">
