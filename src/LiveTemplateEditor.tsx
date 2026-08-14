@@ -114,7 +114,8 @@ function EditorShell({
               (بعكس transform:scale) فيبقى التوسيط والسكرول الداخلي صحيحين
               تلقائيًا بأي مستوى تكبير */}
           <div
-            className="relative h-full w-full min-w-[320px] shrink-0 md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
+            data-invitation-viewport
+            className="relative h-full w-full min-w-0 shrink-0 md:w-[480px] md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
             style={
               {
                 zoom,
