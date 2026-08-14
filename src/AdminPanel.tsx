@@ -740,6 +740,10 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
 
       {designEditingInv && (
         <LiveTemplateEditor
+          // key بالـ id يفرض mount جديد بالكامل لكل دعوة — يضمن رجوع
+          // مستوى التكبير (zoom) وأي حالة ثانية بالمحرر لوضعها الافتراضي
+          // (100%) من الصفر عند فتح دعوة، بدل ما تنورّث أي حالة سابقة
+          key={designEditingInv.id}
           inv={designEditingInv}
           onClose={() => setDesignEditingInv(null)}
           onSave={handleSaveDesign}
