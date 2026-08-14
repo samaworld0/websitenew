@@ -53,6 +53,7 @@ export function InvitationFullView({
         data-invitation-viewport
         dir="rtl"
         className="relative w-full h-full min-w-0 md:w-[480px] md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
+        style={{ containerType: "inline-size" }}
       >
         {inv.templateType === "wisal" ? (
           <EditModeProvider editable={false} initialStyles={inv.textStyles || {}}>
