@@ -52,7 +52,7 @@ export interface Invitation {
   // المباشر (شبيه فيغما) لما الأدمن يكبّر/يصغّر نص أو يسحبه لمكان ثاني.
   // المفتاح هو معرّف النص (مثل groomName)، والقيمة حجم الخط بالبكسل
   // ومقدار الإزاحة الأفقية/العمودية بالبكسل عن موضعه الأصلي بالتصميم.
-  textStyles?: Record<string, { size?: number; x?: number; y?: number }>
+  textStyles?: Record<string, { size?: number; x?: number; y?: number; imageUrl?: string; [key: string]: any }>
   // النص الصغير اللي يطلع فوق الوردة بأعلى الشاشة الأولى (افتراضياً "دعوة
   // زفاف") — قابل للتعديل من نموذج "تعديل الدعوة"
   heroEyebrow?: string
