@@ -63,26 +63,32 @@ export function ReorderableSection({
         transition: "opacity .15s ease",
       }}
     >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          setSelectedId(id)
-        }}
-        className="absolute z-40 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white border backdrop-blur-sm shadow-lg"
-        style={{
-          position: "sticky",
-          top: 8,
-          insetInlineStart: 8,
-          background: isSelected ? "#3B82F6" : "rgba(0,0,0,0.55)",
-          borderColor: isSelected ? "#3B82F6" : "rgba(255,255,255,0.25)",
-          fontFamily: "Cairo, sans-serif",
-        }}
-        title={`تحريك قسم: ${label}`}
-      >
-        {isHidden && "⊘ "}
-        ✥ {label}
-      </button>
+      {/* حاوية بارتفاع صفر عشان الزر (sticky) ما ياخذ مساحة فعلية
+          بتدفق الصفحة ويدفع محتوى القسم لتحت (كان يسبب فراغ أبيض فوق
+          كل قسم بوضع التحرير) — overflow: visible يخلي الزر يظهر
+          طبيعي رغم إن ارتفاع حاويته صفر */}
+      <div style={{ height: 0, overflow: "visible", position: "relative" }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            setSelectedId(id)
+          }}
+          className="z-40 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold text-white border backdrop-blur-sm shadow-lg"
+          style={{
+            position: "sticky",
+            top: 8,
+            insetInlineStart: 8,
+            background: isSelected ? "#3B82F6" : "rgba(0,0,0,0.55)",
+            borderColor: isSelected ? "#3B82F6" : "rgba(255,255,255,0.25)",
+            fontFamily: "Cairo, sans-serif",
+          }}
+          title={`تحريك قسم: ${label}`}
+        >
+          {isHidden && "⊘ "}
+          ✥ {label}
+        </button>
+      </div>
       {isSelected && (
         <div
           className="absolute inset-0 pointer-events-none"
@@ -229,4 +235,3 @@ export function CustomImageLayer() {
     </div>
   )
 }
-
