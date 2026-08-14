@@ -63,6 +63,10 @@ export interface TextStyle {
   // النسخ ولا يشتغل، وتعديل النصوص بالمحرر ما يشتغل عليها لأنها مو عناصر
   // React حقيقية
   rawHtml?: string
+  // طبقة العرض (z-index) لصورة مُضافة يدويًا (IMAGE_PREFIX) — تتحكم هل
+  // الصورة تظهر فوق قسم معيّن أو تحته لو تداخلت معه بالموضع. الافتراضي
+  // IMAGE_LAYER_DEFAULT (30) لحد ما الأدمن يستخدم زر "▲ فوق / ▼ تحت"
+  layer?: number
 }
 
 const BG_PREFIX = "bg:"
@@ -1216,6 +1220,16 @@ export function EditableText({
 
 const IMAGE_MIN_PX = 40
 const IMAGE_MAX_PX = 800
+// طبقة (z-index) الصورة المُضافة يدويًا — الافتراضي 30 (نفس القيمة الثابتة
+// اللي كانت مطبّقة على كل الصور قبل). "▲ فوق / ▼ تحت" يغيّرونها بخطوة 20
+// حتى يقدر الأدمن يطلع الصورة فوق قسم معيّن (لو كانت مختفية وراه) أو
+// ينزلها تحته (لو تبي تكون خلف محتوى القسم) — نفس فكرة زر ترتيب الأقسام
+// بالضبط، بس هنا z-index مباشرة بدل CSS order (لأن الصور موضعها absolute
+// حر فوق الصفحة، مو جزء من تسلسل الأقسام العادي)
+const IMAGE_LAYER_DEFAULT = 30
+const IMAGE_LAYER_STEP = 20
+const IMAGE_LAYER_MIN = 0
+const IMAGE_LAYER_MAX = 200
 
 // نفس فكرة EditableText بالضبط (سحب/تكبير/تدوير + تحديد من لوحة الخصائص)
 // بس لعنصر <img> بدل نص — حقل "size" هنا يمثّل عرض الصورة بالبكسل (الارتفاع
@@ -2839,6 +2853,56 @@ export function EditPanel() {
             </PanelSection>
           )}
 
+          {isImage && (
+            <PanelSection title="الطبقة">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  style={{
+                    ...smallBtnStyle,
+                    opacity: (st.layer ?? IMAGE_LAYER_DEFAULT) <= IMAGE_LAYER_MIN ? 0.4 : 1,
+                    cursor:
+                      (st.layer ?? IMAGE_LAYER_DEFAULT) <= IMAGE_LAYER_MIN ? "default" : "pointer",
+                  }}
+                  disabled={(st.layer ?? IMAGE_LAYER_DEFAULT) <= IMAGE_LAYER_MIN}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      layer: Math.max(
+                        IMAGE_LAYER_MIN,
+                        (st.layer ?? IMAGE_LAYER_DEFAULT) - IMAGE_LAYER_STEP,
+                      ),
+                    })
+                  }
+                >
+                  ▼ تحت
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    ...smallBtnStyle,
+                    opacity: (st.layer ?? IMAGE_LAYER_DEFAULT) >= IMAGE_LAYER_MAX ? 0.4 : 1,
+                    cursor:
+                      (st.layer ?? IMAGE_LAYER_DEFAULT) >= IMAGE_LAYER_MAX ? "default" : "pointer",
+                  }}
+                  disabled={(st.layer ?? IMAGE_LAYER_DEFAULT) >= IMAGE_LAYER_MAX}
+                  onClick={() =>
+                    updateStyle(selectedId, {
+                      layer: Math.min(
+                        IMAGE_LAYER_MAX,
+                        (st.layer ?? IMAGE_LAYER_DEFAULT) + IMAGE_LAYER_STEP,
+                      ),
+                    })
+                  }
+                >
+                  ▲ فوق
+                </button>
+              </div>
+              <div style={{ fontSize: 10, color: "#8C6B6F", marginTop: 4 }}>
+                يحرّك الصورة فوق أو تحت الأقسام لو تداخلت معها
+              </div>
+            </PanelSection>
+          )}
+
           {isIcon && (
             <PanelSection title="الحجم">
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3232,11 +3296,14 @@ export function CustomImageLayer() {
         <div
           key={key}
           ref={(el) => registerElRef(key, el)}
-          className="absolute z-30"
+          className="absolute"
           style={{
             top: `${90 + i * 60}px`,
             insetInlineStart: "50%",
             transform: "translateX(-50%)",
+            // z-index قابل للتعديل من لوحة الخصائص (زر ▲ فوق / ▼ تحت) —
+            // الافتراضي 30 نفس القيمة الثابتة القديمة
+            zIndex: styles[key]?.layer ?? IMAGE_LAYER_DEFAULT,
           }}
         >
           <EditableImage id={key} />
