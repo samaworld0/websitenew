@@ -161,11 +161,13 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
 }
 
 // حفظ إعدادات الواجهة بقاعدة Supabase (صف واحد ثابت id=1، upsert).
-// لو جدول site_settings غير موجود بعد نرجّع tableMissing:true حتى نعرض
-// تنبيه واضح بلوحة التحكم يشرح للمشرف يسوّي الجدول أولاً.
+// لو جدول site_settings غير موجود بعد نرجّع tableMissing:true، ولو الجدول
+// موجود بس ناقصه عمود (أو أكثر) نرجّع columnMissing:true — حتى نعرض
+// تنبيه واضح بلوحة التحكم يشرح للمشرف بالضبط شنو يسوّي.
 export async function saveSiteSettings(settings: SiteSettings): Promise<{
   success: boolean
   tableMissing?: boolean
+  columnMissing?: boolean
   error?: string
 }> {
   try {
@@ -176,6 +178,9 @@ export async function saveSiteSettings(settings: SiteSettings): Promise<{
     if (error) {
       if (isMissingTableError(error)) {
         return { success: false, tableMissing: true, error: error.message }
+      }
+      if (isMissingColumnError(error)) {
+        return { success: false, columnMissing: true, error: error.message }
       }
       console.error("Supabase saveSiteSettings error:", error)
       return { success: false, error: error.message }
