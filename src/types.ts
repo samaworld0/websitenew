@@ -32,3 +32,13 @@ export interface Invitation {
   // رابط المعاينة المباشر (?preview=ID).
   isPrivate?: boolean
 }
+
+// إعدادات الواجهة العامة للموقع (اسم الموقع، الشعار، رقم واتساب، عنوان
+// القسم الرئيسي...) — صف واحد بجدول site_settings بقاعدة البيانات.
+export interface SiteSettings {
+  siteName: string
+  siteNameEn: string
+  logoIcon: string
+  heroTitle: string
+  whatsappNumber: string
+}
