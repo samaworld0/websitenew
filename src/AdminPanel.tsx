@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
-import { Invitation } from "./types"
+import { Invitation, SiteSettings } from "./types"
 import {
   saveInvitation,
   deleteInvitation,
   signInWithPassword,
   signOut,
   getCurrentSession,
+  saveSiteSettings,
 } from "./backend"
 
 const categories = [
@@ -507,6 +508,141 @@ function InvitationForm({
   )
 }
 
+function SiteSettingsForm({
+  initial,
+  onSaved,
+}: {
+  initial: SiteSettings
+  onSaved: () => void
+}) {
+  const [settings, setSettings] = useState<SiteSettings>(initial)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
+
+  useEffect(() => setSettings(initial), [initial])
+
+  const set = <K extends keyof SiteSettings>(
+    key: K,
+    value: SiteSettings[K],
+  ) => setSettings((prev) => ({ ...prev, [key]: value }))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    setError("")
+    setNotice("")
+    const result = await saveSiteSettings(settings)
+    setSaving(false)
+    if (!result.success) {
+      if (result.tableMissing) {
+        setError(
+          "ما انحفظت الإعدادات لأن جدول site_settings غير موجود بعد بقاعدة البيانات. لازم تسوّي الجدول أولاً بلوحة تحكم Supabase: جدول باسم site_settings بالأعمدة (id رقم صحيح - primary key، siteName نص، siteNameEn نص، logoIcon نص، heroTitle نص، whatsappNumber نص)، وبعدها جرّب الحفظ مرة ثانية.",
+        )
+      } else {
+        setError(result.error || "صار خطأ أثناء الحفظ، حاول مرة ثانية")
+      }
+      return
+    }
+    setNotice("انحفظت إعدادات الواجهة بنجاح ✅")
+    onSaved()
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 bg-white rounded-2xl border border-[#e5d9c3] p-5 sm:p-7"
+    >
+      <h3
+        className="text-lg font-bold"
+        style={{ fontFamily: "Amiri, serif" }}
+      >
+        إعدادات الواجهة
+      </h3>
+      <p className="text-sm text-[#8a7561] -mt-4">
+        هذي الإعدادات تتحكم بالمظهر العام للموقع (الشريط العلوي والقسم
+        الرئيسي بالصفحة الرئيسية) — مو خاصة بدعوة معينة.
+      </p>
+
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+          {error}
+        </div>
+      )}
+      {notice && (
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
+          {notice}
+        </div>
+      )}
+
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          الشعار والاسم
+        </legend>
+        <Field label="اسم الموقع (عربي)">
+          <input
+            className={inputClass}
+            value={settings.siteName}
+            onChange={(e) => set("siteName", e.target.value)}
+            required
+          />
+        </Field>
+        <Field label="اسم الموقع (إنجليزي)" hint="يظهر صغير تحت الاسم العربي">
+          <input
+            className={inputClass}
+            value={settings.siteNameEn}
+            onChange={(e) => set("siteNameEn", e.target.value)}
+          />
+        </Field>
+        <Field
+          label="أيقونة الشعار"
+          hint="إيموجي أو حرف واحد يظهر بالدائرة أعلى يسار الموقع"
+        >
+          <input
+            className={inputClass}
+            value={settings.logoIcon}
+            onChange={(e) => set("logoIcon", e.target.value)}
+            maxLength={4}
+          />
+        </Field>
+      </fieldset>
+
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          الصفحة الرئيسية والتواصل
+        </legend>
+        <Field label="عنوان القسم الرئيسي" hint="يظهر أعلى شبكة الدعوات">
+          <input
+            className={inputClass}
+            value={settings.heroTitle}
+            onChange={(e) => set("heroTitle", e.target.value)}
+          />
+        </Field>
+        <Field
+          label="رقم واتساب للتواصل"
+          hint="بصيغة دولية بدون + أو أصفار، مثال: 9647700000000"
+        >
+          <input
+            className={inputClass}
+            value={settings.whatsappNumber}
+            onChange={(e) => set("whatsappNumber", e.target.value)}
+          />
+        </Field>
+      </fieldset>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="px-6 py-2.5 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810] disabled:opacity-60"
+        >
+          {saving ? "جارِ الحفظ..." : "حفظ إعدادات الواجهة"}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 function LoginGate({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -578,12 +714,19 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
 export default function AdminPanel({
   invitations,
   onRefresh,
+  siteSettings,
+  onSiteSettingsRefresh,
 }: {
   invitations: Invitation[]
   onRefresh: () => void
+  siteSettings: SiteSettings
+  onSiteSettingsRefresh: () => void
 }) {
   const [checkingSession, setCheckingSession] = useState(true)
   const [authed, setAuthed] = useState(false)
+  const [activeTab, setActiveTab] = useState<"invitations" | "settings">(
+    "invitations",
+  )
   const [editing, setEditing] = useState<Invitation | null>(null)
   const [editingIsNew, setEditingIsNew] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -667,7 +810,35 @@ export default function AdminPanel({
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-5 pt-3">
+      <div className="max-w-5xl mx-auto px-5 pt-3 flex items-center justify-between">
+        <div className="flex items-center gap-1 bg-[#f5efe2] rounded-full p-1">
+          <button
+            onClick={() => {
+              closeForm()
+              setActiveTab("invitations")
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              activeTab === "invitations"
+                ? "bg-[#D4AF37] text-[#2C1810]"
+                : "text-[#8a7561]"
+            }`}
+          >
+            الدعوات
+          </button>
+          <button
+            onClick={() => {
+              closeForm()
+              setActiveTab("settings")
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              activeTab === "settings"
+                ? "bg-[#D4AF37] text-[#2C1810]"
+                : "text-[#8a7561]"
+            }`}
+          >
+            إعدادات الواجهة
+          </button>
+        </div>
         <button
           onClick={handleLogout}
           className="text-xs text-[#8a7561] hover:text-red-600"
@@ -677,7 +848,14 @@ export default function AdminPanel({
       </div>
 
       <div className="max-w-5xl mx-auto px-5 py-8 space-y-6">
-        {!editing && !creating && (
+        {activeTab === "settings" && (
+          <SiteSettingsForm
+            initial={siteSettings}
+            onSaved={onSiteSettingsRefresh}
+          />
+        )}
+
+        {activeTab === "invitations" && !editing && !creating && (
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold">كل الدعوات</h2>
