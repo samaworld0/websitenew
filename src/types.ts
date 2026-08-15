@@ -28,4 +28,7 @@ export interface Invitation {
   // الحضور (RSVP) تترسل فعلياً لشيتها. بدونه تبقى معاينة محلية فقط.
   sheetId?: string
   sheetUrl?: string
+  // دعوة خاصة: لا تظهر بشبكة الدعوات بالصفحة الرئيسية، توصل بس لمن عنده
+  // رابط المعاينة المباشر (?preview=ID).
+  isPrivate?: boolean
 }
