@@ -7,6 +7,7 @@ import {
   signOut,
   getCurrentSession,
   saveSiteSettings,
+  createSheetForInvitation,
 } from "./backend"
 
 const categories = [
@@ -18,7 +19,6 @@ const categories = [
 ]
 
 const HERO_BG_OPTIONS = ["/images/hero-bg.jpg", "/images/hero-bg-2.jpg"]
-const COVER_IMAGE_OPTIONS = ["/images/hero-bg.jpg", "/images/hero-bg-2.jpg"]
 const INTRO_VIDEO_OPTIONS = ["/videos/intro.mp4", "/videos/intro-2.mp4"]
 const INTRO_POSTER_OPTIONS = [
   "/videos/intro-poster.jpg",
@@ -54,8 +54,6 @@ function emptyInvitation(nextId: number): Invitation {
     tag: "",
     price: "",
     verse: "",
-    coverImage: "",
-    hideCoverOverlay: false,
     templateType: undefined,
     heroBg: "",
     doorBgVideo: "",
@@ -104,9 +102,53 @@ function InvitationForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
+  const [creatingSheet, setCreatingSheet] = useState(false)
+  const [sheetError, setSheetError] = useState("")
+  const [showManualSheet, setShowManualSheet] = useState(false)
+
+  const ADD_INVITATION_COLUMNS_SQL = `alter table public.invitations
+  add column if not exists "isPrivate" boolean default false,
+  add column if not exists "sheetId" text,
+  add column if not exists "sheetUrl" text,
+  add column if not exists "date" text,
+  add column if not exists "city" text,
+  add column if not exists "groomFamily" text,
+  add column if not exists "brideFamily" text;`
 
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
+
+  const handleCreateSheet = async () => {
+    setCreatingSheet(true)
+    setSheetError("")
+    const result = await createSheetForInvitation({
+      title:
+        inv.title ||
+        `دعوة خاصة — ${inv.groom || ""} و${inv.bride || ""}`.trim(),
+    })
+    setCreatingSheet(false)
+    if (!result.success || !result.sheetId) {
+      setSheetError(
+        result.error ||
+          "تعذّر إنشاء الشيت تلقائياً. جرّب مرة ثانية، أو عبّي معرّف شيت موجود يدوياً.",
+      )
+      return
+    }
+    setInv((prev) => ({
+      ...prev,
+      sheetId: result.sheetId!,
+      sheetUrl: result.sheetUrl || "",
+    }))
+  }
+
+  // أول ما تنفتح نموذج دعوة جديدة وما عندها شيت بعد، نسوّي لها شيت
+  // جوجل تلقائياً بدون ما نطلب من المستخدم يسوّيه يدوياً وينسخ المعرّف.
+  useEffect(() => {
+    if (isNew && !inv.sheetId) {
+      handleCreateSheet()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const setGradientAt = (idx: number, value: string) => {
     const next = [...(inv.gradient ?? [])]
@@ -133,6 +175,11 @@ function InvitationForm({
     if (cleanInv.isPrivate && !result.savedPrivacy) {
       notices.push(
         "⚠️ مهم: خاصية (دعوة خاصة) ما انحفظت لأن عمود isPrivate غير موجود بجدول invitations بعد — يعني هذي الدعوة راح تظهر بالصفحة الرئيسية للعموم رغم إنك حددتها خاصة! لازم تضيف العمود بالقاعدة أولاً (شوف التعليمات تحت).",
+      )
+    }
+    if ((cleanInv.sheetId || cleanInv.sheetUrl) && !result.savedSheetLink) {
+      notices.push(
+        "⚠️ مهم: رابط شيت الحضور (sheetId/sheetUrl) ما انحفظ لأن أعمدتها غير موجودة بجدول invitations بعد — يعني زر 'شيت الحضور' راح يظل معطّل حتى لو حاطط القيمة هنا. لازم تضيف الأعمدة بالقاعدة أولاً (شوف التعليمات تحت).",
       )
     }
     if (!result.savedExtraFields) {
@@ -181,6 +228,32 @@ function InvitationForm({
           }`}
         >
           {notice}
+        </div>
+      )}
+      {notice.includes("⚠️") && (
+        <div className="rounded-lg bg-[#2C1810] p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#D4AF37]">
+              أمر SQL — الصق هذا بـ Supabase SQL Editor وشغّله
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                navigator.clipboard
+                  ?.writeText(ADD_INVITATION_COLUMNS_SQL)
+                  .catch(() => {})
+              }
+              className="text-xs font-bold text-[#D4AF37] hover:underline shrink-0"
+            >
+              نسخ
+            </button>
+          </div>
+          <pre
+            dir="ltr"
+            className="text-xs text-[#f5efe2] overflow-x-auto whitespace-pre-wrap leading-relaxed"
+          >
+            {ADD_INVITATION_COLUMNS_SQL}
+          </pre>
         </div>
       )}
 
@@ -349,60 +422,6 @@ function InvitationForm({
             ))}
           </div>
         </Field>
-        <Field
-          label="صورة غلاف الدعوة (coverImage)"
-          hint="تظهر بكرت الدعوة بالصفحة الرئيسية بدال التدرج اللوني. اختر من الصور الجاهزة أو اكتب مسار صورة رفعتها لمجلد public/images"
-        >
-          <div className="flex items-center gap-3">
-            <select
-              className={inputClass}
-              value={
-                inv.coverImage && COVER_IMAGE_OPTIONS.includes(inv.coverImage)
-                  ? inv.coverImage
-                  : inv.coverImage
-                    ? "custom"
-                    : ""
-              }
-              onChange={(e) => {
-                if (e.target.value === "custom") return
-                set("coverImage", e.target.value)
-              }}
-            >
-              <option value="">بدون (استخدم التدرج اللوني)</option>
-              {COVER_IMAGE_OPTIONS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-              <option value="custom">مسار مخصص...</option>
-            </select>
-            {inv.coverImage && (
-              <div
-                className="h-14 w-11 shrink-0 rounded border border-[#e5d9c3] bg-cover bg-center"
-                style={{ backgroundImage: `url(${inv.coverImage})` }}
-                title="معاينة الغلاف"
-              />
-            )}
-          </div>
-          <input
-            className={`${inputClass} mt-2`}
-            value={inv.coverImage || ""}
-            onChange={(e) => set("coverImage", e.target.value)}
-            placeholder="/images/cover-1.jpg"
-          />
-          {inv.coverImage && (
-            <label className="mt-3 flex items-center gap-2 text-sm text-[#2C1810] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!inv.hideCoverOverlay}
-                onChange={(e) => set("hideCoverOverlay", e.target.checked)}
-                className="h-4 w-4 accent-[#D4AF37]"
-              />
-              إخفاء الزخارف والنصوص (الزوايا، بسم الله الرحمن الرحيم، الخط،
-              الاسم) فوق صورة الغلاف
-            </label>
-          )}
-        </Field>
         <Field label="الآية / النص الديني" hint="يظهر أعلى الدعوة">
           <textarea
             className={inputClass}
@@ -488,36 +507,86 @@ function InvitationForm({
       </fieldset>
 
       {/* ربط تأكيد الحضور RSVP */}
-      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+      <fieldset className="grid grid-cols-1 gap-3">
+        <legend className="text-sm font-bold text-[#D4AF37] mb-1">
           تأكيد الحضور (Google Sheet)
         </legend>
-        <Field
-          label="معرّف الشيت (sheetId)"
-          hint="بدونه تبقى الدعوة معاينة محلية فقط، بدون إرسال RSVP حقيقي"
+
+        {creatingSheet && (
+          <div className="flex items-center gap-2 text-sm text-[#8a7561] bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-4 py-3">
+            <span className="animate-spin">🪄</span>
+            <span>جارٍ إنشاء شيت تأكيدات الحضور تلقائياً لهذي الدعوة...</span>
+          </div>
+        )}
+
+        {!creatingSheet && resolveSheetLink(inv) && (
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-[#eafaf1] border border-[#1a7f4b]/30 rounded-lg px-4 py-3">
+            <a
+              href={resolveSheetLink(inv)!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-bold text-[#1a7f4b] hover:underline"
+            >
+              📊 فتح شيت تأكيدات الحضور — انسوّى تلقائياً لهذي الدعوة
+            </a>
+            <button
+              type="button"
+              onClick={handleCreateSheet}
+              className="text-xs font-bold text-[#8a7561] hover:text-[#2C1810]"
+            >
+              🔄 إنشاء شيت جديد بدله
+            </button>
+          </div>
+        )}
+
+        {!creatingSheet && !resolveSheetLink(inv) && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+              <p className="text-sm text-amber-800 flex-1 min-w-[200px]">
+                {sheetError ||
+                  "ما أكو شيت تأكيدات حضور مربوط بهذي الدعوة بعد."}
+              </p>
+              <button
+                type="button"
+                onClick={handleCreateSheet}
+                className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#D4AF37] text-[#2C1810] shrink-0"
+              >
+                🪄 إنشاء شيت تلقائياً
+              </button>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setShowManualSheet((prev) => !prev)}
+          className="text-xs text-[#8a7561] hover:text-[#2C1810] w-fit"
         >
-          <input
-            className={inputClass}
-            value={inv.sheetId || ""}
-            onChange={(e) => set("sheetId", e.target.value)}
-          />
-        </Field>
-        <Field label="رابط الشيت (sheetUrl)">
-          <input
-            className={inputClass}
-            value={inv.sheetUrl || ""}
-            onChange={(e) => set("sheetUrl", e.target.value)}
-          />
-        </Field>
-        {resolveSheetLink(inv) && (
-          <a
-            href={resolveSheetLink(inv)!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="col-span-full text-sm font-bold text-[#1a7f4b] hover:underline w-fit"
-          >
-            📊 فتح شيت تأكيدات الحضور بتبويب جديد
-          </a>
+          {showManualSheet ? "إخفاء" : "أو اربط شيت موجود يدوياً"}
+        </button>
+
+        {showManualSheet && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg p-4">
+            <Field
+              label="معرّف الشيت (sheetId)"
+              hint="بدونه تبقى الدعوة معاينة محلية فقط، بدون إرسال RSVP حقيقي"
+            >
+              <input
+                className={inputClass}
+                value={inv.sheetId || ""}
+                onChange={(e) => set("sheetId", e.target.value)}
+                dir="ltr"
+              />
+            </Field>
+            <Field label="رابط الشيت (sheetUrl)">
+              <input
+                className={inputClass}
+                value={inv.sheetUrl || ""}
+                onChange={(e) => set("sheetUrl", e.target.value)}
+                dir="ltr"
+              />
+            </Field>
+          </div>
         )}
       </fieldset>
 
@@ -537,17 +606,10 @@ function InvitationForm({
             <span className="font-bold block">دعوة خاصة</span>
             <span className="text-[#8a7561]">
               ما تظهر بشبكة الدعوات بالصفحة الرئيسية، توصل بس لمن عنده رابط
-              المعاينة المباشر (?preview={inv.id}). فعّلها مع تعبئة معرّف
-              الشيت (sheetId) بالأعلى حتى تنعرف تأكيدات الحضور.
+              المعاينة المباشر (?preview={inv.id}).
             </span>
           </span>
         </label>
-        {inv.isPrivate && !inv.sheetId && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            الدعوة محددة "خاصة" بس معرّف الشيت فارغ — تأكيدات الحضور ما راح
-            تنرسل لأي شيت جوجل لحد ما تعبّي sheetId.
-          </p>
-        )}
       </fieldset>
 
       <div className="flex justify-end gap-3 pt-2">
@@ -901,7 +963,7 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
           className="text-xl font-bold text-center"
           style={{ fontFamily: "Amiri, serif" }}
         >
-          لوحة تحكم سما
+          لوحة تحكم دعوتي
         </h1>
         <p className="text-sm text-[#8a7561] text-center">
           سجّل الدخول بحساب المشرف
@@ -1042,7 +1104,7 @@ export default function AdminPanel({
               className="text-lg font-bold leading-none"
               style={{ fontFamily: "Amiri, serif" }}
             >
-              لوحة تحكم سما
+              لوحة تحكم دعوتي
             </h1>
             <p className="text-[10px] text-[#8a7561]">
               إدارة الدعوات — {publicInvitations.length} عامة ·{" "}
