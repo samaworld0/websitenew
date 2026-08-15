@@ -70,6 +70,13 @@ export interface TextStyle {
   // "none" = بدون أي أنيميشن (الأقسام تظهر فورًا)
   transitionType?: "fadeUp" | "fade" | "none"
   transitionDuration?: number
+  // لعنصر نص محدد بعينه فقط (يفعّله الأدمن يدويًا من تبويب "الخصائص" بعد
+  // تحديد النص) — يخلي النص مخفي تمامًا لحد ما الضيف يضغط زر "فتح
+  // الدعوة" بالشاشة الأولى، وقتها يظهر بالتلاشي (النوع والمدة من إعداد
+  // transitionType/transitionDuration العام أعلاه). بعكس reveal-on-scroll
+  // (المبني بالقالب أصلاً ومرتبط بالسكرول)، هذا مرتبط بلحظة الفتح نفسها
+  // ومحصور بالنصوص اللي يختارها الأدمن بالضبط، مو كل الأقسام تلقائيًا
+  revealOnOpen?: boolean
 }
 
 // المفتاح الثابت اللي يتخزّن تحته إعداد أنيميشن الظهور (تلاشي) لكل الدعوة
@@ -1021,7 +1028,13 @@ export function EditableText({
       ...(isMoved ? { zIndex: 40 } : null),
     }
     return (
-      <Tag className={className} style={readOnlyStyle} {...linkProps}>
+      <Tag
+        className={[className, savedStyle.revealOnOpen ? "reveal-on-open" : ""]
+          .filter(Boolean)
+          .join(" ")}
+        style={readOnlyStyle}
+        {...linkProps}
+      >
         {displayChildren}
       </Tag>
     )
@@ -2520,7 +2533,12 @@ export function EditPanel() {
                 بالتصميم فيفتح تبويب "الخصائص".
               </div>
 
-              <PanelSection title="انتقال ظهور الأقسام">
+              <PanelSection title="انتقال ظهور النصوص بعد الفتح">
+                <div style={{ fontSize: 10, color: "#8C6B6F", marginBottom: 8 }}>
+                  هذا الإعداد يتحكم بشكل ومدة تلاشي أي نص فعّلت له "ظهور
+                  بعد فتح الدعوة" من تبويب الخصائص (اضغط على النص المطلوب
+                  ثم فعّل الخيار). ما يؤثر على باقي الأقسام تلقائيًا.
+                </div>
                 <TransitionPreview
                   type={transitionsStyle.transitionType ?? DEFAULT_TRANSITION_TYPE}
                   duration={transitionsStyle.transitionDuration ?? DEFAULT_TRANSITION_DURATION}
@@ -2795,6 +2813,29 @@ export function EditPanel() {
                 }}
               >
                 {st.hidden ? "⊘ العنصر مخفي — اضغط لإظهاره" : "👁 إخفاء هذا العنصر"}
+              </button>
+            </PanelSection>
+          )}
+
+          {!isBg && !isSection && !isIcon && !isImage && (
+            <PanelSection title="ظهور بعد فتح الدعوة">
+              <div style={{ fontSize: 10, color: "#8C6B6F", marginBottom: 6 }}>
+                لو مفعّل، هذا النص يفضل مخفي تمامًا لحد ما الضيف يضغط زر
+                "فتح الدعوة"، وقتها يظهر بالتلاشي (النوع والمدة من تبويب
+                "التصميم")
+              </div>
+              <button
+                type="button"
+                onClick={() => updateStyle(selectedId, { revealOnOpen: !st.revealOnOpen })}
+                style={{
+                  ...smallBtnStyle,
+                  width: "100%",
+                  background: st.revealOnOpen ? "#B8862F" : "#2A211D",
+                  color: st.revealOnOpen ? "#1A1210" : "#F5EBE0",
+                  fontWeight: 700,
+                }}
+              >
+                {st.revealOnOpen ? "✓ يظهر بعد فتح الدعوة" : "تفعيل الظهور بعد الفتح"}
               </button>
             </PanelSection>
           )}
