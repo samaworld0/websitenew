@@ -18,6 +18,7 @@ const categories = [
 ]
 
 const HERO_BG_OPTIONS = ["/images/hero-bg.jpg", "/images/hero-bg-2.jpg"]
+const COVER_IMAGE_OPTIONS = ["/images/hero-bg.jpg", "/images/hero-bg-2.jpg"]
 const INTRO_VIDEO_OPTIONS = ["/videos/intro.mp4", "/videos/intro-2.mp4"]
 const INTRO_POSTER_OPTIONS = [
   "/videos/intro-poster.jpg",
@@ -53,6 +54,8 @@ function emptyInvitation(nextId: number): Invitation {
     tag: "",
     price: "",
     verse: "",
+    coverImage: "",
+    hideCoverOverlay: false,
     templateType: undefined,
     heroBg: "",
     doorBgVideo: "",
@@ -345,6 +348,60 @@ function InvitationForm({
               />
             ))}
           </div>
+        </Field>
+        <Field
+          label="صورة غلاف الدعوة (coverImage)"
+          hint="تظهر بكرت الدعوة بالصفحة الرئيسية بدال التدرج اللوني. اختر من الصور الجاهزة أو اكتب مسار صورة رفعتها لمجلد public/images"
+        >
+          <div className="flex items-center gap-3">
+            <select
+              className={inputClass}
+              value={
+                inv.coverImage && COVER_IMAGE_OPTIONS.includes(inv.coverImage)
+                  ? inv.coverImage
+                  : inv.coverImage
+                    ? "custom"
+                    : ""
+              }
+              onChange={(e) => {
+                if (e.target.value === "custom") return
+                set("coverImage", e.target.value)
+              }}
+            >
+              <option value="">بدون (استخدم التدرج اللوني)</option>
+              {COVER_IMAGE_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+              <option value="custom">مسار مخصص...</option>
+            </select>
+            {inv.coverImage && (
+              <div
+                className="h-14 w-11 shrink-0 rounded border border-[#e5d9c3] bg-cover bg-center"
+                style={{ backgroundImage: `url(${inv.coverImage})` }}
+                title="معاينة الغلاف"
+              />
+            )}
+          </div>
+          <input
+            className={`${inputClass} mt-2`}
+            value={inv.coverImage || ""}
+            onChange={(e) => set("coverImage", e.target.value)}
+            placeholder="/images/cover-1.jpg"
+          />
+          {inv.coverImage && (
+            <label className="mt-3 flex items-center gap-2 text-sm text-[#2C1810] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!inv.hideCoverOverlay}
+                onChange={(e) => set("hideCoverOverlay", e.target.checked)}
+                className="h-4 w-4 accent-[#D4AF37]"
+              />
+              إخفاء الزخارف والنصوص (الزوايا، بسم الله الرحمن الرحيم، الخط،
+              الاسم) فوق صورة الغلاف
+            </label>
+          )}
         </Field>
         <Field label="الآية / النص الديني" hint="يظهر أعلى الدعوة">
           <textarea
