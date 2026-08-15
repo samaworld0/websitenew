@@ -17,6 +17,9 @@ export interface Invitation {
   tag: string
   price: string
   verse: string
+  // صورة غلاف الدعوة تظهر بكرت الدعوة بالصفحة الرئيسية (شبكة العرض).
+  // لو فاضية، ينرجع تلقائياً للتدرج اللوني (gradient) كخلفية بدالها.
+  coverImage?: string
   // حقول اختيارية خاصة بقالب "وصال" (باب متحرك) — لو الدعوة تستخدمه
   templateType?: "wisal"
   heroBg?: string
