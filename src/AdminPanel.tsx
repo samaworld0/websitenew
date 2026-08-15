@@ -148,7 +148,12 @@ function InvitationForm({
     >
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold" style={{ fontFamily: "Amiri, serif" }}>
-          {isNew ? "إنشاء دعوة جديدة" : "تعديل الدعوة"} #{inv.id}
+          {isNew
+            ? inv.isPrivate
+              ? "إنشاء دعوة خاصة"
+              : "إنشاء دعوة جديدة"
+            : "تعديل الدعوة"}{" "}
+          #{inv.id}
         </h3>
         <button
           type="button"
@@ -1102,7 +1107,7 @@ export default function AdminPanel({
                 onClick={() => setCreating(true)}
                 className="px-5 py-2.5 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810]"
               >
-                + إنشاء دعوة جديدة
+                + إنشاء دعوة خاصة
               </button>
             </div>
             <p className="text-sm text-[#8a7561] -mt-3">
