@@ -1814,6 +1814,110 @@ function PanelSection({
   )
 }
 
+// معاينة مصغّرة حيّة لإعداد أنيميشن ظهور الأقسام (تبويب "التصميم") — تشغّل
+// نفس منطق التلاشي بالضبط (نوعه ومدته) على سطور تجريبية جوّا المحرر نفسه،
+// حتى الأدمن يشوف تأثير أي تغيير فورًا بدون ما يحتاج يفتح معاينة الدعوة
+// الكاملة. تُعاد تلقائيًا كل ما تغيّر النوع أو المدة، وفيها زر تشغيل يدوي
+// أيضًا لإعادة المعاينة براحته.
+function TransitionPreview({
+  type,
+  duration,
+}: {
+  type: NonNullable<TextStyle["transitionType"]>
+  duration: number
+}) {
+  const itemsRef = useRef<(HTMLDivElement | null)[]>([])
+  const timerRef = useRef<number | null>(null)
+
+  const lines = [
+    { text: "بسم الله الرحمن الرحيم", size: 11, weight: 400, color: "#B8A99A" },
+    { text: "آدم & ميرا", size: 16, weight: 700, color: "#F1D989" },
+    { text: "الجمعة، ٢٠ نوفمبر ٢٠٢٦", size: 11, weight: 400, color: "#B8A99A" },
+  ]
+
+  const play = () => {
+    const items = itemsRef.current.filter(Boolean) as HTMLDivElement[]
+    if (items.length === 0) return
+    if (timerRef.current) window.clearTimeout(timerRef.current)
+    const fromTransform = type === "fadeUp" ? "translateY(18px)" : "none"
+    items.forEach((el) => {
+      el.style.transition = "none"
+      el.style.opacity = "0"
+      el.style.transform = fromTransform
+    })
+    items[0].offsetHeight
+    timerRef.current = window.setTimeout(() => {
+      items.forEach((el, i) => {
+        const delay = (duration * i * 0.13).toFixed(2)
+        el.style.transition =
+          type === "none"
+            ? "none"
+            : `opacity ${duration}s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform ${duration}s cubic-bezier(0.22,1,0.36,1) ${delay}s`
+        el.style.opacity = "1"
+        el.style.transform = "none"
+      })
+    }, 80)
+  }
+
+  useEffect(() => {
+    play()
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, duration])
+
+  return (
+    <div
+      style={{
+        background: "#1F1713",
+        border: "1px solid #B8862F33",
+        borderRadius: 10,
+        padding: "18px 10px 12px",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
+        marginBottom: 10,
+      }}
+    >
+      {lines.map((line, i) => (
+        <div
+          key={i}
+          ref={(el) => {
+            itemsRef.current[i] = el
+          }}
+          style={{
+            fontSize: line.size,
+            fontWeight: line.weight,
+            color: line.color,
+            fontFamily: "Cairo, sans-serif",
+          }}
+        >
+          {line.text}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={play}
+        style={{
+          marginTop: 8,
+          background: "#2A211D",
+          color: "#F5EBE0",
+          border: "1px solid #B8862F55",
+          borderRadius: 6,
+          padding: "4px 12px",
+          fontSize: 11,
+          fontFamily: "Cairo, sans-serif",
+          cursor: "pointer",
+        }}
+      >
+        ▶ تشغيل المعاينة
+      </button>
+    </div>
+  )
+}
+
 // تعريف تبويبات شريط الأيقونات — نفس فكرة شريط Canva الجانبي (أيقونة +
 // تسمية تحتها). "properties" ينفتح تلقائيًا لما تحدد عنصر بالتصميم
 // مباشرة (شوف setSelectedId بالمزوّد فوق)، والبقية تنفتح يدويًا بالضغط.
@@ -2417,6 +2521,10 @@ export function EditPanel() {
               </div>
 
               <PanelSection title="انتقال ظهور الأقسام">
+                <TransitionPreview
+                  type={transitionsStyle.transitionType ?? DEFAULT_TRANSITION_TYPE}
+                  duration={transitionsStyle.transitionDuration ?? DEFAULT_TRANSITION_DURATION}
+                />
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
                   {(
                     [
