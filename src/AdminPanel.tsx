@@ -24,6 +24,14 @@ const INTRO_POSTER_OPTIONS = [
 ]
 const MUSIC_OPTIONS = ["/music/background.mp3", "/music/background-2.mp3"]
 
+// رابط جدول تأكيدات الحضور بجوجل شيت الخاص بهذي الدعوة. نفضّل sheetUrl لو
+// موجود، وإلا نبنيه من sheetId (بافتراض إنه معرّف الشيت القياسي بجوجل).
+function resolveSheetLink(inv: Invitation): string | null {
+  if (inv.sheetUrl) return inv.sheetUrl
+  if (inv.sheetId) return `https://docs.google.com/spreadsheets/d/${inv.sheetId}/edit`
+  return null
+}
+
 function emptyInvitation(nextId: number): Invitation {
   return {
     id: nextId,
@@ -52,6 +60,7 @@ function emptyInvitation(nextId: number): Invitation {
     musicUrl: "",
     sheetId: "",
     sheetUrl: "",
+    isPrivate: false,
   }
 }
 
@@ -116,11 +125,18 @@ function InvitationForm({
       setError(result.error || "صار خطأ أثناء الحفظ، حاول مرة ثانية")
       return
     }
+    const notices: string[] = []
+    if (cleanInv.isPrivate && !result.savedPrivacy) {
+      notices.push(
+        "⚠️ مهم: خاصية (دعوة خاصة) ما انحفظت لأن عمود isPrivate غير موجود بجدول invitations بعد — يعني هذي الدعوة راح تظهر بالصفحة الرئيسية للعموم رغم إنك حددتها خاصة! لازم تضيف العمود بالقاعدة أولاً (شوف التعليمات تحت).",
+      )
+    }
     if (!result.savedExtraFields) {
-      setNotice(
+      notices.push(
         "انحفظت الدعوة، لكن حقول (التاريخ الهجري، المدينة، عائلة العريس، عائلة العروس) ما انحفظت بقاعدة البيانات لأن أعمدتها غير موجودة بجدول invitations بعد — تنعرض بس محلياً بهذا المتصفح.",
       )
     }
+    if (notices.length > 0) setNotice(notices.join(" "))
     onSaved(cleanInv)
   }
 
@@ -148,7 +164,13 @@ function InvitationForm({
         </div>
       )}
       {notice && (
-        <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3">
+        <div
+          className={`rounded-lg border text-sm px-4 py-3 ${
+            notice.includes("⚠️")
+              ? "bg-red-50 border-red-200 text-red-700"
+              : "bg-amber-50 border-amber-200 text-amber-800"
+          }`}
+        >
           {notice}
         </div>
       )}
@@ -424,6 +446,45 @@ function InvitationForm({
             onChange={(e) => set("sheetUrl", e.target.value)}
           />
         </Field>
+        {resolveSheetLink(inv) && (
+          <a
+            href={resolveSheetLink(inv)!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="col-span-full text-sm font-bold text-[#1a7f4b] hover:underline w-fit"
+          >
+            📊 فتح شيت تأكيدات الحضور بتبويب جديد
+          </a>
+        )}
+      </fieldset>
+
+      {/* الخصوصية */}
+      <fieldset className="grid grid-cols-1 gap-3">
+        <legend className="text-sm font-bold text-[#D4AF37] mb-1">
+          الخصوصية
+        </legend>
+        <label className="flex items-start gap-3 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-4 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[#D4AF37]"
+            checked={!!inv.isPrivate}
+            onChange={(e) => set("isPrivate", e.target.checked)}
+          />
+          <span className="text-sm">
+            <span className="font-bold block">دعوة خاصة</span>
+            <span className="text-[#8a7561]">
+              ما تظهر بشبكة الدعوات بالصفحة الرئيسية، توصل بس لمن عنده رابط
+              المعاينة المباشر (?preview={inv.id}). فعّلها مع تعبئة معرّف
+              الشيت (sheetId) بالأعلى حتى تنعرف تأكيدات الحضور.
+            </span>
+          </span>
+        </label>
+        {inv.isPrivate && !inv.sheetId && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            الدعوة محددة "خاصة" بس معرّف الشيت فارغ — تأكيدات الحضور ما راح
+            تنرسل لأي شيت جوجل لحد ما تعبّي sheetId.
+          </p>
+        )}
       </fieldset>
 
       <div className="flex justify-end gap-3 pt-2">
@@ -651,8 +712,15 @@ export default function AdminPanel({
                       style={{ backgroundColor: inv.accentColor }}
                     />
                     <div className="min-w-0">
-                      <p className="font-bold text-sm truncate">
-                        #{inv.id} — {inv.title || "بدون عنوان"}
+                      <p className="font-bold text-sm truncate flex items-center gap-2">
+                        <span>
+                          #{inv.id} — {inv.title || "بدون عنوان"}
+                        </span>
+                        {inv.isPrivate && (
+                          <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2C1810] text-[#D4AF37]">
+                            خاصة
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs text-[#8a7561] truncate">
                         {inv.groom} × {inv.bride} · {inv.venue || "بدون قاعة"}
@@ -669,6 +737,24 @@ export default function AdminPanel({
                     >
                       معاينة
                     </a>
+                    {resolveSheetLink(inv) ? (
+                      <a
+                        href={resolveSheetLink(inv)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#1a7f4b]/30 bg-[#eafaf1] text-[#1a7f4b] flex items-center gap-1"
+                        title="فتح شيت تأكيدات الحضور بجوجل شيت"
+                      >
+                        📊 شيت الحضور
+                      </a>
+                    ) : (
+                      <span
+                        className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3] text-[#c7b89a] cursor-not-allowed"
+                        title="ما أكو sheetId أو sheetUrl مضاف لهذي الدعوة بعد"
+                      >
+                        📊 شيت الحضور
+                      </span>
+                    )}
                     <button
                       onClick={() => {
                         setEditing(inv)
@@ -685,11 +771,12 @@ export default function AdminPanel({
                           id: nextId,
                           sheetId: "",
                           sheetUrl: "",
+                          isPrivate: true,
                         })
                         setEditingIsNew(true)
                       }}
                       className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-                      title="ينشئ دعوة جديدة بنفس التصميم"
+                      title="ينشئ دعوة جديدة خاصة بنفس التصميم — لا تظهر بالصفحة الرئيسية"
                     >
                       نسخ كدعوة خاصة
                     </button>
