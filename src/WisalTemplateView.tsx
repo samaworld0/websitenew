@@ -290,7 +290,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
     <EditableBackground
       id="pageBg"
       as="div"
-      className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
+      className={`relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden${isOpen ? " invitation-opened" : ""}`}
       dir="rtl"
     >
       <style>{`
@@ -311,26 +311,45 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         .custom-font-eyebrow { font-family: 'Reem Kufi', sans-serif; }
         .custom-font-tajawal { font-family: 'Cairo', sans-serif; }
 
-        /* أنيميشن ظهور الأقسام عند السكرول — نوعه ومدته قابلين للتحكم من
-           تبويب "التصميم" بالمحرر المباشر (transitionType/transitionDuration) */
+        /* أنيميشن ظهور لطيف عند السكرول — ثابت المدة (غير مرتبط بإعداد
+           الأدمن)، مأخوذ من تصميم القالب الأصلي */
         .reveal-on-scroll {
-          ${
-            revealType === "none"
-              ? "opacity: 1; transform: none; transition: none;"
-              : `opacity: 0;
-          transform: ${revealType === "fade" ? "none" : "translateY(28px)"};
-          transition: opacity ${revealDuration}s cubic-bezier(0.22, 1, 0.36, 1),
-            transform ${revealDuration}s cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: opacity, transform;`
-          }
+          opacity: 0;
+          transform: translateY(28px);
+          transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, transform;
         }
         .reveal-on-scroll.revealed {
           opacity: 1;
           transform: none;
         }
-        .reveal-delay-1 { transition-delay: ${(revealDuration * 0.13).toFixed(2)}s; }
-        .reveal-delay-2 { transition-delay: ${(revealDuration * 0.27).toFixed(2)}s; }
-        .reveal-delay-3 { transition-delay: ${(revealDuration * 0.4).toFixed(2)}s; }
+        .reveal-delay-1 { transition-delay: 0.12s; }
+        .reveal-delay-2 { transition-delay: 0.24s; }
+        .reveal-delay-3 { transition-delay: 0.36s; }
+
+        /* نصوص يفعّل الأدمن لها "ظهور بعد فتح الدعوة" (من تبويب الخصائص،
+           لعنصر نص محدد بعينه) — تبقى مخفية لحد ما الضيف يضغط زر فتح
+           الدعوة (isOpen)، وقتها تتلاشى بالنوع والمدة المحدّدين بتبويب
+           "التصميم" (transitionType/transitionDuration) */
+        .reveal-on-open {
+          ${
+            revealType === "none"
+              ? "opacity: 1; translate: 0 0; transition: none;"
+              : `opacity: 0;
+          translate: 0 ${revealType === "fade" ? "0" : "20px"};`
+          }
+        }
+        .invitation-opened .reveal-on-open {
+          opacity: 1;
+          translate: 0 0;
+          ${
+            revealType === "none"
+              ? ""
+              : `transition: opacity ${revealDuration}s cubic-bezier(0.22, 1, 0.36, 1),
+            translate ${revealDuration}s cubic-bezier(0.22, 1, 0.36, 1);`
+          }
+        }
       `}</style>
 
       <audio
