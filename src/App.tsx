@@ -752,10 +752,18 @@ export default function App() {
     )
   }
 
+  // الدعوات الخاصة (isPrivate) ما تنعرض بشبكة الدعوات بالصفحة الرئيسية،
+  // توصل بس لمن عنده رابط المعاينة المباشر (?preview=ID) أعلاه.
+  const publiclyListedInvitations = allInvitations.filter(
+    (inv) => !inv.isPrivate,
+  )
+
   const filtered =
     activeCategory === "all"
-      ? allInvitations
-      : allInvitations.filter((inv) => inv.category === activeCategory)
+      ? publiclyListedInvitations
+      : publiclyListedInvitations.filter(
+          (inv) => inv.category === activeCategory,
+        )
   const generalMsg = encodeURIComponent(
     "السلام عليكم، أود الاستفسار عن الدعوات الإلكترونية",
   )
