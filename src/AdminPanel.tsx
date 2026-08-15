@@ -533,7 +533,8 @@ function SiteSettingsForm({
   add column if not exists "siteNameEn" text,
   add column if not exists "logoIcon" text,
   add column if not exists "heroTitle" text,
-  add column if not exists "whatsappNumber" text;`
+  add column if not exists "whatsappNumberIraq" text,
+  add column if not exists "whatsappNumberSaudi" text;`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -546,7 +547,7 @@ function SiteSettingsForm({
     if (!result.success) {
       if (result.tableMissing) {
         setError(
-          "ما انحفظت الإعدادات لأن جدول site_settings غير موجود بعد بقاعدة البيانات. لازم تسوّي الجدول أولاً بلوحة تحكم Supabase: جدول باسم site_settings بالأعمدة (id رقم صحيح - primary key، siteName نص، siteNameEn نص، logoIcon نص، heroTitle نص، whatsappNumber نص)، وبعدها جرّب الحفظ مرة ثانية.",
+          "ما انحفظت الإعدادات لأن جدول site_settings غير موجود بعد بقاعدة البيانات. لازم تسوّي الجدول أولاً بلوحة تحكم Supabase: جدول باسم site_settings بالأعمدة (id رقم صحيح - primary key، siteName نص، siteNameEn نص، logoIcon نص، heroTitle نص، whatsappNumberIraq نص، whatsappNumberSaudi نص)، وبعدها جرّب الحفظ مرة ثانية.",
         )
       } else if (result.columnMissing) {
         setError(
@@ -658,14 +659,27 @@ function SiteSettingsForm({
             onChange={(e) => set("heroTitle", e.target.value)}
           />
         </Field>
+        <div />
         <Field
-          label="رقم واتساب للتواصل"
-          hint="بصيغة دولية بدون + أو أصفار، مثال: 9647700000000"
+          label="رقم واتساب — العراق"
+          hint="بصيغة دولية بدون + أو أصفار، مثال: 9647718031245"
         >
           <input
             className={inputClass}
-            value={settings.whatsappNumber}
-            onChange={(e) => set("whatsappNumber", e.target.value)}
+            value={settings.whatsappNumberIraq}
+            onChange={(e) => set("whatsappNumberIraq", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <Field
+          label="رقم واتساب — السعودية"
+          hint="بصيغة دولية بدون + أو أصفار، مثال: 966580690167"
+        >
+          <input
+            className={inputClass}
+            value={settings.whatsappNumberSaudi}
+            onChange={(e) => set("whatsappNumberSaudi", e.target.value)}
+            dir="ltr"
           />
         </Field>
       </fieldset>
