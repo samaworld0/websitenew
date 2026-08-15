@@ -793,15 +793,25 @@ export default function App() {
               <p className="text-[10px] text-muted-foreground">DAWAATI</p>
             </div>
           </div>
-          <a
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${generalMsg}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#25D366] text-white"
-          >
-            <WhatsAppIcon size={16} />
-            <span>تواصل</span>
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href="?admin=1"
+              title="لوحة التحكم"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border border-border text-[#2C1810] hover:bg-accent/10 transition"
+            >
+              <span aria-hidden>⚙️</span>
+              <span className="hidden sm:inline">لوحة التحكم</span>
+            </a>
+            <a
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${generalMsg}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#25D366] text-white"
+            >
+              <WhatsAppIcon size={16} />
+              <span>تواصل</span>
+            </a>
+          </div>
         </div>
       </nav>
 
