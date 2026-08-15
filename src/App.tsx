@@ -654,6 +654,8 @@ function InvitationCard({
   const bg = inv.coverImage
     ? `linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%), url(${inv.coverImage})`
     : gradientBg
+  // إخفاء الزخارف والنصوص المرسومة فوق صورة الغلاف لو مفعّل الخيار
+  const showOverlay = !(inv.coverImage && inv.hideCoverOverlay)
 
   return (
     <div
@@ -674,27 +676,31 @@ function InvitationCard({
             backgroundPosition: "center",
           }}
         />
-        <div className="absolute top-3 right-3 opacity-70 scale-75">
-          <CornerOrnament color={ac} />
-        </div>
-        <div className="absolute top-3 left-3 opacity-70 scale-75">
-          <CornerOrnament color={ac} flip />
-        </div>
+        {showOverlay && (
+          <>
+            <div className="absolute top-3 right-3 opacity-70 scale-75">
+              <CornerOrnament color={ac} />
+            </div>
+            <div className="absolute top-3 left-3 opacity-70 scale-75">
+              <CornerOrnament color={ac} flip />
+            </div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-2">
-          <p className="text-[10px] tracking-widest text-white/70">
-            بسم الله الرحمن الرحيم
-          </p>
-          <div className="my-2">
-            <OrnamentSVG color={ac} scale={0.7} />
-          </div>
-          <p
-            className="text-lg font-bold leading-snug text-white"
-            style={{ fontFamily: "Amiri, serif" }}
-          >
-            {inv.subtitle}
-          </p>
-        </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-2">
+              <p className="text-[10px] tracking-widest text-white/70">
+                بسم الله الرحمن الرحيم
+              </p>
+              <div className="my-2">
+                <OrnamentSVG color={ac} scale={0.7} />
+              </div>
+              <p
+                className="text-lg font-bold leading-snug text-white"
+                style={{ fontFamily: "Amiri, serif" }}
+              >
+                {inv.subtitle}
+              </p>
+            </div>
+          </>
+        )}
 
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition-all duration-300"
