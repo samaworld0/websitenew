@@ -34,6 +34,7 @@ function toDatabaseInvitation(inv: Invitation) {
     price: inv.price,
     verse: inv.verse,
     coverImage: inv.coverImage ?? null,
+    hideCoverOverlay: inv.hideCoverOverlay ?? false,
     sheetId: inv.sheetId ?? null,
     sheetUrl: inv.sheetUrl ?? null,
     templateType: inv.templateType ?? null,
