@@ -33,6 +33,7 @@ function toDatabaseInvitation(inv: Invitation) {
     tag: inv.tag,
     price: inv.price,
     verse: inv.verse,
+    coverImage: inv.coverImage ?? null,
     sheetId: inv.sheetId ?? null,
     sheetUrl: inv.sheetUrl ?? null,
     templateType: inv.templateType ?? null,
