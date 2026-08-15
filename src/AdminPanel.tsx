@@ -844,7 +844,7 @@ function LoginGate({ onSuccess }: { onSuccess: () => void }) {
           className="text-xl font-bold text-center"
           style={{ fontFamily: "Amiri, serif" }}
         >
-          لوحة تحكم دعوتي
+          لوحة تحكم سما
         </h1>
         <p className="text-sm text-[#8a7561] text-center">
           سجّل الدخول بحساب المشرف
@@ -985,7 +985,7 @@ export default function AdminPanel({
               className="text-lg font-bold leading-none"
               style={{ fontFamily: "Amiri, serif" }}
             >
-              لوحة تحكم دعوتي
+              لوحة تحكم سما
             </h1>
             <p className="text-[10px] text-[#8a7561]">
               إدارة الدعوات — {publicInvitations.length} عامة ·{" "}
