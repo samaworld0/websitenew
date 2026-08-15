@@ -162,7 +162,7 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=El+Messiri:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Cairo:wght@300;400;500;600;700;800&display=swap');
       `}</style>
       <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810]">
               ✨
@@ -201,7 +201,7 @@ export default function App() {
         <span className="hidden sm:block absolute bottom-24 right-[10%] w-2.5 h-2.5 rounded-full bg-gold-400 animate-float" />
         <span className="hidden sm:block absolute top-52 right-[3%] w-1.5 h-1.5 rounded-full bg-rose-500 animate-float-delay" />
 
-        <div className="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center relative">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8 sm:pb-10 text-center relative">
           <a
             href="#try"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs md:text-sm font-bold bg-gold-50 border border-gold-200 text-gold-700 mb-8"
@@ -211,7 +211,7 @@ export default function App() {
           </a>
 
           <h1
-            className="text-4xl md:text-6xl font-bold leading-tight text-warm-900 mb-6"
+            className="text-3xl sm:text-4xl md:text-6xl font-bold leading-tight text-warm-900 mb-5 sm:mb-6"
             style={{ fontFamily: "'El Messiri', serif" }}
           >
             {siteSettings.hero.titleLine1}
@@ -220,7 +220,7 @@ export default function App() {
           </h1>
 
           <p
-            className="text-warm-700/80 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10"
+            className="text-warm-700/80 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-7 sm:mb-10"
             style={{ fontFamily: "Cairo, sans-serif" }}
           >
             {siteSettings.hero.subtitle}
@@ -232,17 +232,17 @@ export default function App() {
                 .getElementById("templates")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="btn-gold inline-flex items-center gap-2 px-8 py-4 rounded-full text-white font-bold text-base"
+            className="btn-gold inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-white font-bold text-sm sm:text-base"
             style={{ fontFamily: "Cairo, sans-serif" }}
           >
             {siteSettings.hero.ctaButton}
           </button>
         </div>
 
-        <div className="relative max-w-3xl mx-auto px-6 pb-20 pt-4">
-          <div className="flex items-end justify-center gap-4 md:gap-6">
+        <div className="relative w-full max-w-3xl mx-auto px-4 sm:px-6 pb-14 sm:pb-20 pt-2 sm:pt-4 overflow-hidden">
+          <div className="flex items-end justify-center gap-2 sm:gap-4 md:gap-6">
             <div
-              className="w-28 md:w-40 rounded-2xl overflow-hidden shadow-xl border-4 border-white rotate-[8deg] translate-y-3"
+              className="w-24 sm:w-28 md:w-40 rounded-2xl overflow-hidden shadow-xl border-4 border-white rotate-[8deg] translate-y-3"
               style={{ aspectRatio: "3/4" }}
             >
               <img
@@ -253,7 +253,7 @@ export default function App() {
             </div>
 
             <div
-              className="w-32 md:w-48 rounded-2xl overflow-hidden shadow-2xl border-4 border-white -translate-y-4 z-10 flex flex-col items-center justify-center text-center px-3"
+              className="w-28 sm:w-32 md:w-48 rounded-2xl overflow-hidden shadow-2xl border-4 border-white -translate-y-4 z-10 flex flex-col items-center justify-center text-center px-3"
               style={{
                 aspectRatio: "3/4",
                 background: "linear-gradient(180deg, #1A0E10 0%, #2A161A 100%)",
@@ -277,7 +277,7 @@ export default function App() {
             </div>
 
             <div
-              className="w-28 md:w-40 rounded-2xl overflow-hidden shadow-xl border-4 border-white rotate-[-8deg] translate-y-3"
+              className="w-24 sm:w-28 md:w-40 rounded-2xl overflow-hidden shadow-xl border-4 border-white rotate-[-8deg] translate-y-3"
               style={{ aspectRatio: "3/4" }}
             >
               <img
