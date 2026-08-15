@@ -719,6 +719,65 @@ function InvitationCard({
   )
 }
 
+function WhatsAppContactButton({
+  numberIraq,
+  numberSaudi,
+  message,
+}: {
+  numberIraq: string
+  numberSaudi: string
+  message: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#25D366] text-white"
+      >
+        <WhatsAppIcon size={16} />
+        <span>تواصل</span>
+      </button>
+
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className="absolute left-0 mt-2 z-50 w-48 rounded-xl border border-border bg-background shadow-lg overflow-hidden"
+            dir="rtl"
+          >
+            <a
+              href={`https://wa.me/${numberIraq}?text=${message}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-bold hover:bg-accent/10 transition"
+            >
+              <WhatsAppIcon size={16} />
+              <span>واتساب — العراق</span>
+            </a>
+            <a
+              href={`https://wa.me/${numberSaudi}?text=${message}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-4 py-3 text-sm font-bold border-t border-border hover:bg-accent/10 transition"
+            >
+              <WhatsAppIcon size={16} />
+              <span>واتساب — السعودية</span>
+            </a>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("all")
   // نبدأ بالبيانات المحلية (seedInvitations) حتى ما تنعرض الصفحة فاضية
@@ -814,15 +873,11 @@ export default function App() {
               <span aria-hidden>⚙️</span>
               <span className="hidden sm:inline">لوحة التحكم</span>
             </a>
-            <a
-              href={`https://wa.me/${siteSettings.whatsappNumber}?text=${generalMsg}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#25D366] text-white"
-            >
-              <WhatsAppIcon size={16} />
-              <span>تواصل</span>
-            </a>
+            <WhatsAppContactButton
+              numberIraq={siteSettings.whatsappNumberIraq}
+              numberSaudi={siteSettings.whatsappNumberSaudi}
+              message={generalMsg}
+            />
           </div>
         </div>
       </nav>
