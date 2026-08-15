@@ -12,6 +12,54 @@ const SUPABASE_URL = "https://yybdncbgradywuiomyik.supabase.co"
 const SUPABASE_ANON_KEY = "sb_publishable_ghQkvzBNAVphFa5PJMwoHQ_2zIoeBHD"
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// اسم الـ bucket بـ Supabase Storage اللي نرفع فيه ملفات الوسائط (صور
+// الدعوات، الفيديوهات، الموسيقى). لازم يكون "Public bucket" مفعّل حتى
+// الروابط تشتغل مباشرة بدون تسجيل دخول (شوف تعليمات الإعداد بالمحادثة).
+const MEDIA_BUCKET = "invitation-media"
+
+function isMissingBucketError(error: any) {
+  const msg = (error?.message || "").toLowerCase()
+  return msg.includes("bucket not found")
+}
+
+// رفع ملف وسائط (صورة/فيديو/صوت) لـ Supabase Storage وإرجاع رابطه
+// العام. folder ينظم الملفات داخل الـ bucket (مثلاً "hero-bg"،
+// "intro-video"...) بس ما يأثر على الرابط النهائي.
+export async function uploadMedia(
+  file: File,
+  folder: string,
+): Promise<{
+  success: boolean
+  url?: string
+  error?: string
+  bucketMissing?: boolean
+}> {
+  try {
+    const safeName = file.name
+      .replace(/[^a-zA-Z0-9.\-_]/g, "-")
+      .toLowerCase()
+    const path = `${folder}/${Date.now()}-${safeName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from(MEDIA_BUCKET)
+      .upload(path, file, { upsert: false })
+
+    if (uploadError) {
+      if (isMissingBucketError(uploadError)) {
+        return { success: false, bucketMissing: true }
+      }
+      console.error("Supabase uploadMedia error:", uploadError)
+      return { success: false, error: uploadError.message }
+    }
+
+    const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path)
+    return { success: true, url: data.publicUrl }
+  } catch (err: any) {
+    console.error("Supabase uploadMedia exception:", err)
+    return { success: false, error: err?.message ?? "خطأ غير متوقع" }
+  }
+}
+
 // تحويل بيانات الدعوة إلى أعمدة موجودة فعلياً بجدول public.invitations.
 // ملاحظة مهمة: هذا المشروع عنده حقول (date, city, groomFamily, brideFamily)
 // غير موجودة كأعمدة بالجدول الحالي (شوف ملاحظة README المرفقة)، فهذي
