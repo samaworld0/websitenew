@@ -173,6 +173,26 @@ export async function deleteInvitation(
   }
 }
 
+// تسجيل الدخول بإيميل وباسورد (Supabase Auth). المستخدم لازم يكون
+// متسوّي مسبقاً من لوحة Supabase (Authentication > Users > Add user).
+export async function signInWithPassword(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+  if (error) return { success: false, error: error.message }
+  return { success: true, session: data.session }
+}
+
+export async function signOut() {
+  await supabase.auth.signOut()
+}
+
+export async function getCurrentSession() {
+  const { data } = await supabase.auth.getSession()
+  return data.session
+}
+
 // إرسال تأكيد حضور (RSVP) لشيت جوجل الخاص بالدعوة. يترسل فعلياً بس لو
 // الدعوة عندها sheetId (دعوة خاصة اتنشأت من لوحة تحكم). بدون sheetId
 // تبقى معاينة محلية فقط بدون إرسال حقيقي.
