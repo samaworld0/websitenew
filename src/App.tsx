@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Invitation } from "./types"
 import { invitations as seedInvitations } from "./data"
 import { loadInvitations, submitRSVP } from "./backend"
+import AdminPanel from "./AdminPanel"
 
 const WHATSAPP_NUMBER = "966500000000"
 
@@ -736,9 +737,19 @@ export default function App() {
   const previewInv = allInvitations.find(
     (inv) => inv.id.toString() === previewId,
   )
+  const isAdmin = urlParams.get("admin") === "1"
 
   const handlePreview = (inv: Invitation) => {
     window.location.href = `${window.location.pathname}?preview=${inv.id}`
+  }
+
+  if (isAdmin) {
+    return (
+      <AdminPanel
+        invitations={allInvitations}
+        onRefresh={() => loadInvitations().then(setAllInvitations)}
+      />
+    )
   }
 
   const filtered =
