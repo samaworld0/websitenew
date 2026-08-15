@@ -290,7 +290,8 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
     <EditableBackground
       id="pageBg"
       as="div"
-      className={`relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden${isOpen ? " invitation-opened" : ""}`}
+      data-wisal-page="true"
+       className={`relative h-full w-full min-w-0 max-w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden${isOpen ? " invitation-opened" : ""}`}
       dir="rtl"
     >
       <style>{`
@@ -310,6 +311,96 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         .custom-font-heading { font-family: 'El Messiri', serif; }
         .custom-font-eyebrow { font-family: 'Reem Kufi', sans-serif; }
         .custom-font-tajawal { font-family: 'Cairo', sans-serif; }
+
+        @media (max-width: 639px) {
+          [data-wisal-page] {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+
+          [data-wisal-page] .royal-scroll {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          [data-wisal-page] .royal-scroll > div {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+          }
+
+          /* Keep the opening screen inside the actual mobile viewport */
+          [data-wisal-page] .w-screen,
+          [data-wisal-page] [style*="177.7777778vw"] {
+            max-width: 100%;
+          }
+
+          /* Countdown: 4 cards must fit 320–390px screens */
+          [data-wisal-page] .countdown-row {
+            width: 100%;
+            gap: 6px !important;
+            padding: 0 2px;
+            flex-wrap: nowrap;
+          }
+
+          [data-wisal-page] .countdown-card {
+            min-width: 0 !important;
+            flex: 1 1 0;
+            width: 25%;
+            padding: 10px 4px !important;
+          }
+
+          [data-wisal-page] .countdown-card .countdown-value {
+            font-size: 1.55rem !important;
+          }
+
+          [data-wisal-page] .countdown-card .countdown-label {
+            font-size: 0.68rem !important;
+          }
+
+          /* Calendar buttons stack instead of overflowing */
+          [data-wisal-page] .calendar-actions {
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+
+          [data-wisal-page] .calendar-actions > * {
+            width: 100%;
+            text-align: center;
+          }
+
+          /* Program timeline gets a little more room for Arabic text */
+          [data-wisal-page] .program-grid {
+            grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) !important;
+            column-gap: 6px !important;
+          }
+
+          [data-wisal-page] .program-grid > * {
+            min-width: 0;
+          }
+
+          /* Smaller section padding on phones */
+          [data-wisal-page] .mobile-section {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+          }
+        }
+
+        @media (max-width: 359px) {
+          [data-wisal-page] .countdown-row {
+            gap: 4px !important;
+          }
+
+          [data-wisal-page] .countdown-card {
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+          }
+
+          [data-wisal-page] .countdown-card .countdown-value {
+            font-size: 1.35rem !important;
+          }
+        }
 
         /* أنيميشن ظهور لطيف عند السكرول — ثابت المدة (غير مرتبط بإعداد
            الأدمن)، مأخوذ من تصميم القالب الأصلي */
@@ -528,7 +619,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           <ReorderableSection id="core:saveDate" label="بطاقة احفظ الموعد" index={1}>
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full">
-            <section className="py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
+            <section className="mobile-section py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
               {/* بطاقة احفظ الموعد */}
               <div className="text-center w-full max-w-sm mb-20 reveal-on-scroll">
                 <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-8 custom-font-heading flex items-center justify-center gap-2">
@@ -568,7 +659,7 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
                       {inv.time}
                     </EditableText>
                   </div>
-                  <div className="border-t border-[#8C7A6B]/20 px-6 py-5 flex items-center justify-center gap-3">
+                  <div className="calendar-actions border-t border-[#8C7A6B]/20 px-6 py-5 flex items-center justify-center gap-3">
                     <a
                       href={googleCalendarUrl}
                       target="_blank"
@@ -593,53 +684,53 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
 
           <ReorderableSection id="core:countdown" label="العداد التنازلي" index={2}>
           <div className="w-full">
-            <section className="py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
+            <section className="mobile-section py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
               {/* العداد التنازلي المكبر */}
               <div className="text-center w-full max-w-lg mb-16 reveal-on-scroll">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-heading">
                   <EditableText id="countdownHeading">باقي على فرحنا</EditableText>
                 </h4>
                 <div
-                  className="flex justify-center items-center gap-4"
+                  className="countdown-row flex justify-center items-center gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
+                  <div className="countdown-card flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                    <span className="countdown-value text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownSecondsValue">
                         {String(timeLeft.seconds).padStart(2, "0")}
                       </EditableText>
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="countdown-label text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdownSecondsLabel">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
+                  <div className="countdown-card flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                    <span className="countdown-value text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownMinutesValue">
                         {String(timeLeft.minutes).padStart(2, "0")}
                       </EditableText>
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="countdown-label text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdownMinutesLabel">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
+                  <div className="countdown-card flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                    <span className="countdown-value text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownHoursValue">
                         {String(timeLeft.hours).padStart(2, "0")}
                       </EditableText>
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="countdown-label text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdownHoursLabel">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <span className="text-3xl font-bold text-[#4A3B2C] custom-font-heading">
+                  <div className="countdown-card flex flex-col items-center bg-white border border-[#8C7A6B]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                    <span className="countdown-value text-3xl font-bold text-[#4A3B2C] custom-font-heading">
                       <EditableText id="countdownDaysValue">
                         {timeLeft.days}
                       </EditableText>
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="countdown-label text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdownDaysLabel">يوم</EditableText>
                     </span>
                   </div>
@@ -655,14 +746,14 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
             <EditableBackground
               id="programSectionBg"
               as="section"
-              className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#C9BBA0] relative z-20"
+              className="mobile-section py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#C9BBA0] relative z-20"
             >
               <div className="text-center max-w-lg w-full mb-24 reveal-on-scroll">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-12 custom-font-heading">
                   <EditableText id="programHeading">برنامج الحفل</EditableText>
                 </h3>
                 <div
-                  className="grid gap-x-3 text-base md:text-lg custom-font-tajawal"
+                  className="program-grid grid gap-x-3 text-base md:text-lg custom-font-tajawal"
                   style={{ gridTemplateColumns: "1fr 2rem 1fr" }}
                 >
                   {/* عمود الزينة الأوسط: يمتد عبر كل الصفوف ويحتوي النقاط
