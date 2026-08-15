@@ -103,9 +103,12 @@ function EditorShell({
             transition: "padding-inline-start .15s ease",
           }}
         >
-          {/* حاوية البطاقة: عرض كامل بالجوال، وبعرض ثابت يشبه شاشة الجوال
-              ويتوسط المساحة المتبقية (بعد الشريط الجانبي) بالكمبيوتر، مع
-              خلفية داكنة حواليها. [transform:translateZ(0)] يخلي هذي
+          {/* حاوية البطاقة: عرض كامل بالجوال، وبعرض أوسع (900px) بالكمبيوتر
+              يتوسط المساحة المتبقية (بعد الشريط الجانبي)، بنفس منطق صفحة
+              عرض الضيف تمامًا — البطاقة الفعلية بداخلها محدودة بعرضها
+              الأقصى (max-w-[560px] بـWisalTemplateView)، فالمساحة الإضافية
+              مجرد خلفية داكنة حوالين البطاقة، نفس اللي يشوفه الضيف بالضبط.
+              [transform:translateZ(0)] يخلي هذي
               الحاوية "containing block" لأي عنصر position:fixed بداخلها
               (زر كتم الصوت، طبقة فتح الدعوة...) عشان يتحدد بالنسبة لعرض
               البطاقة نفسها، نفس سلوك صفحة عرض الضيف بالضبط.
@@ -115,7 +118,7 @@ function EditorShell({
               تلقائيًا بأي مستوى تكبير */}
           <div
             data-invitation-viewport
-            className="relative h-full w-full min-w-0 shrink-0 md:w-[480px] md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
+            className="relative h-full w-full min-w-0 shrink-0 md:w-[900px] md:max-w-[900px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
             style={
               {
                 zoom,
