@@ -1,14 +1,12 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Invitation } from "./types"
-import { saveInvitation, deleteInvitation } from "./backend"
-
-// كلمة مرور بسيطة لحماية لوحة التحكم من الزوار العاديين.
-// ⚠️ هذا حماية سطحية فقط (client-side) — أي شخص يقدر يشوف الكود المصدري
-// للموقع يقدر يلكيها. الحماية الحقيقية تصير من إعدادات Supabase نفسها عبر
-// Row Level Security (RLS): تخلي القراءة عامة، لكن الإضافة/التعديل/الحذف
-// تنحصر بمستخدم مسجّل دخول (Supabase Auth) بدل الاعتماد على هذا الرمز.
-const ADMIN_PASSCODE = "dawaati-2026"
-const SESSION_KEY = "dawaati_admin_authed"
+import {
+  saveInvitation,
+  deleteInvitation,
+  signInWithPassword,
+  signOut,
+  getCurrentSession,
+} from "./backend"
 
 const categories = [
   { id: "wedding", label: "زفاف" },
@@ -448,18 +446,23 @@ function InvitationForm({
   )
 }
 
-function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
-  const [value, setValue] = useState("")
+function LoginGate({ onSuccess }: { onSuccess: () => void }) {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (value === ADMIN_PASSCODE) {
-      sessionStorage.setItem(SESSION_KEY, "1")
-      onSuccess()
-    } else {
-      setError("كلمة المرور غير صحيحة")
+    setError("")
+    setLoading(true)
+    const result = await signInWithPassword(email, password)
+    setLoading(false)
+    if (!result.success) {
+      setError(result.error || "تعذّر تسجيل الدخول")
+      return
     }
+    onSuccess()
   }
 
   return (
@@ -479,22 +482,32 @@ function PasscodeGate({ onSuccess }: { onSuccess: () => void }) {
           لوحة تحكم دعوتي
         </h1>
         <p className="text-sm text-[#8a7561] text-center">
-          أدخل كلمة المرور للمتابعة
+          سجّل الدخول بحساب المشرف
         </p>
         <input
-          type="password"
+          type="email"
           autoFocus
           className={inputClass}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="الإيميل"
+          required
+        />
+        <input
+          type="password"
+          className={inputClass}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           placeholder="كلمة المرور"
+          required
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"
-          className="w-full py-2.5 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810]"
+          disabled={loading}
+          className="w-full py-2.5 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810] disabled:opacity-60"
         >
-          دخول
+          {loading ? "جارِ الدخول..." : "دخول"}
         </button>
       </form>
     </div>
@@ -508,17 +521,36 @@ export default function AdminPanel({
   invitations: Invitation[]
   onRefresh: () => void
 }) {
-  const [authed, setAuthed] = useState(
-    sessionStorage.getItem(SESSION_KEY) === "1",
-  )
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [authed, setAuthed] = useState(false)
   const [editing, setEditing] = useState<Invitation | null>(null)
   const [editingIsNew, setEditingIsNew] = useState(false)
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState("")
 
+  useEffect(() => {
+    getCurrentSession().then((session) => {
+      setAuthed(!!session)
+      setCheckingSession(false)
+    })
+  }, [])
+
+  const handleLogout = async () => {
+    await signOut()
+    setAuthed(false)
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fefcf8]">
+        <p className="text-sm text-[#8a7561]">جارِ التحقق من الجلسة...</p>
+      </div>
+    )
+  }
+
   if (!authed) {
-    return <PasscodeGate onSuccess={() => setAuthed(true)} />
+    return <LoginGate onSuccess={() => setAuthed(true)} />
   }
 
   const nextId =
@@ -573,6 +605,15 @@ export default function AdminPanel({
           </a>
         </div>
       </nav>
+
+      <div className="max-w-5xl mx-auto px-5 pt-3">
+        <button
+          onClick={handleLogout}
+          className="text-xs text-[#8a7561] hover:text-red-600"
+        >
+          تسجيل الخروج
+        </button>
+      </div>
 
       <div className="max-w-5xl mx-auto px-5 py-8 space-y-6">
         {!editing && !creating && (
