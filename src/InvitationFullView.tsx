@@ -25,10 +25,10 @@ export function InvitationFullView({
       className="fixed inset-0 z-50 flex flex-col items-center w-full h-full bg-[#0D0706]"
       dir="ltr"
     >
-      <div className="absolute top-6 left-6 z-[100] flex items-center gap-2">
+      <div className="absolute top-3 left-3 sm:top-6 sm:left-6 z-[100] flex items-center gap-2 flex-wrap max-w-[calc(100%-24px)]">
         {isTrial && (
           <span
-            className="px-4 py-2 rounded-full text-xs font-bold shadow-lg bg-[#B8862F] text-white"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold shadow-lg bg-[#B8862F] text-white"
             style={{ fontFamily: "Cairo, sans-serif" }}
           >
             وضع تجربة — معاينة فقط
@@ -36,7 +36,7 @@ export function InvitationFullView({
         )}
         <button
           onClick={onClose}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-lg bg-black/60 text-white backdrop-blur-md border border-white/20"
+          className="flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold shadow-lg bg-black/60 text-white backdrop-blur-md border border-white/20"
           style={{ fontFamily: "Cairo, sans-serif" }}
         >
           ← رجوع للرئيسية
@@ -52,7 +52,7 @@ export function InvitationFullView({
       <div
         data-invitation-viewport
         dir="rtl"
-        className="relative w-full h-full min-w-0 md:w-[480px] md:max-w-[480px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
+        className="relative w-full h-full min-w-0 md:w-[1366px] md:max-w-[1366px] md:shadow-2xl overflow-hidden [transform:translateZ(0)]"
         style={{ containerType: "inline-size" }}
       >
         {inv.templateType === "wisal" ? (
