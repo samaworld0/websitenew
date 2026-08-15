@@ -8,6 +8,7 @@ import {
   getCurrentSession,
   saveSiteSettings,
   createSheetForInvitation,
+  uploadMedia,
 } from "./backend"
 
 const categories = [
@@ -17,14 +18,6 @@ const categories = [
   { id: "graduation", label: "تخرج" },
   { id: "birthday", label: "عيد ميلاد" },
 ]
-
-const HERO_BG_OPTIONS = ["/images/hero-bg.jpg", "/images/hero-bg-2.jpg"]
-const INTRO_VIDEO_OPTIONS = ["/videos/intro.mp4", "/videos/intro-2.mp4"]
-const INTRO_POSTER_OPTIONS = [
-  "/videos/intro-poster.jpg",
-  "/videos/intro-poster-2.jpg",
-]
-const MUSIC_OPTIONS = ["/music/background.mp3", "/music/background-2.mp3"]
 
 // رابط جدول تأكيدات الحضور بجوجل شيت الخاص بهذي الدعوة. نفضّل sheetUrl لو
 // موجود، وإلا نبنيه من sheetId (بافتراض إنه معرّف الشيت القياسي بجوجل).
@@ -86,6 +79,142 @@ function Field({
 
 const inputClass =
   "w-full rounded-lg border border-[#e5d9c3] bg-white px-3 py-2 text-sm text-[#2C1810] outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition"
+
+// حقل رفع ملف وسائط (صورة/فيديو/صوت) لـ Supabase Storage. يعرض معاينة
+// بسيطة للملف الحالي (لو موجود)، وزر رفع ملف جديد من جهاز المستخدم،
+// بدل ما يحتاج يختار من قائمة ملفات جاهزة بس.
+function MediaUploadField({
+  label,
+  hint,
+  accept,
+  kind,
+  value,
+  folder,
+  onChange,
+}: {
+  label: string
+  hint?: string
+  accept: string
+  kind: "image" | "video" | "audio"
+  value: string
+  folder: string
+  onChange: (url: string) => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState("")
+  const [bucketMissing, setBucketMissing] = useState(false)
+  const inputId = `upload-${folder}-${label}`.replace(/\s+/g, "-")
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return
+    setUploading(true)
+    setError("")
+    setBucketMissing(false)
+    const result = await uploadMedia(file, folder)
+    setUploading(false)
+    if (!result.success || !result.url) {
+      if (result.bucketMissing) {
+        setBucketMissing(true)
+      } else {
+        setError(result.error || "تعذّر رفع الملف، حاول مرة ثانية")
+      }
+      return
+    }
+    onChange(result.url)
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 text-sm">
+      <span className="font-bold text-[#2C1810]">{label}</span>
+
+      {value ? (
+        <div className="flex items-center gap-3 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg p-2">
+          {kind === "image" && (
+            <img
+              src={value}
+              alt=""
+              className="w-14 h-14 rounded-md object-cover shrink-0 border border-[#e5d9c3]"
+            />
+          )}
+          {kind === "video" && (
+            <video
+              src={value}
+              muted
+              className="w-14 h-14 rounded-md object-cover shrink-0 border border-[#e5d9c3] bg-black"
+            />
+          )}
+          {kind === "audio" && (
+            <div className="w-14 h-14 rounded-md shrink-0 border border-[#e5d9c3] bg-white flex items-center justify-center text-xl">
+              🎵
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[#1a7f4b] hover:underline break-all line-clamp-2"
+            >
+              {value}
+            </a>
+          </div>
+          <div className="flex flex-col gap-1 shrink-0">
+            <label
+              htmlFor={inputId}
+              className="text-xs font-bold text-[#8a7561] hover:text-[#2C1810] cursor-pointer text-center"
+            >
+              استبدال
+            </label>
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="text-xs text-red-600 hover:underline"
+            >
+              إزالة
+            </button>
+          </div>
+        </div>
+      ) : (
+        <label
+          htmlFor={inputId}
+          className="flex items-center justify-center gap-2 border-2 border-dashed border-[#e5d9c3] rounded-lg py-4 text-sm text-[#8a7561] hover:border-[#D4AF37] hover:text-[#2C1810] cursor-pointer transition"
+        >
+          {uploading ? (
+            <>
+              <span className="animate-spin">⏳</span>
+              <span>جارٍ الرفع...</span>
+            </>
+          ) : (
+            <>
+              <span>⬆️</span>
+              <span>اضغط لرفع ملف</span>
+            </>
+          )}
+        </label>
+      )}
+
+      <input
+        id={inputId}
+        type="file"
+        accept={accept}
+        className="hidden"
+        disabled={uploading}
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+
+      {hint && <span className="text-xs text-[#8a7561]">{hint}</span>}
+      {error && <span className="text-xs text-red-600">{error}</span>}
+      {bucketMissing && (
+        <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          مخزن الملفات "invitation-media" غير موجود بعد بـ Supabase Storage.
+          روح لـ Supabase → Storage → New bucket → اكتب الاسم بالضبط
+          invitation-media وفعّل "Public bucket"، وبعدها جرّب الرفع مرة
+          ثانية.
+        </span>
+      )}
+    </div>
+  )
+}
 
 function InvitationForm({
   initial,
@@ -432,78 +561,61 @@ function InvitationForm({
         </Field>
       </fieldset>
 
-      {/* قالب وصال (باب متحرك) والوسائط */}
+      {/* قالب "وصال" (باب متحرك) والوسائط */}
       <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
           قالب "وصال" والوسائط (اختياري)
         </legend>
-        <Field label="خلفية الصفحة (heroBg)">
-          <select
-            className={inputClass}
-            value={inv.heroBg || ""}
-            onChange={(e) => set("heroBg", e.target.value)}
-          >
-            <option value="">بدون</option>
-            {HERO_BG_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="فيديو المقدمة (introVideo)">
-          <select
-            className={inputClass}
-            value={inv.introVideo || ""}
-            onChange={(e) => set("introVideo", e.target.value)}
-          >
-            <option value="">بدون</option>
-            {INTRO_VIDEO_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="صورة غلاف الفيديو (introPoster)">
-          <select
-            className={inputClass}
-            value={inv.introPoster || ""}
-            onChange={(e) => set("introPoster", e.target.value)}
-          >
-            <option value="">بدون</option>
-            {INTRO_POSTER_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="الموسيقى (musicUrl)">
-          <select
-            className={inputClass}
-            value={inv.musicUrl || ""}
-            onChange={(e) => set("musicUrl", e.target.value)}
-          >
-            <option value="">بدون</option>
-            {MUSIC_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="فيديو خلفية الباب (doorBgVideo)"
-          hint="مسار ملف يدوي إذا رفعته لمجلد public/videos"
-        >
-          <input
-            className={inputClass}
-            value={inv.doorBgVideo || ""}
-            onChange={(e) => set("doorBgVideo", e.target.value)}
-            placeholder="/videos/door-bg.mp4"
-          />
-        </Field>
+
+        <MediaUploadField
+          label="صورة بداية الدعوة (introPoster)"
+          hint="تظهر كغلاف ثابت قبل ما يضغط الضيف يشغّل فيديو الفتح"
+          accept="image/*"
+          kind="image"
+          value={inv.introPoster || ""}
+          folder="intro-poster"
+          onChange={(url) => set("introPoster", url)}
+        />
+
+        <MediaUploadField
+          label="فيديو الفتح (introVideo)"
+          hint="الفيديو اللي يشتغل لما الضيف يفتح الدعوة أول مرة"
+          accept="video/*"
+          kind="video"
+          value={inv.introVideo || ""}
+          folder="intro-video"
+          onChange={(url) => set("introVideo", url)}
+        />
+
+        <MediaUploadField
+          label="خلفية القسم الأول — صورة (heroBg)"
+          hint="صورة الخلفية الثابتة للقسم الأول من الدعوة"
+          accept="image/*"
+          kind="image"
+          value={inv.heroBg || ""}
+          folder="hero-bg"
+          onChange={(url) => set("heroBg", url)}
+        />
+
+        <MediaUploadField
+          label="خلفية القسم الأول — مقطع فيديو (doorBgVideo)"
+          hint="فيديو متحرك اختياري يشتغل فوق صورة الخلفية بنفس القسم"
+          accept="video/*"
+          kind="video"
+          value={inv.doorBgVideo || ""}
+          folder="door-bg-video"
+          onChange={(url) => set("doorBgVideo", url)}
+        />
+
+        <MediaUploadField
+          label="المقطع الموسيقى (musicUrl)"
+          hint="يشتغل تلقائياً بالخلفية أثناء تصفح الضيف للدعوة"
+          accept="audio/*"
+          kind="audio"
+          value={inv.musicUrl || ""}
+          folder="music"
+          onChange={(url) => set("musicUrl", url)}
+        />
       </fieldset>
 
       {/* ربط تأكيد الحضور RSVP */}
