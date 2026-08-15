@@ -33,8 +33,6 @@ function toDatabaseInvitation(inv: Invitation) {
     tag: inv.tag,
     price: inv.price,
     verse: inv.verse,
-    coverImage: inv.coverImage ?? null,
-    hideCoverOverlay: inv.hideCoverOverlay ?? false,
     sheetId: inv.sheetId ?? null,
     sheetUrl: inv.sheetUrl ?? null,
     templateType: inv.templateType ?? null,
@@ -44,6 +42,14 @@ function toDatabaseInvitation(inv: Invitation) {
     introPoster: inv.introPoster ?? null,
     musicUrl: inv.musicUrl ?? null,
   }
+}
+
+// أضيق نسخة ممكنة — بدون sheetId/sheetUrl. هذي آخر محاولة احتياطية
+// لو عمود الشيت نفسه غير موجود بجدول invitations، حتى أقل شي باقي
+// بيانات الدعوة (العنوان، الأسماء، التاريخ...) تنحفظ بدل ما يفشل كل شي.
+function toDatabaseInvitationCore(inv: Invitation) {
+  const { sheetId, sheetUrl, ...rest } = toDatabaseInvitation(inv)
+  return rest
 }
 
 // نكمّل بيانات الصف الراجع من القاعدة بالحقول المحلية (date, city,
@@ -197,15 +203,19 @@ export async function saveSiteSettings(settings: SiteSettings): Promise<{
 }
 
 // حفظ دعوة (إنشاء جديدة أو تعديل موجودة) بقاعدة Supabase.
-// نجرب من الأشمل للأبسط: (1) كل الحقول حتى الإضافية والخصوصية،
-// (2) الحقول الأساسية + خاصية الخصوصية (isPrivate)، (3) الحقول الأساسية
-// بس. هذا حتى عمود ناقص وحد (مثلاً isPrivate) ما يفشّل حفظ باقي الدعوة.
-// savedPrivacy مهم لأنه لو ما انحفظ يعني الدعوة "الخاصة" راح تظهر
-// بالصفحة الرئيسية بالعامة رغم كل شي.
+// نجرب من الأشمل للأبسط: (1) كل الحقول حتى الإضافية والخصوصية ورابط
+// الشيت، (2) بدون الحقول الإضافية بس مع الخصوصية ورابط الشيت،
+// (3) الحقول الأساسية + رابط الشيت بس (بدون خصوصية)، (4) الحقول
+// الأساسية فقط بدون رابط الشيت. هذا حتى عمود ناقص وحد (مثلاً sheetId)
+// ما يفشّل حفظ باقي الدعوة. savedPrivacy مهم لأنه لو ما انحفظ يعني
+// الدعوة "الخاصة" راح تظهر بالصفحة الرئيسية بالعامة رغم كل شي.
+// savedSheetLink مهم لأنه لو ما انحفظ يعني sheetId/sheetUrl ما وصلوا
+// للقاعدة وزر "شيت الحضور" رح يظل رمادي حتى لو عبّيتهم بالنموذج.
 export async function saveInvitation(inv: Invitation): Promise<{
   success: boolean
   savedExtraFields: boolean
   savedPrivacy: boolean
+  savedSheetLink: boolean
   error?: string
 }> {
   try {
@@ -213,21 +223,31 @@ export async function saveInvitation(inv: Invitation): Promise<{
       row: Record<string, any>
       savedExtraFields: boolean
       savedPrivacy: boolean
+      savedSheetLink: boolean
     }> = [
       {
         row: toDatabaseInvitationFull(inv),
         savedExtraFields: true,
         savedPrivacy: true,
+        savedSheetLink: true,
       },
       {
         row: toDatabaseInvitationWithPrivacy(inv),
         savedExtraFields: false,
         savedPrivacy: true,
+        savedSheetLink: true,
       },
       {
         row: toDatabaseInvitation(inv),
         savedExtraFields: false,
         savedPrivacy: false,
+        savedSheetLink: true,
+      },
+      {
+        row: toDatabaseInvitationCore(inv),
+        savedExtraFields: false,
+        savedPrivacy: false,
+        savedSheetLink: false,
       },
     ]
 
@@ -242,6 +262,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           success: true,
           savedExtraFields: attempt.savedExtraFields,
           savedPrivacy: attempt.savedPrivacy,
+          savedSheetLink: attempt.savedSheetLink,
         }
       }
 
@@ -252,6 +273,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           success: false,
           savedExtraFields: false,
           savedPrivacy: false,
+          savedSheetLink: false,
           error: error.message,
         }
       }
@@ -262,6 +284,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       success: false,
       savedExtraFields: false,
       savedPrivacy: false,
+      savedSheetLink: false,
       error: lastError?.message ?? "خطأ غير متوقع",
     }
   } catch (err: any) {
@@ -270,6 +293,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       success: false,
       savedExtraFields: false,
       savedPrivacy: false,
+      savedSheetLink: false,
       error: err?.message ?? "خطأ غير متوقع",
     }
   }
@@ -310,6 +334,42 @@ export async function signOut() {
 export async function getCurrentSession() {
   const { data } = await supabase.auth.getSession()
   return data.session
+}
+
+// إنشاء شيت جوجل جديد تلقائياً لدعوة معينة (بدل ما المستخدم يسوّي شيت
+// يدوياً وينسخ معرّفه). يعتمد على أكشن "createSheet" الموجود فعلياً بنفس
+// Google Apps Script المستخدم لإرسال RSVP (SHEETS_SCRIPT_URL) — نفس
+// الأكشن اللي كان مستخدم بالمشروع القديم لإنشاء شيت لكل دعوة خاصة.
+export async function createSheetForInvitation(params: {
+  title: string
+}): Promise<{
+  success: boolean
+  sheetId?: string
+  sheetUrl?: string
+  error?: string
+}> {
+  try {
+    const res = await fetch(SHEETS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "createSheet",
+        title: params.title,
+      }),
+    })
+    const result = await res.json().catch(() => null)
+    if (!result || result.success === false || !result.sheetId) {
+      return { success: false, error: result?.error ?? "استجابة غير متوقعة" }
+    }
+    return {
+      success: true,
+      sheetId: String(result.sheetId),
+      sheetUrl: result.sheetUrl ?? undefined,
+    }
+  } catch (err: any) {
+    console.error("createSheetForInvitation error:", err)
+    return { success: false, error: err?.message ?? "خطأ غير متوقع" }
+  }
 }
 
 // إرسال تأكيد حضور (RSVP) لشيت جوجل الخاص بالدعوة. يترسل فعلياً بس لو
