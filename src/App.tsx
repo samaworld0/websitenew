@@ -648,7 +648,12 @@ function InvitationCard({
 }) {
   const [hovered, setHovered] = useState(false)
   const ac = inv.accentColor
-  const bg = `linear-gradient(180deg, ${inv.gradient[0]} 0%, ${inv.gradient[1]} 100%)`
+  const gradientBg = `linear-gradient(180deg, ${inv.gradient[0]} 0%, ${inv.gradient[1]} 100%)`
+  // لو محدد للدعوة صورة غلاف (coverImage)، تنعرض كخلفية الكرت مع تعتيم
+  // خفيف فوقها حتى يضل النص مقروء. وإلا نرجع للتدرج اللوني كخلفية.
+  const bg = inv.coverImage
+    ? `linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%), url(${inv.coverImage})`
+    : gradientBg
 
   return (
     <div
@@ -661,7 +666,14 @@ function InvitationCard({
         style={{ aspectRatio: "3/4" }}
         onClick={() => onPreview(inv)}
       >
-        <div className="absolute inset-0" style={{ background: bg }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: bg,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
         <div className="absolute top-3 right-3 opacity-70 scale-75">
           <CornerOrnament color={ac} />
         </div>
