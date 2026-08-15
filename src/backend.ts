@@ -151,8 +151,10 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
       siteNameEn: data.siteNameEn ?? defaultSiteSettings.siteNameEn,
       logoIcon: data.logoIcon ?? defaultSiteSettings.logoIcon,
       heroTitle: data.heroTitle ?? defaultSiteSettings.heroTitle,
-      whatsappNumber:
-        data.whatsappNumber ?? defaultSiteSettings.whatsappNumber,
+      whatsappNumberIraq:
+        data.whatsappNumberIraq ?? defaultSiteSettings.whatsappNumberIraq,
+      whatsappNumberSaudi:
+        data.whatsappNumberSaudi ?? defaultSiteSettings.whatsappNumberSaudi,
     }
   } catch (err) {
     console.error("Supabase loadSiteSettings error:", err)
