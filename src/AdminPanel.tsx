@@ -643,6 +643,115 @@ function SiteSettingsForm({
   )
 }
 
+function InvitationRow({
+  inv,
+  nextId,
+  deletingId,
+  setDeletingId,
+  onDelete,
+  onEdit,
+  onCopyAsPrivate,
+}: {
+  inv: Invitation
+  nextId: number
+  deletingId: number | null
+  setDeletingId: (id: number | null) => void
+  onDelete: (id: number) => void
+  onEdit: (inv: Invitation) => void
+  onCopyAsPrivate: (inv: Invitation, nextId: number) => void
+}) {
+  return (
+    <div className="bg-white rounded-xl border border-[#e5d9c3] p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <span
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: inv.accentColor }}
+        />
+        <div className="min-w-0">
+          <p className="font-bold text-sm truncate flex items-center gap-2">
+            <span>
+              #{inv.id} — {inv.title || "بدون عنوان"}
+            </span>
+            {inv.isPrivate && (
+              <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2C1810] text-[#D4AF37]">
+                خاصة
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-[#8a7561] truncate">
+            {inv.groom} × {inv.bride} · {inv.venue || "بدون قاعة"}
+            {inv.sheetId ? " · مربوطة بشيت RSVP" : " · معاينة فقط"}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <a
+          href={`?preview=${inv.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
+        >
+          معاينة
+        </a>
+        {resolveSheetLink(inv) ? (
+          <a
+            href={resolveSheetLink(inv)!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#1a7f4b]/30 bg-[#eafaf1] text-[#1a7f4b] flex items-center gap-1"
+            title="فتح شيت تأكيدات الحضور بجوجل شيت"
+          >
+            📊 شيت الحضور
+          </a>
+        ) : (
+          <span
+            className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3] text-[#c7b89a] cursor-not-allowed"
+            title="ما أكو sheetId أو sheetUrl مضاف لهذي الدعوة بعد"
+          >
+            📊 شيت الحضور
+          </span>
+        )}
+        <button
+          onClick={() => onEdit(inv)}
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
+        >
+          تعديل
+        </button>
+        <button
+          onClick={() => onCopyAsPrivate(inv, nextId)}
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
+          title="ينشئ دعوة جديدة خاصة بنفس التصميم — لا تظهر بالصفحة الرئيسية"
+        >
+          نسخ كدعوة خاصة
+        </button>
+        {deletingId === inv.id ? (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onDelete(inv.id)}
+              className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-600 text-white"
+            >
+              تأكيد الحذف
+            </button>
+            <button
+              onClick={() => setDeletingId(null)}
+              className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
+            >
+              تراجع
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setDeletingId(inv.id)}
+            className="px-3 py-1.5 rounded-full text-xs font-bold border border-red-200 text-red-600"
+          >
+            حذف
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function LoginGate({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -724,9 +833,9 @@ export default function AdminPanel({
 }) {
   const [checkingSession, setCheckingSession] = useState(true)
   const [authed, setAuthed] = useState(false)
-  const [activeTab, setActiveTab] = useState<"invitations" | "settings">(
-    "invitations",
-  )
+  const [activeTab, setActiveTab] = useState<
+    "invitations" | "private" | "settings"
+  >("invitations")
   const [editing, setEditing] = useState<Invitation | null>(null)
   const [editingIsNew, setEditingIsNew] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -762,6 +871,9 @@ export default function AdminPanel({
       ? Math.max(...invitations.map((i) => i.id)) + 1
       : 1
 
+  const publicInvitations = invitations.filter((inv) => !inv.isPrivate)
+  const privateInvitations = invitations.filter((inv) => inv.isPrivate)
+
   const handleDelete = async (id: number) => {
     setDeleteError("")
     const result = await deleteInvitation(id)
@@ -785,6 +897,22 @@ export default function AdminPanel({
     onRefresh()
   }
 
+  const startEdit = (inv: Invitation) => {
+    setEditing(inv)
+    setEditingIsNew(false)
+  }
+
+  const startCopyAsPrivate = (inv: Invitation, forcedNextId: number) => {
+    setEditing({
+      ...inv,
+      id: forcedNextId,
+      sheetId: "",
+      sheetUrl: "",
+      isPrivate: true,
+    })
+    setEditingIsNew(true)
+  }
+
   return (
     <div
       className="min-h-screen bg-[#fefcf8]"
@@ -801,7 +929,8 @@ export default function AdminPanel({
               لوحة تحكم دعوتي
             </h1>
             <p className="text-[10px] text-[#8a7561]">
-              إدارة الدعوات — {invitations.length} دعوة
+              إدارة الدعوات — {publicInvitations.length} عامة ·{" "}
+              {privateInvitations.length} خاصة
             </p>
           </div>
           <a href="?" className="text-sm text-[#8a7561] hover:text-[#2C1810]">
@@ -824,6 +953,19 @@ export default function AdminPanel({
             }`}
           >
             الدعوات
+          </button>
+          <button
+            onClick={() => {
+              closeForm()
+              setActiveTab("private")
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              activeTab === "private"
+                ? "bg-[#D4AF37] text-[#2C1810]"
+                : "text-[#8a7561]"
+            }`}
+          >
+            الدعوات الخاصة
           </button>
           <button
             onClick={() => {
@@ -858,7 +1000,7 @@ export default function AdminPanel({
         {activeTab === "invitations" && !editing && !creating && (
           <>
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold">كل الدعوات</h2>
+              <h2 className="text-base font-bold">الدعوات العامة</h2>
               <button
                 onClick={() => setCreating(true)}
                 className="px-5 py-2.5 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810]"
@@ -866,6 +1008,9 @@ export default function AdminPanel({
                 + إنشاء دعوة جديدة
               </button>
             </div>
+            <p className="text-sm text-[#8a7561] -mt-3">
+              هذي الدعوات تظهر بشبكة الدعوات بالصفحة الرئيسية للعموم.
+            </p>
 
             {deleteError && (
               <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
@@ -874,115 +1019,67 @@ export default function AdminPanel({
             )}
 
             <div className="space-y-3">
-              {invitations.length === 0 && (
+              {publicInvitations.length === 0 && (
                 <p className="text-sm text-[#8a7561] text-center py-10">
-                  ما أكو دعوات بعد.
+                  ما أكو دعوات عامة بعد.
                 </p>
               )}
-              {invitations.map((inv) => (
-                <div
+              {publicInvitations.map((inv) => (
+                <InvitationRow
                   key={inv.id}
-                  className="bg-white rounded-xl border border-[#e5d9c3] p-4 flex flex-wrap items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: inv.accentColor }}
-                    />
-                    <div className="min-w-0">
-                      <p className="font-bold text-sm truncate flex items-center gap-2">
-                        <span>
-                          #{inv.id} — {inv.title || "بدون عنوان"}
-                        </span>
-                        {inv.isPrivate && (
-                          <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2C1810] text-[#D4AF37]">
-                            خاصة
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-[#8a7561] truncate">
-                        {inv.groom} × {inv.bride} · {inv.venue || "بدون قاعة"}
-                        {inv.sheetId ? " · مربوطة بشيت RSVP" : " · معاينة فقط"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <a
-                      href={`?preview=${inv.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-                    >
-                      معاينة
-                    </a>
-                    {resolveSheetLink(inv) ? (
-                      <a
-                        href={resolveSheetLink(inv)!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#1a7f4b]/30 bg-[#eafaf1] text-[#1a7f4b] flex items-center gap-1"
-                        title="فتح شيت تأكيدات الحضور بجوجل شيت"
-                      >
-                        📊 شيت الحضور
-                      </a>
-                    ) : (
-                      <span
-                        className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3] text-[#c7b89a] cursor-not-allowed"
-                        title="ما أكو sheetId أو sheetUrl مضاف لهذي الدعوة بعد"
-                      >
-                        📊 شيت الحضور
-                      </span>
-                    )}
-                    <button
-                      onClick={() => {
-                        setEditing(inv)
-                        setEditingIsNew(false)
-                      }}
-                      className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-                    >
-                      تعديل
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditing({
-                          ...inv,
-                          id: nextId,
-                          sheetId: "",
-                          sheetUrl: "",
-                          isPrivate: true,
-                        })
-                        setEditingIsNew(true)
-                      }}
-                      className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-                      title="ينشئ دعوة جديدة خاصة بنفس التصميم — لا تظهر بالصفحة الرئيسية"
-                    >
-                      نسخ كدعوة خاصة
-                    </button>
-                    {deletingId === inv.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleDelete(inv.id)}
-                          className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-600 text-white"
-                        >
-                          تأكيد الحذف
-                        </button>
-                        <button
-                          onClick={() => setDeletingId(null)}
-                          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-                        >
-                          تراجع
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setDeletingId(inv.id)}
-                        className="px-3 py-1.5 rounded-full text-xs font-bold border border-red-200 text-red-600"
-                      >
-                        حذف
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  inv={inv}
+                  nextId={nextId}
+                  deletingId={deletingId}
+                  setDeletingId={setDeletingId}
+                  onDelete={handleDelete}
+                  onEdit={startEdit}
+                  onCopyAsPrivate={startCopyAsPrivate}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {activeTab === "private" && !editing && !creating && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold">الدعوات الخاصة</h2>
+              <button
+                onClick={() => setCreating(true)}
+                className="px-5 py-2.5 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810]"
+              >
+                + إنشاء دعوة جديدة
+              </button>
+            </div>
+            <p className="text-sm text-[#8a7561] -mt-3">
+              هذي الدعوات ما تظهر بشبكة الدعوات بالصفحة الرئيسية — توصل
+              بس لمن عنده رابط المعاينة المباشر (?preview=ID).
+            </p>
+
+            {deleteError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {privateInvitations.length === 0 && (
+                <p className="text-sm text-[#8a7561] text-center py-10">
+                  ما أكو دعوات خاصة بعد. تكدر تسوّي وحدة جديدة، أو تحدد
+                  خيار "دعوة خاصة" بنموذج تعديل أي دعوة عامة.
+                </p>
+              )}
+              {privateInvitations.map((inv) => (
+                <InvitationRow
+                  key={inv.id}
+                  inv={inv}
+                  nextId={nextId}
+                  deletingId={deletingId}
+                  setDeletingId={setDeletingId}
+                  onDelete={handleDelete}
+                  onEdit={startEdit}
+                  onCopyAsPrivate={startCopyAsPrivate}
+                />
               ))}
             </div>
           </>
@@ -990,7 +1087,10 @@ export default function AdminPanel({
 
         {creating && (
           <InvitationForm
-            initial={emptyInvitation(nextId)}
+            initial={{
+              ...emptyInvitation(nextId),
+              isPrivate: activeTab === "private",
+            }}
             isNew
             onCancel={closeForm}
             onSaved={handleSaved}
