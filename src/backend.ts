@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
-import { Invitation } from "./types"
-import { invitations as seedInvitations } from "./data"
+import { Invitation, SiteSettings } from "./types"
+import { invitations as seedInvitations, defaultSiteSettings } from "./data"
 
 // رابط سكربت Google Apps Script المسؤول عن إضافة تأكيدات الحضور (RSVP) للشيت
 export const SHEETS_SCRIPT_URL =
@@ -118,6 +118,73 @@ function isMissingColumnError(error: any) {
     (msg.includes("column") && msg.includes("does not exist")) ||
     (msg.includes("could not find") && msg.includes("column"))
   )
+}
+
+// لو جدول site_settings نفسه غير موجود بعد بقاعدة البيانات (لسه ما انسوّى).
+function isMissingTableError(error: any) {
+  const msg = (error?.message || "").toLowerCase()
+  return (
+    error?.code === "42P01" ||
+    (msg.includes("relation") && msg.includes("does not exist")) ||
+    (msg.includes("could not find") && msg.includes("table"))
+  )
+}
+
+// إعدادات الواجهة العامة تنحفظ بصف واحد ثابت (id = 1) بجدول site_settings.
+const SITE_SETTINGS_ROW_ID = 1
+
+// تحميل إعدادات الواجهة من Supabase. لو الجدول غير موجود أو فاضي، نرجع
+// القيم الافتراضية (defaultSiteSettings) بدون ما نوقف الموقع عن الشغل.
+export async function loadSiteSettings(): Promise<SiteSettings> {
+  try {
+    const { data, error } = await supabase
+      .from("site_settings")
+      .select("*")
+      .eq("id", SITE_SETTINGS_ROW_ID)
+      .maybeSingle()
+
+    if (error) throw error
+    if (!data) return defaultSiteSettings
+
+    return {
+      siteName: data.siteName ?? defaultSiteSettings.siteName,
+      siteNameEn: data.siteNameEn ?? defaultSiteSettings.siteNameEn,
+      logoIcon: data.logoIcon ?? defaultSiteSettings.logoIcon,
+      heroTitle: data.heroTitle ?? defaultSiteSettings.heroTitle,
+      whatsappNumber:
+        data.whatsappNumber ?? defaultSiteSettings.whatsappNumber,
+    }
+  } catch (err) {
+    console.error("Supabase loadSiteSettings error:", err)
+    return defaultSiteSettings
+  }
+}
+
+// حفظ إعدادات الواجهة بقاعدة Supabase (صف واحد ثابت id=1، upsert).
+// لو جدول site_settings غير موجود بعد نرجّع tableMissing:true حتى نعرض
+// تنبيه واضح بلوحة التحكم يشرح للمشرف يسوّي الجدول أولاً.
+export async function saveSiteSettings(settings: SiteSettings): Promise<{
+  success: boolean
+  tableMissing?: boolean
+  error?: string
+}> {
+  try {
+    const { error } = await supabase
+      .from("site_settings")
+      .upsert({ id: SITE_SETTINGS_ROW_ID, ...settings }, { onConflict: "id" })
+
+    if (error) {
+      if (isMissingTableError(error)) {
+        return { success: false, tableMissing: true, error: error.message }
+      }
+      console.error("Supabase saveSiteSettings error:", error)
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err: any) {
+    console.error("Supabase saveSiteSettings exception:", err)
+    return { success: false, error: err?.message ?? "خطأ غير متوقع" }
+  }
 }
 
 // حفظ دعوة (إنشاء جديدة أو تعديل موجودة) بقاعدة Supabase.
