@@ -1,4 +1,14 @@
-import { Invitation } from "./types"
+import { Invitation, SiteSettings } from "./types"
+
+// القيم الافتراضية لإعدادات الواجهة — تُستخدم لو قاعدة البيانات فاضية أو
+// جدول site_settings غير موجود بعد (شوف backend.ts -> loadSiteSettings).
+export const defaultSiteSettings: SiteSettings = {
+  siteName: "دعوتي",
+  siteNameEn: "DAWAATI",
+  logoIcon: "✨",
+  heroTitle: "اختر دعوتك المثالية",
+  whatsappNumber: "966500000000",
+}
 
 // هذي البيانات تُستخدم فقط "لزرع" قاعدة بيانات Supabase أول مرة لو كانت
 // فاضية (شوف backend.ts -> loadInvitations). بعد أول تحميل، البيانات
