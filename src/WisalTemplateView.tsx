@@ -620,6 +620,95 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full">
             <section className="mobile-section py-24 px-6 flex flex-col items-center bg-[#FAF7F2] text-[#3D312A] relative z-20">
+              {/* نص الدعوة الكتابي المزخرف — بخط ونمط الدعوات التقليدية
+                  (بسملة/دعاء علوي بخط Aref Ruqaa، ونصوص وسطى بخط Amiri) */}
+              <div className="text-center w-full max-w-md mb-20 reveal-on-scroll">
+                <EditableText
+                  id="ornateTopInvocation"
+                  as="p"
+                  className="custom-font-ruqaa text-[#4A3B2C] mb-8"
+                  style={{ fontSize: "clamp(20px, 5vw, 27px)", lineHeight: 1.5, fontWeight: 700 }}
+                >
+                  بِسْمِ اللَّهِ مَا شَاءَ اللَّهُ لَا قُوَّةَ إِلَّا بِاللَّهِ
+                </EditableText>
+
+                <div className="mb-6">
+                  <EditableText
+                    id="ornateIntroLine1"
+                    as="p"
+                    className="custom-font-amiri text-[#5A4A3C]"
+                    style={{ fontSize: 17, lineHeight: 2 }}
+                  >
+                    في ليلة جميلة يضوي
+                  </EditableText>
+                  <EditableText
+                    id="ornateIntroLine2"
+                    as="p"
+                    className="custom-font-amiri text-[#5A4A3C]"
+                    style={{ fontSize: 17, lineHeight: 2 }}
+                  >
+                    الفرح بعالي سماها
+                  </EditableText>
+                </div>
+
+                <EditableText
+                  id="ornateHostLabel"
+                  as="p"
+                  className="custom-font-amiri text-[#8C7A6B] mb-6"
+                  style={{ fontSize: 16, letterSpacing: 6 }}
+                >
+                  تتشرف
+                </EditableText>
+
+                <EditableText
+                  id="ornateHostName"
+                  as="p"
+                  className="custom-font-amiri font-bold text-[#4A3B2C] mb-6"
+                  style={{ fontSize: 23 }}
+                >
+                  أم فالح البديني وكريماتها
+                </EditableText>
+
+                <EditableText
+                  id="ornateInviteLine"
+                  as="p"
+                  className="custom-font-amiri text-[#5A4A3C] mb-3"
+                  style={{ fontSize: 17 }}
+                >
+                  بدعوتكم لحضور حفل زفاف أبنائها
+                </EditableText>
+
+                <div
+                  className="custom-font-amiri font-bold text-[#B8862B] mb-8 flex items-center justify-center gap-3"
+                  style={{ fontSize: 27 }}
+                >
+                  <EditableText id="ornateGroomName">{inv.groom}</EditableText>
+                  <span style={{ color: "#D4AF37", fontSize: 20 }}>&amp;</span>
+                  <EditableText id="ornateBrideName">{inv.bride}</EditableText>
+                </div>
+
+                <EditableText
+                  id="ornateDateLine"
+                  as="p"
+                  className="custom-font-amiri text-[#5A4A3C] mb-10"
+                  style={{ fontSize: 17 }}
+                >
+                  {saveDateDayName ? `وذلك بمشيئة الله تعالى يوم ${saveDateDayName}` : "وذلك بمشيئة الله تعالى"}
+                </EditableText>
+
+                <EditableText
+                  id="ornateBottomClosing"
+                  as="p"
+                  className="custom-font-ruqaa text-[#8C7A6B]"
+                  style={{ fontSize: "clamp(19px, 4.5vw, 24px)", lineHeight: 1.6, fontWeight: 700 }}
+                >
+                  ويسعدهم تشريفكم الفرح والسرور
+                </EditableText>
+              </div>
+
+              {/* خط فاصل ذهبي رفيع بين نص الدعوة وبطاقة احفظ الموعد */}
+              <div className="w-24 h-px bg-[#D4AF37]/40 mb-16 reveal-on-scroll" />
+
               {/* بطاقة احفظ الموعد */}
               <div className="text-center w-full max-w-sm mb-20 reveal-on-scroll">
                 <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-8 custom-font-heading flex items-center justify-center gap-2">
