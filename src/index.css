@@ -158,3 +158,63 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
+
+
+/* =========================
+   Responsive / Mobile fixes
+   ========================= */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .card-hover:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Prevent long Arabic/English strings from widening the page */
+  h1, h2, h3, h4, h5, h6, p, a, button, span {
+    overflow-wrap: anywhere;
+  }
+
+  /* Main navbar */
+  nav > div {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  /* Main hero */
+  section#templates {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Avoid oversized desktop-style spacing on small screens */
+  .max-w-7xl,
+  .max-w-5xl,
+  .max-w-4xl,
+  .max-w-3xl {
+    max-width: 100%;
+  }
+}
