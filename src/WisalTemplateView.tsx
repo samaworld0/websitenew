@@ -2,7 +2,17 @@ import { useState, useEffect, useRef, Fragment } from "react"
 import { Invitation } from "./types"
 import { getTimeLeft, getNameFontSizeClass, DEFAULT_WISAL_PROGRAM, hexToRgba } from "./utils"
 import { SHEETS_SCRIPT_URL } from "./backend"
-import { EditableText, EditableBackground, EditableIcon, EditableImage, LOGO_ID } from "./LiveEditing"
+import {
+  EditableText,
+  EditableBackground,
+  EditableIcon,
+  EditableImage,
+  LOGO_ID,
+  useEditMode,
+  TRANSITIONS_KEY,
+  DEFAULT_TRANSITION_TYPE,
+  DEFAULT_TRANSITION_DURATION,
+} from "./LiveEditing"
 import { CustomTextLayer, CustomImageLayer, CustomSectionsLayer, ReorderableSection } from "./InvitationLayers"
 
 // يفعّل ظهور تدريجي (fade + slide) لأي عنصر يحمل كلاس reveal-on-scroll
@@ -74,6 +84,14 @@ function useScrollProgress(active: boolean) {
 }
 
 export function WisalTemplateView({ inv }: { inv: Invitation }) {
+  // إعداد أنيميشن الظهور التدريجي (تلاشي) للأقسام عند السكرول — يتحكم فيه
+  // الأدمن من تبويب "التصميم" بالمحرر المباشر، ويتخزّن مرة وحدة لكل
+  // الدعوة تحت مفتاح ثابت (TRANSITIONS_KEY)
+  const { styles: editStyles } = useEditMode()
+  const transitionsMeta = editStyles[TRANSITIONS_KEY] || {}
+  const revealType = transitionsMeta.transitionType ?? DEFAULT_TRANSITION_TYPE
+  const revealDuration = transitionsMeta.transitionDuration ?? DEFAULT_TRANSITION_DURATION
+
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
@@ -293,21 +311,26 @@ export function WisalTemplateView({ inv }: { inv: Invitation }) {
         .custom-font-eyebrow { font-family: 'Reem Kufi', sans-serif; }
         .custom-font-tajawal { font-family: 'Cairo', sans-serif; }
 
-        /* أنيميشن ظهور لطيف عند السكرول */
+        /* أنيميشن ظهور الأقسام عند السكرول — نوعه ومدته قابلين للتحكم من
+           تبويب "التصميم" بالمحرر المباشر (transitionType/transitionDuration) */
         .reveal-on-scroll {
-          opacity: 0;
-          transform: translateY(28px);
-          transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-            transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: opacity, transform;
+          ${
+            revealType === "none"
+              ? "opacity: 1; transform: none; transition: none;"
+              : `opacity: 0;
+          transform: ${revealType === "fade" ? "none" : "translateY(28px)"};
+          transition: opacity ${revealDuration}s cubic-bezier(0.22, 1, 0.36, 1),
+            transform ${revealDuration}s cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, transform;`
+          }
         }
         .reveal-on-scroll.revealed {
           opacity: 1;
-          transform: translateY(0);
+          transform: none;
         }
-        .reveal-delay-1 { transition-delay: 0.12s; }
-        .reveal-delay-2 { transition-delay: 0.24s; }
-        .reveal-delay-3 { transition-delay: 0.36s; }
+        .reveal-delay-1 { transition-delay: ${(revealDuration * 0.13).toFixed(2)}s; }
+        .reveal-delay-2 { transition-delay: ${(revealDuration * 0.27).toFixed(2)}s; }
+        .reveal-delay-3 { transition-delay: ${(revealDuration * 0.4).toFixed(2)}s; }
       `}</style>
 
       <audio
