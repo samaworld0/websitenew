@@ -63,7 +63,22 @@ export interface TextStyle {
   // النسخ ولا يشتغل، وتعديل النصوص بالمحرر ما يشتغل عليها لأنها مو عناصر
   // React حقيقية
   rawHtml?: string
+  // نوع أنيميشن الظهور التدريجي للأقسام عند وصول السكرول لها، ومدته
+  // بالثواني — يتخزّنان مرة وحدة للدعوة كاملة تحت مفتاح ثابت خاص
+  // (TRANSITIONS_KEY بالأسفل)، مو لكل قسم لحاله. "fadeUp" = تلاشي + صعود
+  // خفيف (الافتراضي القديم قبل هالخاصية)، "fade" = تلاشي بدون حركة،
+  // "none" = بدون أي أنيميشن (الأقسام تظهر فورًا)
+  transitionType?: "fadeUp" | "fade" | "none"
+  transitionDuration?: number
 }
+
+// المفتاح الثابت اللي يتخزّن تحته إعداد أنيميشن الظهور (تلاشي) لكل الدعوة
+// — نفس فكرة pageBgKey بالضبط (إعداد عام واحد، مو مرتبط بعنصر معيّن)
+export const TRANSITIONS_KEY = "meta:transitions"
+export const DEFAULT_TRANSITION_TYPE: NonNullable<TextStyle["transitionType"]> = "fadeUp"
+export const DEFAULT_TRANSITION_DURATION = 0.9
+export const MIN_TRANSITION_DURATION = 0.2
+export const MAX_TRANSITION_DURATION = 2.5
 
 const BG_PREFIX = "bg:"
 const ICON_PREFIX = "icon:"
@@ -2068,6 +2083,8 @@ export function EditPanel() {
   )}
 
   const pageBgKey = BG_PREFIX + "pageBg"
+  const transitionsKey = TRANSITIONS_KEY
+  const transitionsStyle = styles[transitionsKey] || {}
   const pageBgStyle = styles[pageBgKey] || {}
 
   const flyoutHeaderStyle: React.CSSProperties = {
@@ -2398,6 +2415,88 @@ export function EditPanel() {
                 لتغيير لون قسم معيّن بس (مو الدعوة كاملة)، اضغط عليه مباشرة
                 بالتصميم فيفتح تبويب "الخصائص".
               </div>
+
+              <PanelSection title="انتقال ظهور الأقسام">
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+                  {(
+                    [
+                      { id: "fadeUp", label: "تلاشي + صعود" },
+                      { id: "fade", label: "تلاشي فقط" },
+                      { id: "none", label: "بدون انتقال" },
+                    ] as const
+                  ).map((opt) => {
+                    const current = transitionsStyle.transitionType ?? DEFAULT_TRANSITION_TYPE
+                    const active = current === opt.id
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => updateStyle(transitionsKey, { transitionType: opt.id })}
+                        style={{
+                          ...smallBtnStyle,
+                          textAlign: "center",
+                          background: active ? "#B8862F" : "#2A211D",
+                          color: active ? "#1A1210" : "#F5EBE0",
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div style={{ fontSize: 10, color: "#8C6B6F", marginBottom: 6 }}>
+                  مدة التلاشي
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    style={smallBtnStyle}
+                    disabled={(transitionsStyle.transitionType ?? DEFAULT_TRANSITION_TYPE) === "none"}
+                    onClick={() =>
+                      updateStyle(transitionsKey, {
+                        transitionDuration: Math.max(
+                          MIN_TRANSITION_DURATION,
+                          Math.round(
+                            ((transitionsStyle.transitionDuration ?? DEFAULT_TRANSITION_DURATION) - 0.1) * 10,
+                          ) / 10,
+                        ),
+                      })
+                    }
+                  >
+                    −
+                  </button>
+                  <span style={{ fontSize: 12, color: "#F5EBE0", minWidth: 60, textAlign: "center" }}>
+                    {(transitionsStyle.transitionDuration ?? DEFAULT_TRANSITION_DURATION).toFixed(1)} ثانية
+                  </span>
+                  <button
+                    type="button"
+                    style={smallBtnStyle}
+                    disabled={(transitionsStyle.transitionType ?? DEFAULT_TRANSITION_TYPE) === "none"}
+                    onClick={() =>
+                      updateStyle(transitionsKey, {
+                        transitionDuration: Math.min(
+                          MAX_TRANSITION_DURATION,
+                          Math.round(
+                            ((transitionsStyle.transitionDuration ?? DEFAULT_TRANSITION_DURATION) + 0.1) * 10,
+                          ) / 10,
+                        ),
+                      })
+                    }
+                  >
+                    +
+                  </button>
+                  {(transitionsStyle.transitionType || transitionsStyle.transitionDuration !== undefined) && (
+                    <button
+                      type="button"
+                      onClick={() => resetStyle(transitionsKey)}
+                      style={{ ...smallBtnStyle, marginInlineStart: "auto" }}
+                    >
+                      ↺ الأصلي
+                    </button>
+                  )}
+                </div>
+              </PanelSection>
             </>
           )}
 
