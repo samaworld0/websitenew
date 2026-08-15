@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from "react"
 import { Invitation } from "./types"
-import { invitations as seedInvitations } from "./data"
-import { loadInvitations, submitRSVP } from "./backend"
+import { invitations as seedInvitations, defaultSiteSettings } from "./data"
+import { loadInvitations, loadSiteSettings, submitRSVP } from "./backend"
 import AdminPanel from "./AdminPanel"
-
-const WHATSAPP_NUMBER = "966500000000"
 
 const categories = [
   { id: "all", label: "الكل" },
@@ -727,9 +725,11 @@ export default function App() {
   // لحظة التحميل الأول، وتنستبدل ببيانات Supabase الحقيقية أول ما توصل
   const [allInvitations, setAllInvitations] =
     useState<Invitation[]>(seedInvitations)
+  const [siteSettings, setSiteSettings] = useState(defaultSiteSettings)
 
   useEffect(() => {
     loadInvitations().then(setAllInvitations)
+    loadSiteSettings().then(setSiteSettings)
   }, [])
 
   const urlParams = new URLSearchParams(window.location.search)
@@ -748,6 +748,8 @@ export default function App() {
       <AdminPanel
         invitations={allInvitations}
         onRefresh={() => loadInvitations().then(setAllInvitations)}
+        siteSettings={siteSettings}
+        onSiteSettingsRefresh={() => loadSiteSettings().then(setSiteSettings)}
       />
     )
   }
@@ -789,16 +791,18 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810]">
-              ✨
+              {siteSettings.logoIcon}
             </div>
             <div>
               <h1
                 className="text-lg font-bold leading-none"
                 style={{ fontFamily: "Amiri, serif" }}
               >
-                دعوتي
+                {siteSettings.siteName}
               </h1>
-              <p className="text-[10px] text-muted-foreground">DAWAATI</p>
+              <p className="text-[10px] text-muted-foreground">
+                {siteSettings.siteNameEn}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -811,7 +815,7 @@ export default function App() {
               <span className="hidden sm:inline">لوحة التحكم</span>
             </a>
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${generalMsg}`}
+              href={`https://wa.me/${siteSettings.whatsappNumber}?text=${generalMsg}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#25D366] text-white"
@@ -829,7 +833,7 @@ export default function App() {
             className="text-3xl md:text-4xl font-bold mb-3"
             style={{ fontFamily: "Amiri, serif" }}
           >
-            اختر دعوتك المثالية
+            {siteSettings.heroTitle}
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
