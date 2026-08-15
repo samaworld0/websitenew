@@ -89,6 +89,90 @@ export async function loadInvitations(): Promise<Invitation[]> {
   }
 }
 
+// نفس أعمدة toDatabaseInvitation بس مع إضافة الحقول المحلية (date, city,
+// groomFamily, brideFamily) لو انضافت أعمدتها بالجدول لاحقاً.
+function toDatabaseInvitationFull(inv: Invitation) {
+  return {
+    ...toDatabaseInvitation(inv),
+    date: inv.date ?? null,
+    city: inv.city ?? null,
+    groomFamily: inv.groomFamily ?? null,
+    brideFamily: inv.brideFamily ?? null,
+  }
+}
+
+function isMissingColumnError(error: any) {
+  const msg = (error?.message || "").toLowerCase()
+  return (
+    error?.code === "42703" ||
+    (msg.includes("column") && msg.includes("does not exist")) ||
+    (msg.includes("could not find") && msg.includes("column"))
+  )
+}
+
+// حفظ دعوة (إنشاء جديدة أو تعديل موجودة) بقاعدة Supabase.
+// أول محاولة نبعث كل الحقول (حتى date/city/groomFamily/brideFamily). لو
+// القاعدة ما عندها هذي الأعمدة بعد، نعيد المحاولة بدونها حتى ما تفشل
+// عملية الحفظ بالكامل، ونرجّع علم savedExtraFields يوضح شنو انحفظ فعلياً.
+export async function saveInvitation(
+  inv: Invitation,
+): Promise<{ success: boolean; savedExtraFields: boolean; error?: string }> {
+  try {
+    const fullRow = toDatabaseInvitationFull(inv)
+    const { error } = await supabase
+      .from("invitations")
+      .upsert(fullRow, { onConflict: "id" })
+
+    if (!error) return { success: true, savedExtraFields: true }
+
+    if (!isMissingColumnError(error)) {
+      console.error("Supabase saveInvitation error:", error)
+      return { success: false, savedExtraFields: false, error: error.message }
+    }
+
+    // إعادة المحاولة بدون الحقول الإضافية الغير موجودة بالجدول
+    const coreRow = toDatabaseInvitation(inv)
+    const { error: coreError } = await supabase
+      .from("invitations")
+      .upsert(coreRow, { onConflict: "id" })
+
+    if (coreError) {
+      console.error("Supabase saveInvitation (core) error:", coreError)
+      return {
+        success: false,
+        savedExtraFields: false,
+        error: coreError.message,
+      }
+    }
+
+    return { success: true, savedExtraFields: false }
+  } catch (err: any) {
+    console.error("Supabase saveInvitation exception:", err)
+    return {
+      success: false,
+      savedExtraFields: false,
+      error: err?.message ?? "خطأ غير متوقع",
+    }
+  }
+}
+
+// حذف دعوة نهائياً من القاعدة.
+export async function deleteInvitation(
+  id: number,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.from("invitations").delete().eq("id", id)
+    if (error) {
+      console.error("Supabase deleteInvitation error:", error)
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err: any) {
+    console.error("Supabase deleteInvitation exception:", err)
+    return { success: false, error: err?.message ?? "خطأ غير متوقع" }
+  }
+}
+
 // إرسال تأكيد حضور (RSVP) لشيت جوجل الخاص بالدعوة. يترسل فعلياً بس لو
 // الدعوة عندها sheetId (دعوة خاصة اتنشأت من لوحة تحكم). بدون sheetId
 // تبقى معاينة محلية فقط بدون إرسال حقيقي.
