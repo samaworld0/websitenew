@@ -55,6 +55,7 @@ function mergeWithLocalFields(row: any): Invitation {
     city: row.city ?? local?.city ?? "",
     groomFamily: row.groomFamily ?? local?.groomFamily ?? "",
     brideFamily: row.brideFamily ?? local?.brideFamily ?? "",
+    isPrivate: row.isPrivate ?? local?.isPrivate ?? false,
   } as Invitation
 }
 
@@ -89,11 +90,20 @@ export async function loadInvitations(): Promise<Invitation[]> {
   }
 }
 
-// نفس أعمدة toDatabaseInvitation بس مع إضافة الحقول المحلية (date, city,
-// groomFamily, brideFamily) لو انضافت أعمدتها بالجدول لاحقاً.
-function toDatabaseInvitationFull(inv: Invitation) {
+// نفس أعمدة toDatabaseInvitation بس مع إضافة خاصية "دعوة خاصة" (isPrivate)
+// لو انضاف عمودها بالجدول.
+function toDatabaseInvitationWithPrivacy(inv: Invitation) {
   return {
     ...toDatabaseInvitation(inv),
+    isPrivate: inv.isPrivate ?? false,
+  }
+}
+
+// نفس الشي بس مع إضافة الحقول المحلية (date, city, groomFamily,
+// brideFamily) لو انضافت أعمدتها بالجدول لاحقاً.
+function toDatabaseInvitationFull(inv: Invitation) {
+  return {
+    ...toDatabaseInvitationWithPrivacy(inv),
     date: inv.date ?? null,
     city: inv.city ?? null,
     groomFamily: inv.groomFamily ?? null,
@@ -111,46 +121,79 @@ function isMissingColumnError(error: any) {
 }
 
 // حفظ دعوة (إنشاء جديدة أو تعديل موجودة) بقاعدة Supabase.
-// أول محاولة نبعث كل الحقول (حتى date/city/groomFamily/brideFamily). لو
-// القاعدة ما عندها هذي الأعمدة بعد، نعيد المحاولة بدونها حتى ما تفشل
-// عملية الحفظ بالكامل، ونرجّع علم savedExtraFields يوضح شنو انحفظ فعلياً.
-export async function saveInvitation(
-  inv: Invitation,
-): Promise<{ success: boolean; savedExtraFields: boolean; error?: string }> {
+// نجرب من الأشمل للأبسط: (1) كل الحقول حتى الإضافية والخصوصية،
+// (2) الحقول الأساسية + خاصية الخصوصية (isPrivate)، (3) الحقول الأساسية
+// بس. هذا حتى عمود ناقص وحد (مثلاً isPrivate) ما يفشّل حفظ باقي الدعوة.
+// savedPrivacy مهم لأنه لو ما انحفظ يعني الدعوة "الخاصة" راح تظهر
+// بالصفحة الرئيسية بالعامة رغم كل شي.
+export async function saveInvitation(inv: Invitation): Promise<{
+  success: boolean
+  savedExtraFields: boolean
+  savedPrivacy: boolean
+  error?: string
+}> {
   try {
-    const fullRow = toDatabaseInvitationFull(inv)
-    const { error } = await supabase
-      .from("invitations")
-      .upsert(fullRow, { onConflict: "id" })
-
-    if (!error) return { success: true, savedExtraFields: true }
-
-    if (!isMissingColumnError(error)) {
-      console.error("Supabase saveInvitation error:", error)
-      return { success: false, savedExtraFields: false, error: error.message }
-    }
-
-    // إعادة المحاولة بدون الحقول الإضافية الغير موجودة بالجدول
-    const coreRow = toDatabaseInvitation(inv)
-    const { error: coreError } = await supabase
-      .from("invitations")
-      .upsert(coreRow, { onConflict: "id" })
-
-    if (coreError) {
-      console.error("Supabase saveInvitation (core) error:", coreError)
-      return {
-        success: false,
+    const attempts: Array<{
+      row: Record<string, any>
+      savedExtraFields: boolean
+      savedPrivacy: boolean
+    }> = [
+      {
+        row: toDatabaseInvitationFull(inv),
+        savedExtraFields: true,
+        savedPrivacy: true,
+      },
+      {
+        row: toDatabaseInvitationWithPrivacy(inv),
         savedExtraFields: false,
-        error: coreError.message,
+        savedPrivacy: true,
+      },
+      {
+        row: toDatabaseInvitation(inv),
+        savedExtraFields: false,
+        savedPrivacy: false,
+      },
+    ]
+
+    let lastError: any = null
+    for (const attempt of attempts) {
+      const { error } = await supabase
+        .from("invitations")
+        .upsert(attempt.row, { onConflict: "id" })
+
+      if (!error) {
+        return {
+          success: true,
+          savedExtraFields: attempt.savedExtraFields,
+          savedPrivacy: attempt.savedPrivacy,
+        }
+      }
+
+      lastError = error
+      if (!isMissingColumnError(error)) {
+        console.error("Supabase saveInvitation error:", error)
+        return {
+          success: false,
+          savedExtraFields: false,
+          savedPrivacy: false,
+          error: error.message,
+        }
       }
     }
 
-    return { success: true, savedExtraFields: false }
+    console.error("Supabase saveInvitation error:", lastError)
+    return {
+      success: false,
+      savedExtraFields: false,
+      savedPrivacy: false,
+      error: lastError?.message ?? "خطأ غير متوقع",
+    }
   } catch (err: any) {
     console.error("Supabase saveInvitation exception:", err)
     return {
       success: false,
       savedExtraFields: false,
+      savedPrivacy: false,
       error: err?.message ?? "خطأ غير متوقع",
     }
   }
