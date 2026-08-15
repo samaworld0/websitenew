@@ -7,7 +7,8 @@ export const defaultSiteSettings: SiteSettings = {
   siteNameEn: "DAWAATI",
   logoIcon: "✨",
   heroTitle: "اختر دعوتك المثالية",
-  whatsappNumber: "966500000000",
+  whatsappNumberIraq: "9647718031245",
+  whatsappNumberSaudi: "966580690167",
 }
 
 // هذي البيانات تُستخدم فقط "لزرع" قاعدة بيانات Supabase أول مرة لو كانت
