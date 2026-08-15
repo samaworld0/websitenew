@@ -519,6 +519,7 @@ function SiteSettingsForm({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
+  const [showSqlHelp, setShowSqlHelp] = useState(false)
 
   useEffect(() => setSettings(initial), [initial])
 
@@ -527,11 +528,19 @@ function SiteSettingsForm({
     value: SiteSettings[K],
   ) => setSettings((prev) => ({ ...prev, [key]: value }))
 
+  const ADD_COLUMNS_SQL = `alter table public.site_settings
+  add column if not exists "siteName" text,
+  add column if not exists "siteNameEn" text,
+  add column if not exists "logoIcon" text,
+  add column if not exists "heroTitle" text,
+  add column if not exists "whatsappNumber" text;`
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError("")
     setNotice("")
+    setShowSqlHelp(false)
     const result = await saveSiteSettings(settings)
     setSaving(false)
     if (!result.success) {
@@ -539,6 +548,11 @@ function SiteSettingsForm({
         setError(
           "ما انحفظت الإعدادات لأن جدول site_settings غير موجود بعد بقاعدة البيانات. لازم تسوّي الجدول أولاً بلوحة تحكم Supabase: جدول باسم site_settings بالأعمدة (id رقم صحيح - primary key، siteName نص، siteNameEn نص، logoIcon نص، heroTitle نص، whatsappNumber نص)، وبعدها جرّب الحفظ مرة ثانية.",
         )
+      } else if (result.columnMissing) {
+        setError(
+          "ما انحفظت الإعدادات لأن جدول site_settings موجود بس ناقصه عمود واحد أو أكثر من الأعمدة المطلوبة. روح بلوحة تحكم Supabase → SQL Editor، وشغّل الأمر تحت حتى يضيف أي عمود ناقص (آمن، ما يمسح ولا يغيّر أي عمود موجود أصلاً)، وبعدها جرّب الحفظ مرة ثانية.",
+        )
+        setShowSqlHelp(true)
       } else {
         setError(result.error || "صار خطأ أثناء الحفظ، حاول مرة ثانية")
       }
@@ -567,6 +581,32 @@ function SiteSettingsForm({
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
           {error}
+        </div>
+      )}
+      {showSqlHelp && (
+        <div className="rounded-lg bg-[#2C1810] p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#D4AF37]">
+              أمر SQL — الصق هذا بـ Supabase SQL Editor وشغّله
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                navigator.clipboard
+                  ?.writeText(ADD_COLUMNS_SQL)
+                  .catch(() => {})
+              }
+              className="text-xs font-bold text-[#D4AF37] hover:underline shrink-0"
+            >
+              نسخ
+            </button>
+          </div>
+          <pre
+            dir="ltr"
+            className="text-xs text-[#f5efe2] overflow-x-auto whitespace-pre-wrap leading-relaxed"
+          >
+            {ADD_COLUMNS_SQL}
+          </pre>
         </div>
       )}
       {notice && (
