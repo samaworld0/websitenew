@@ -3,8 +3,8 @@ import { Invitation, SiteSettings } from "./types"
 // القيم الافتراضية لإعدادات الواجهة — تُستخدم لو قاعدة البيانات فاضية أو
 // جدول site_settings غير موجود بعد (شوف backend.ts -> loadSiteSettings).
 export const defaultSiteSettings: SiteSettings = {
-  siteName: "دعوتي",
-  siteNameEn: "DAWAATI",
+  siteName: "سما",
+  siteNameEn: "SAMA",
   logoIcon: "✨",
   heroTitle: "اختر دعوتك المثالية",
   whatsappNumberIraq: "9647718031245",
