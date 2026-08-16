@@ -84,13 +84,14 @@ function ScheduleTrack({
         className="absolute left-1/2 -translate-x-1/2 w-px bg-[#D4AF37]/25"
         style={{ top: line.top, height: Math.max(0, line.bottom - line.top) }}
       />
-      {/* الوردة المتحركة فوق الخط */}
+      {/* الوردة المتحركة فوق الخط — نحركها بـ transform (مو top) حتى تكون
+          الحركة أنعم (GPU-accelerated)، ومدة أطول مع تسارع طبيعي بدل القفز
+          الخطي. z-20 حتى تطلع دايماً فوق النقاط الذهبية. */}
       <div
-        className="absolute left-1/2 z-10 flex items-center justify-center pointer-events-none"
+        className="absolute left-1/2 top-0 z-20 flex items-center justify-center pointer-events-none will-change-transform"
         style={{
-          top: flowerTop,
-          transform: "translate(-50%, -50%)",
-          transition: "top 80ms linear",
+          transform: `translate(-50%, calc(${flowerTop}px - 50%))`,
+          transition: "transform 450ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         <span
