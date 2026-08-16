@@ -12,7 +12,8 @@ import {
 // عمود قاعدة البيانات المطلوب لحفظ تخصيصات التصميم — لو ناقص نعرض
 // تعليمات إضافته بدل ما تختفي التخصيصات بصمت.
 const ADD_TEXT_STYLES_COLUMN_SQL = `alter table public.invitations
-  add column if not exists "textStyles" jsonb;`
+  add column if not exists "textStyles" jsonb,
+  add column if not exists "textContent" jsonb;`
 
 // حقل رقمي صغير بنفس روح لوحة فيكما (أيقونة + رقم)
 function NumberField({
@@ -70,6 +71,9 @@ export default function DesignPanel({
   const [textStyles, setTextStyles] = useState<Record<string, TextStyle>>(
     invitation.textStyles ?? {},
   )
+  const [textContent, setTextContent] = useState<Record<string, string>>(
+    invitation.textContent ?? {},
+  )
   const [selectedId, setSelectedId] = useState<string>(elements[0]?.id ?? "")
   const [filter, setFilter] = useState("")
   const [saving, setSaving] = useState(false)
@@ -105,29 +109,60 @@ export default function DesignPanel({
     })
   }
 
+  const currentContent = textContent[selectedId] ?? ""
+  const updateContent = (value: string) => {
+    setTextContent((prev) => {
+      const next = { ...prev }
+      if (value.trim() === "") {
+        delete next[selectedId]
+      } else {
+        next[selectedId] = value
+      }
+      return next
+    })
+  }
+  const resetContent = () => {
+    setTextContent((prev) => {
+      const next = { ...prev }
+      delete next[selectedId]
+      return next
+    })
+  }
+
   const hasOverride = Object.keys(current).length > 0
 
   const handleSave = async () => {
     setSaving(true)
     setError("")
     setNotice("")
-    const updated: Invitation = { ...invitation, textStyles }
+    const updated: Invitation = { ...invitation, textStyles, textContent }
     const result = await saveInvitation(updated)
     setSaving(false)
     if (!result.success) {
       setError(result.error || "صار خطأ أثناء الحفظ، حاول مرة ثانية")
       return
     }
+    const notices: string[] = []
     if (!result.savedTextStyles) {
+      notices.push(
+        "⚠️ تخصيصات الخط والحجم واللون ما انحفظت لأن عمود textStyles غير موجود بجدول invitations بعد.",
+      )
+    }
+    if (!result.savedTextContent) {
+      notices.push(
+        "⚠️ تعديلات النصوص ما انحفظت لأن عمود textContent غير موجود بجدول invitations بعد.",
+      )
+    }
+    if (notices.length > 0) {
       setNotice(
-        "⚠️ مهم: تخصيصات التصميم ما انحفظت لأن عمود textStyles غير موجود بجدول invitations بعد. أضف العمود بالقاعدة أولاً (انسخ أمر SQL تحت) وحاول تحفظ مرة ثانية.",
+        notices.join(" ") + " أضف الأعمدة الناقصة بالقاعدة أولاً (انسخ أمر SQL تحت) وحاول تحفظ مرة ثانية.",
       )
       return
     }
     onSaved(updated)
   }
 
-  const previewInv: Invitation = { ...invitation, textStyles }
+  const previewInv: Invitation = { ...invitation, textStyles, textContent }
   const filteredElements = elements.filter((el) =>
     el.label.toLowerCase().includes(filter.toLowerCase()),
   )
@@ -221,6 +256,29 @@ export default function DesignPanel({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-5">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-[#2C1810]">
+                  Content
+                </span>
+                {currentContent && (
+                  <button
+                    onClick={resetContent}
+                    className="text-[10px] text-[#8a7561] hover:text-red-600 underline"
+                  >
+                    رجوع للنص الافتراضي
+                  </button>
+                )}
+              </div>
+              <textarea
+                value={currentContent}
+                onChange={(e) => updateContent(e.target.value)}
+                placeholder="اكتب نص بديل لهذا العنصر... (فاضي = يستخدم النص الافتراضي)"
+                rows={3}
+                className="w-full rounded-lg border border-[#e5d9c3] bg-white px-2.5 py-2 text-sm text-[#2C1810] outline-none resize-none"
+              />
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-[#2C1810]">
@@ -382,7 +440,7 @@ export default function DesignPanel({
                   }`}
                 >
                   {el.label}
-                  {textStyles[el.id] && (
+                  {(textStyles[el.id] || textContent[el.id]) && (
                     <span className="text-[#D4AF37] mr-1">●</span>
                   )}
                 </button>
