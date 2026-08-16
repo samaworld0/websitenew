@@ -145,13 +145,7 @@ function ScheduleTrack({
   )
 }
 
-function WisalTemplateView({
-  inv,
-  embedded,
-}: {
-  inv: Invitation
-  embedded?: boolean
-}) {
+function WisalTemplateView({ inv }: { inv: Invitation }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -247,9 +241,7 @@ function WisalTemplateView({
 
     // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
     // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
-    // بوضع المعاينة المباشرة (embedded من لوحة التحكم) ما نرسل شي فعلياً
-    // للشيت الحقيقي حتى ما نلوّث بيانات الحضور بتجارب المشرف وهو يصمم.
-    if (inv.sheetId && !embedded) {
+    if (inv.sheetId) {
       const result = await submitRSVP({
         sheetId: inv.sheetId,
         name: guestName,
@@ -310,7 +302,7 @@ function WisalTemplateView({
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && (
         <div
-          className={`${embedded ? "absolute" : "fixed"} inset-0 z-[60] pointer-events-none`}
+          className="fixed inset-0 z-[60] pointer-events-none"
           style={{
             background:
               "radial-gradient(circle at center, rgba(255,241,196,0.95) 0%, rgba(212,175,55,0.55) 35%, transparent 70%)",
@@ -321,7 +313,7 @@ function WisalTemplateView({
 
       <div
         ref={scrollContainerRef}
-        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll overscroll-contain"
+        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll"
       >
         <div
           className={`relative transition-all duration-1000 w-full ${
@@ -660,53 +652,36 @@ function WisalTemplateView({
   )
 }
 
-// وضع embedded: يُستخدم بلوحة التحكم لعرض "معاينة مباشرة" للدعوة داخل
-// إطار جوّال صغير جنب نموذج التعديل (شوف PhoneFramePreview بـ
-// AdminPanel.tsx)، بدل التغطية الكاملة للشاشة (fixed inset-0) اللي
-// تُستخدم بالوضع العادي (صفحة ?preview=ID). بهالوضع: ما نلمس تمرير أو
-// scroll الصفحة الأصلية، وما نعرض زر "رجوع" لأنه ما إله معنى داخل إطار
-// معاينة مصغّر.
 export default function InvitationFullView({
   inv,
   onClose,
-  embedded,
 }: {
   inv: Invitation
-  onClose?: () => void
-  embedded?: boolean
+  onClose: () => void
 }) {
   useEffect(() => {
-    if (embedded) return
     window.scrollTo(0, 0)
     document.body.style.overflow = "hidden"
     return () => {
       document.body.style.overflow = ""
     }
-  }, [embedded])
+  }, [])
 
   return (
-    <div
-      className={
-        embedded
-          ? "relative w-full h-full flex flex-col overflow-hidden bg-[#0D0706]"
-          : "fixed inset-0 z-50 flex flex-col w-full h-full bg-[#0D0706]"
-      }
-    >
-      {!embedded && (
-        <div className="absolute top-6 left-6 z-[100]">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-lg bg-black/60 text-white backdrop-blur-md border border-white/20"
-          >
-            ← رجوع للرئيسية
-          </button>
-        </div>
-      )}
+    <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-[#0D0706]">
+      <div className="absolute top-6 left-6 z-[100]">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-lg bg-black/60 text-white backdrop-blur-md border border-white/20"
+        >
+          ← رجوع للرئيسية
+        </button>
+      </div>
       {inv.templateType === "wisal" ? (
-        <WisalTemplateView inv={inv} embedded={embedded} />
+        <WisalTemplateView inv={inv} />
       ) : (
         <div
-          className="flex-1 w-full h-full overflow-y-auto overscroll-contain p-12 text-center"
+          className="flex-1 w-full h-full overflow-y-auto p-12 text-center"
           style={{
             background: `linear-gradient(180deg, ${inv.gradient[0]}, ${inv.gradient[1]})`,
             color: inv.accentColor,
