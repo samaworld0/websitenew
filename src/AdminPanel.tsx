@@ -10,6 +10,34 @@ import {
   createSheetForInvitation,
   uploadMedia,
 } from "./backend"
+import InvitationFullView from "./InvitationView"
+
+// إطار جوّال يعرض الدعوة "حيّة" بالضبط بالشكل اللي راح يشوفه المدعو —
+// يُستخدم بنموذج التعديل/الإنشاء كمعاينة مباشرة تتحدّث فوراً مع كل
+// تغيير بالحقول، بدون ما تحتاج تحفظ الدعوة أو تفتح تبويب منفصل. نستخدم
+// InvitationFullView بوضعها embedded حتى تنحصر داخل الإطار (مو تغطي كل
+// الشاشة زي وضعها العادي بصفحة ?preview=ID).
+function PhoneFramePreview({ inv }: { inv: Invitation }) {
+  return (
+    <div className="lg:sticky lg:top-20">
+      <div className="flex items-center justify-between mb-2 px-1">
+        <span className="text-xs font-bold text-[#8a7561]">
+          🖥️ معاينة مباشرة — تتحدّث فوراً مع كل تعديل
+        </span>
+      </div>
+      <div
+        className="mx-auto rounded-[2.2rem] border-[6px] border-[#2C1810] shadow-2xl overflow-hidden bg-[#0D0706]"
+        style={{ width: 300, height: 620 }}
+      >
+        <InvitationFullView inv={inv} embedded onClose={() => {}} />
+      </div>
+      <p className="text-[11px] text-[#8a7561] text-center mt-2">
+        معاينة تقريبية داخل إطار جوّال — الشكل الفعلي بهاتف المدعو قد
+        يختلف بسيط حسب حجم الشاشة.
+      </p>
+    </div>
+  )
+}
 
 const categories = [
   { id: "wedding", label: "زفاف" },
@@ -590,6 +618,7 @@ function InvitationForm({
   const [creatingSheet, setCreatingSheet] = useState(false)
   const [sheetError, setSheetError] = useState("")
   const [showManualSheet, setShowManualSheet] = useState(false)
+  const [showLivePreview, setShowLivePreview] = useState(true)
 
   const ADD_INVITATION_COLUMNS_SQL = `alter table public.invitations
   add column if not exists "isPrivate" boolean default false,
@@ -713,11 +742,18 @@ function InvitationForm({
   }
 
   return (
+    <div
+      className={
+        showLivePreview
+          ? "lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6 lg:items-start"
+          : ""
+      }
+    >
     <form
       onSubmit={handleSubmit}
       className="space-y-6 bg-white rounded-2xl border border-[#e5d9c3] p-5 sm:p-7"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="text-lg font-bold" style={{ fontFamily: "Amiri, serif" }}>
           {isNew
             ? inv.isPrivate
@@ -726,13 +762,26 @@ function InvitationForm({
             : "تعديل الدعوة"}{" "}
           #{inv.id}
         </h3>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-sm text-[#8a7561] hover:text-[#2C1810]"
-        >
-          إلغاء
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowLivePreview((prev) => !prev)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition ${
+              showLivePreview
+                ? "bg-[#2C1810] text-[#D4AF37] border-[#2C1810]"
+                : "border-[#e5d9c3] text-[#8a7561]"
+            }`}
+          >
+            🖥️ {showLivePreview ? "إخفاء المعاينة المباشرة" : "معاينة مباشرة"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-[#8a7561] hover:text-[#2C1810]"
+          >
+            إلغاء
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -1109,6 +1158,13 @@ function InvitationForm({
         </button>
       </div>
     </form>
+
+    {showLivePreview && (
+      <div className="mt-6 lg:mt-0">
+        <PhoneFramePreview inv={inv} />
+      </div>
+    )}
+    </div>
   )
 }
 
