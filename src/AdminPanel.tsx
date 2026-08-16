@@ -10,7 +10,6 @@ import {
   createSheetForInvitation,
   uploadMedia,
 } from "./backend"
-import DesignPanel from "./DesignPanel"
 
 const categories = [
   { id: "wedding", label: "زفاف" },
@@ -59,6 +58,11 @@ function emptyInvitation(nextId: number): Invitation {
     sheetId: "",
     sheetUrl: "",
     isPrivate: false,
+    schedule: [
+      { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
+      { label: "عقد القران", time: "٧:٣٠ مساءً" },
+      { label: "العشاء", time: "٩:٠٠ مساءً" },
+    ],
   }
 }
 
@@ -604,8 +608,7 @@ function InvitationForm({
   add column if not exists "eventDateTime" text,
   add column if not exists "coverImage" text,
   add column if not exists "hideCoverOverlay" boolean default false,
-  add column if not exists "textStyles" jsonb,
-  add column if not exists "textContent" jsonb;`
+  add column if not exists "schedule" jsonb;`
 
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
@@ -659,6 +662,37 @@ function InvitationForm({
     set("gradient", next)
   }
 
+  // تحرير برنامج الحفل (الجدول الزمني الذهبي بصفحة الدعوة): إضافة/حذف/
+  // تعديل عنصر (نص + وقت)، مع الحفاظ على الترتيب اللي يتحكم فيه المشرف.
+  const setScheduleField = (
+    idx: number,
+    key: "label" | "time",
+    value: string,
+  ) => {
+    const next = [...(inv.schedule ?? [])]
+    next[idx] = { ...next[idx], [key]: value }
+    set("schedule", next)
+  }
+
+  const addScheduleItem = () => {
+    set("schedule", [...(inv.schedule ?? []), { label: "", time: "" }])
+  }
+
+  const removeScheduleItem = (idx: number) => {
+    set(
+      "schedule",
+      (inv.schedule ?? []).filter((_, i) => i !== idx),
+    )
+  }
+
+  const moveScheduleItem = (idx: number, direction: -1 | 1) => {
+    const list = [...(inv.schedule ?? [])]
+    const target = idx + direction
+    if (target < 0 || target >= list.length) return
+    ;[list[idx], list[target]] = [list[target], list[idx]]
+    set("schedule", list)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -668,6 +702,11 @@ function InvitationForm({
       ...inv,
       mapUrl: normalizeMapUrl(inv.mapUrl || ""),
       templateType: inv.heroBg || inv.introVideo ? "wisal" : undefined,
+      // نشيل عناصر برنامج الحفل الفاضية كلياً (بدون نص وبدون وقت) قبل
+      // الحفظ، حتى ما تظهر نقاط فاضية بخط الجدول الزمني بصفحة الدعوة.
+      schedule: (inv.schedule ?? []).filter(
+        (item) => item.label.trim() || item.time.trim(),
+      ),
     }
     const result = await saveInvitation(cleanInv)
     setSaving(false)
@@ -699,6 +738,15 @@ function InvitationForm({
     if (cleanInv.coverImage && !result.savedCoverImage) {
       notices.push(
         "⚠️ مهم: صورة العرض (coverImage) ما انحفظت لأن عمودها غير موجود بجدول invitations بعد — يعني الكرت بالصفحة الرئيسية راح يستمر يعرض خلفية القسم الأول أو التدرج اللوني مو الصورة اللي رفعتها. لازم تضيف العمود بالقاعدة أولاً (شوف التعليمات تحت).",
+      )
+    }
+    if (
+      cleanInv.schedule &&
+      cleanInv.schedule.length > 0 &&
+      !result.savedSchedule
+    ) {
+      notices.push(
+        "⚠️ مهم: برنامج الحفل (schedule) ما انحفظ لأن عمودها غير موجود بجدول invitations بعد — يعني قسم «برنامج الحفل» بصفحة الدعوة راح يعرض البرنامج الافتراضي مو البرنامج اللي عدّلته هنا. لازم تضيف العمود بالقاعدة أولاً (شوف التعليمات تحت).",
       )
     }
     if (!result.savedExtraFields) {
@@ -880,6 +928,79 @@ function InvitationForm({
             placeholder="https://maps.google.com/..."
           />
         </Field>
+      </fieldset>
+
+      {/* برنامج الحفل — الجدول الزمني الذهبي بصفحة الدعوة (استقبال الضيوف،
+          عقد القران، العشاء...) — قابل للتعديل والإضافة والحذف وإعادة الترتيب */}
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-sm font-bold text-[#D4AF37] mb-1">
+          برنامج الحفل (الجدول الزمني)
+        </legend>
+        <p className="text-xs text-[#8a7561] -mt-2">
+          يظهر كخط ذهبي بصفحة الدعوة. كل صف عنصر (مثلاً "عقد القران") مع
+          وقته (مثلاً "٧:٣٠ مساءً"). لو تركته فاضياً بالكامل، تُستخدم القيم
+          الافتراضية تلقائياً.
+        </p>
+        <div className="flex flex-col gap-2">
+          {(inv.schedule ?? []).map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-2 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg p-2"
+            >
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => moveScheduleItem(idx, -1)}
+                  disabled={idx === 0}
+                  className="text-xs text-[#8a7561] disabled:opacity-30 hover:text-[#D4AF37]"
+                  title="تحريك لأعلى"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveScheduleItem(idx, 1)}
+                  disabled={idx === (inv.schedule?.length ?? 0) - 1}
+                  className="text-xs text-[#8a7561] disabled:opacity-30 hover:text-[#D4AF37]"
+                  title="تحريك لأسفل"
+                >
+                  ▼
+                </button>
+              </div>
+              <input
+                className={inputClass}
+                placeholder="النص (مثلاً: عقد القران)"
+                value={item.label}
+                onChange={(e) =>
+                  setScheduleField(idx, "label", e.target.value)
+                }
+              />
+              <input
+                className={inputClass}
+                placeholder="الوقت (مثلاً: ٧:٣٠ مساءً)"
+                value={item.time}
+                onChange={(e) =>
+                  setScheduleField(idx, "time", e.target.value)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => removeScheduleItem(idx)}
+                className="shrink-0 text-red-600 hover:text-red-800 text-sm px-2"
+                title="حذف هذا العنصر"
+              >
+                حذف
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={addScheduleItem}
+          className="self-start text-sm font-bold text-[#D4AF37] hover:underline"
+        >
+          + إضافة عنصر لبرنامج الحفل
+        </button>
       </fieldset>
 
       {/* التصميم */}
@@ -1435,7 +1556,6 @@ function InvitationRow({
   setDeletingId,
   onDelete,
   onEdit,
-  onDesign,
   onCopyAsPrivate,
 }: {
   inv: Invitation
@@ -1444,7 +1564,6 @@ function InvitationRow({
   setDeletingId: (id: number | null) => void
   onDelete: (id: number) => void
   onEdit: (inv: Invitation) => void
-  onDesign: (inv: Invitation) => void
   onCopyAsPrivate: (inv: Invitation, nextId: number) => void
 }) {
   return (
@@ -1503,13 +1622,6 @@ function InvitationRow({
           className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
         >
           تعديل
-        </button>
-        <button
-          onClick={() => onDesign(inv)}
-          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#D4AF37]/40 bg-[#faf5e8] text-[#8a6d1f] flex items-center gap-1"
-          title="تعديل خط وحجم ولون نصوص الدعوة من لوحة تصميم شبيهة بفيكما"
-        >
-          🎨 تصميم
         </button>
         <button
           onClick={() => onCopyAsPrivate(inv, nextId)}
@@ -1635,7 +1747,6 @@ export default function AdminPanel({
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState("")
-  const [designing, setDesigning] = useState<Invitation | null>(null)
 
   useEffect(() => {
     getCurrentSession().then((session) => {
@@ -1685,12 +1796,6 @@ export default function AdminPanel({
     setEditing(null)
     setEditingIsNew(false)
     setCreating(false)
-    setDesigning(null)
-  }
-
-  const handleDesignSaved = (_updated: Invitation) => {
-    setDesigning(null)
-    onRefresh()
   }
 
   const handleSaved = (_inv: Invitation, keepFormOpen?: boolean) => {
@@ -1800,7 +1905,7 @@ export default function AdminPanel({
           />
         )}
 
-        {activeTab === "invitations" && !editing && !creating && !designing && (
+        {activeTab === "invitations" && !editing && !creating && (
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold">الدعوات العامة</h2>
@@ -1836,7 +1941,6 @@ export default function AdminPanel({
                   setDeletingId={setDeletingId}
                   onDelete={handleDelete}
                   onEdit={startEdit}
-                  onDesign={setDesigning}
                   onCopyAsPrivate={startCopyAsPrivate}
                 />
               ))}
@@ -1844,7 +1948,7 @@ export default function AdminPanel({
           </>
         )}
 
-        {activeTab === "private" && !editing && !creating && !designing && (
+        {activeTab === "private" && !editing && !creating && (
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold">الدعوات الخاصة</h2>
@@ -1882,7 +1986,6 @@ export default function AdminPanel({
                   setDeletingId={setDeletingId}
                   onDelete={handleDelete}
                   onEdit={startEdit}
-                  onDesign={setDesigning}
                   onCopyAsPrivate={startCopyAsPrivate}
                 />
               ))}
@@ -1908,14 +2011,6 @@ export default function AdminPanel({
             isNew={editingIsNew}
             onCancel={closeForm}
             onSaved={handleSaved}
-          />
-        )}
-
-        {designing && (
-          <DesignPanel
-            invitation={designing}
-            onCancel={closeForm}
-            onSaved={handleDesignSaved}
           />
         )}
       </div>
