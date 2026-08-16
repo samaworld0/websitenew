@@ -141,6 +141,142 @@ function WhatsAppContactButton({
   )
 }
 
+function TopHero({ onShowTemplates }: { onShowTemplates: () => void }) {
+  const floatingDots = [
+    { top: "10%", right: "50%", size: 9, color: "var(--color-rose-300)", delay: 0 },
+    { top: "18%", right: "8%", size: 7, color: "var(--color-gold-400)", delay: 1.4 },
+    { top: "48%", right: "3%", size: 6, color: "var(--color-rose-400)", delay: 0.6 },
+    { top: "6%", left: "6%", size: 8, color: "var(--color-rose-400)", delay: 2 },
+    { top: "60%", left: "9%", size: 7, color: "var(--color-gold-300)", delay: 1 },
+  ]
+
+  return (
+    <section className="relative overflow-hidden py-20 sm:py-28">
+      {/* خلفية منقّطة خفيفة + توهج علوي دافئ */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(rgba(180,130,40,0.14) 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+          maskImage:
+            "radial-gradient(ellipse 70% 60% at 50% 20%, black 40%, transparent 90%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 70% 60% at 50% 20%, black 40%, transparent 90%)",
+        }}
+      />
+
+      {floatingDots.map((dot, i) => (
+        <span
+          key={i}
+          className="hidden sm:block absolute rounded-full animate-float"
+          style={{
+            top: dot.top,
+            right: (dot as any).right,
+            left: (dot as any).left,
+            width: dot.size,
+            height: dot.size,
+            background: dot.color,
+            animationDelay: `${dot.delay}s`,
+          }}
+        />
+      ))}
+
+      <div className="max-w-4xl mx-auto px-6 text-center">
+        <Reveal duration={600}>
+          <span className="inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5 text-xs sm:text-sm font-bold text-gold-700">
+            ✨ قوالب جاهزة بأنميشن حقيقي — جرّبها الحين
+          </span>
+        </Reveal>
+
+        <Reveal duration={700} delay={100}>
+          <h1
+            className="mt-6 font-display font-bold leading-[1.3] text-3xl sm:text-5xl text-warm-900"
+          >
+            دعوة إلكترونية <span className="shimmer-text">تخطف الأنظار</span>
+            <br />
+            لمناسبتك القادمة
+          </h1>
+        </Reveal>
+
+        <Reveal duration={700} delay={200}>
+          <p className="mt-6 max-w-xl mx-auto text-base sm:text-lg text-warm-700 leading-relaxed">
+            رابط واحد ترسله لكل المدعوين، يفتح بأنميشن يشد الأنظار، وعداد
+            تنازلي حقيقي لموعد مناسبتك — وتأكيد الحضور يوصلك فوراً عبر
+            واتساب.
+          </p>
+        </Reveal>
+
+        <Reveal duration={700} delay={300}>
+          <button
+            onClick={onShowTemplates}
+            className="mt-8 inline-flex items-center gap-2 btn-gold text-white font-bold px-7 py-3.5 rounded-full text-sm sm:text-base"
+          >
+            <span aria-hidden>🎨</span>
+            شاهد القوالب
+          </button>
+        </Reveal>
+
+        <Reveal duration={800} delay={400} className="mt-16">
+          <div className="flex items-center justify-center gap-4 sm:gap-6">
+            {/* بطاقة 1: مغلّف بختم شمعي */}
+            <div
+              className="w-24 sm:w-32 aspect-[3/5] rounded-2xl shadow-xl -rotate-6 flex items-center justify-center"
+              style={{
+                background:
+                  "linear-gradient(160deg, var(--color-cream-100) 0%, var(--color-gold-100) 100%)",
+                border: "1px solid var(--color-gold-200)",
+              }}
+            >
+              <div
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-md"
+                style={{ background: "var(--color-rose-500)" }}
+              >
+                س و ن
+              </div>
+            </div>
+
+            {/* بطاقة 2: قالب "وصال" — باب الفرح الذهبي */}
+            <div
+              className="w-28 sm:w-36 aspect-[3/5] rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-2 relative z-10"
+              style={{
+                background:
+                  "linear-gradient(160deg, #1a0a00 0%, #2d1200 60%, #1a0a00 100%)",
+                border: "1px solid var(--color-gold-500)",
+              }}
+            >
+              <div
+                className="w-10 h-14 sm:w-12 sm:h-16 rounded-t-full flex items-center justify-center text-gold-300 text-[10px] font-bold"
+                style={{ border: "2px solid var(--color-gold-400)" }}
+              >
+                و ل
+              </div>
+              <span className="text-[9px] sm:text-[10px] text-gold-300 font-bold">
+                وصال
+              </span>
+            </div>
+
+            {/* بطاقة 3: قالب زهور */}
+            <div
+              className="w-24 sm:w-32 aspect-[3/5] rounded-2xl shadow-xl rotate-6 flex flex-col items-center justify-center gap-1.5"
+              style={{
+                background:
+                  "linear-gradient(160deg, var(--color-rose-50) 0%, var(--color-cream-200) 100%)",
+                border: "1px solid var(--color-rose-200)",
+              }}
+            >
+              <span className="text-lg sm:text-xl">🌸</span>
+              <span className="text-[9px] sm:text-[10px] text-rose-600 font-bold">
+                لمسة
+              </span>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
 // الواجهة الرئيسية للموقع: الشريط العلوي + شبكة عرض الدعوات مع الفلترة
 // حسب التصنيف. هذا الملف مستقل تماماً ويستقبل بياناته عبر props من App.tsx
 export default function HomePage({
@@ -215,7 +351,11 @@ export default function HomePage({
         </div>
       </nav>
 
-      <section className="max-w-7xl mx-auto px-6 py-24">
+      <TopHero onShowTemplates={() => {
+        document.getElementById("templates-grid")?.scrollIntoView({ behavior: "smooth" })
+      }} />
+
+      <section id="templates-grid" className="max-w-7xl mx-auto px-6 py-24">
         <Reveal className="text-center mb-16" as="div">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
