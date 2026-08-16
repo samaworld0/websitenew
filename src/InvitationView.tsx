@@ -321,7 +321,7 @@ function WisalTemplateView({
 
       <div
         ref={scrollContainerRef}
-        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll"
+        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll overscroll-contain"
       >
         <div
           className={`relative transition-all duration-1000 w-full ${
@@ -706,7 +706,7 @@ export default function InvitationFullView({
         <WisalTemplateView inv={inv} embedded={embedded} />
       ) : (
         <div
-          className="flex-1 w-full h-full overflow-y-auto p-12 text-center"
+          className="flex-1 w-full h-full overflow-y-auto overscroll-contain p-12 text-center"
           style={{
             background: `linear-gradient(180deg, ${inv.gradient[0]}, ${inv.gradient[1]})`,
             color: inv.accentColor,
