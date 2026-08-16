@@ -34,11 +34,11 @@ function InvitationCard({
         style={{ aspectRatio: "3/4" }}
         onClick={() => onPreview(inv)}
       >
-        {inv.heroBg ? (
+        {inv.coverImage || inv.heroBg ? (
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `url("${inv.heroBg}")`,
+              backgroundImage: `url("${inv.coverImage || inv.heroBg}")`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
