@@ -38,7 +38,9 @@ function emptyInvitation(nextId: number): Invitation {
     date: "",
     dateGreg: "",
     time: "",
+    eventDateTime: "",
     venue: "",
+    mapUrl: "",
     city: "",
     groomFamily: "",
     brideFamily: "",
@@ -856,11 +858,33 @@ function InvitationForm({
             onChange={(e) => set("time", e.target.value)}
           />
         </Field>
+        <Field
+          label="موعد المناسبة (للعداد التنازلي)"
+          hint="هذا التاريخ والوقت هو اللي يُحسب عليه العداد التنازلي الحقيقي بصفحة الدعوة — منفصل عن حقول التاريخ النصية أعلاه"
+        >
+          <input
+            type="datetime-local"
+            className={inputClass}
+            value={inv.eventDateTime || ""}
+            onChange={(e) => set("eventDateTime", e.target.value)}
+          />
+        </Field>
         <Field label="القاعة / الموقع (venue)">
           <input
             className={inputClass}
             value={inv.venue}
             onChange={(e) => set("venue", e.target.value)}
+          />
+        </Field>
+        <Field
+          label="رابط الموقع (خرائط جوجل)"
+          hint="الرابط اللي ينفتح لما الضيف يضغط زر «الموقع على الخريطة». اتركه فاضي لاستخدام رابط خرائط جوجل الافتراضي"
+        >
+          <input
+            className={inputClass}
+            value={inv.mapUrl || ""}
+            onChange={(e) => set("mapUrl", e.target.value)}
+            placeholder="https://maps.google.com/..."
           />
         </Field>
         <Field label="المدينة" hint="قد لا ينحفظ بالقاعدة">
