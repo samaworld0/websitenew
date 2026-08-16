@@ -602,16 +602,18 @@ function InvitationCard({
         style={{ aspectRatio: "3/4" }}
         onClick={() => onPreview(inv)}
       >
-        <div className="absolute inset-0" style={{ background: bg }} />
-
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-2">
-          <p
-            className="text-lg font-bold leading-snug text-white"
-            style={{ fontFamily: "Amiri, serif" }}
-          >
-            {inv.subtitle}
-          </p>
-        </div>
+        {inv.heroBg ? (
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url("${inv.heroBg}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0" style={{ background: bg }} />
+        )}
 
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition-all duration-300"
