@@ -600,7 +600,9 @@ function InvitationForm({
   add column if not exists "groomFamily" text,
   add column if not exists "brideFamily" text,
   add column if not exists "mapUrl" text,
-  add column if not exists "eventDateTime" text;`
+  add column if not exists "eventDateTime" text,
+  add column if not exists "coverImage" text,
+  add column if not exists "hideCoverOverlay" boolean default false;`
 
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
@@ -689,6 +691,11 @@ function InvitationForm({
     if (cleanInv.eventDateTime && !result.savedEventDateTime) {
       notices.push(
         "⚠️ مهم: موعد المناسبة (eventDateTime) ما انحفظ لأن عمودها غير موجود بجدول invitations بعد — يعني العداد التنازلي بصفحة الدعوة راح يرجع للأرقام الافتراضية الوهمية مو الوقت الحقيقي اللي حاططه. لازم تضيف العمود بالقاعدة أولاً (شوف التعليمات تحت).",
+      )
+    }
+    if (cleanInv.coverImage && !result.savedCoverImage) {
+      notices.push(
+        "⚠️ مهم: صورة العرض (coverImage) ما انحفظت لأن عمودها غير موجود بجدول invitations بعد — يعني الكرت بالصفحة الرئيسية راح يستمر يعرض خلفية القسم الأول أو التدرج اللوني مو الصورة اللي رفعتها. لازم تضيف العمود بالقاعدة أولاً (شوف التعليمات تحت).",
       )
     }
     if (!result.savedExtraFields) {
@@ -913,6 +920,23 @@ function InvitationForm({
             onChange={(e) => set("verse", e.target.value)}
           />
         </Field>
+      </fieldset>
+
+      {/* صورة العرض بالصفحة الرئيسية */}
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          صورة العرض (كرت الدعوة بالصفحة الرئيسية)
+        </legend>
+
+        <MediaUploadField
+          label="صورة العرض (coverImage)"
+          hint="هذي الصورة اللي تظهر بكرت الدعوة بالصفحة الرئيسية — منفصلة عن خلفية القسم الأول جوّا الدعوة. لو تركتها فاضية، يترجع تلقائياً لخلفية القسم الأول (heroBg) أو التدرج اللوني"
+          accept="image/*"
+          kind="image"
+          value={inv.coverImage || ""}
+          folder="cover-image"
+          onChange={(url) => set("coverImage", url)}
+        />
       </fieldset>
 
       {/* قالب "وصال" (باب متحرك) والوسائط */}
