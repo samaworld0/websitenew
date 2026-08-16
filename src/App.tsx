@@ -194,12 +194,18 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
             isOpen ? "opacity-100" : "opacity-0"
           }`}
         >
-          {/* القسم الأول مع الخلفية والزهور */}
+          {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
+              (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
+              خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={{
-              backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-            }}
+            style={
+              inv.doorBgVideo
+                ? undefined
+                : {
+                    backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
+                  }
+            }
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
@@ -208,15 +214,17 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
               <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
               <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
             </div>
-            <video
-              key={inv.doorBgVideo || "default-door-bg"}
-              src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
-            />
+            {(inv.doorBgVideo || !inv.heroBg) && (
+              <video
+                key={inv.doorBgVideo || "default-door-bg"}
+                src={inv.doorBgVideo || "/videos/door-bg.mp4"}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
             <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
