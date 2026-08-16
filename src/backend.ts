@@ -241,6 +241,12 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
         data.topHeroSubtitle ?? defaultSiteSettings.topHeroSubtitle,
       topHeroButtonText:
         data.topHeroButtonText ?? defaultSiteSettings.topHeroButtonText,
+      heroCard1Image:
+        data.heroCard1Image ?? defaultSiteSettings.heroCard1Image,
+      heroCard2Image:
+        data.heroCard2Image ?? defaultSiteSettings.heroCard2Image,
+      heroCard3Image:
+        data.heroCard3Image ?? defaultSiteSettings.heroCard3Image,
     }
   } catch (err) {
     console.error("Supabase loadSiteSettings error:", err)
