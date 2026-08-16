@@ -64,4 +64,10 @@ export interface SiteSettings {
   topHeroTitleAfter: string
   topHeroSubtitle: string
   topHeroButtonText: string
+  // صور البطاقات الثلاث الزخرفية اللي تظهر تحت القسم الرئيسي العلوي
+  // (Hero). كل وحدة اختيارية — لو فاضية، تترجع تلقائياً للتصميم
+  // الافتراضي (الأيقونة/الإيموجي المرسوم بالكود) بدالها.
+  heroCard1Image?: string
+  heroCard2Image?: string
+  heroCard3Image?: string
 }
