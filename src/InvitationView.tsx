@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, type RefObject } from "react"
 import { Invitation } from "./types"
 import { submitRSVP } from "./backend"
 import Reveal from "./Reveal"
@@ -12,12 +12,77 @@ interface GoldenParticle {
   delay: number
 }
 
+// وردة زخرفية تتحرك (نزولاً وصعوداً) بنسبة أبطأ من باقي الصفحة أثناء
+// التمرير — تأثير "parallax" بسيط بدون أي مكتبة خارجية. نربطها بحاوية
+// السكرول الفعلية عبر containerRef (مو window، لأن صفحة الدعوة تستخدم
+// div داخلي قابل للتمرير بدل الصفحة نفسها).
+function ScrollFlower({
+  containerRef,
+}: {
+  containerRef: RefObject<HTMLDivElement | null>
+}) {
+  const flowerRef = useRef<HTMLDivElement>(null)
+  const [offset, setOffset] = useState(0)
+
+  useEffect(() => {
+    const container = containerRef.current
+    const el = flowerRef.current
+    if (!container || !el) return
+
+    let ticking = false
+    const update = () => {
+      ticking = false
+      const containerRect = container.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      const elCenter = elRect.top + elRect.height / 2
+      const containerCenter = containerRect.top + containerRect.height / 2
+      // الفرق بين مركز الوردة ومركز الشاشة المرئية، بنسبة مخففة (0.18)
+      // حتى تعطي إحساس عوم بطيء نزولاً وصعوداً بدل حركة عنيفة، مع حد
+      // أقصى (clamp) حتى ما تبعد كثير عن مكانها الأصلي.
+      const delta = (elCenter - containerCenter) * 0.18
+      setOffset(Math.max(-36, Math.min(36, delta)))
+    }
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true
+        requestAnimationFrame(update)
+      }
+    }
+
+    update()
+    container.addEventListener("scroll", handleScroll, { passive: true })
+    return () => container.removeEventListener("scroll", handleScroll)
+  }, [containerRef])
+
+  return (
+    <div
+      ref={flowerRef}
+      className="flex items-center justify-center"
+      style={{
+        transform: `translateY(${offset}px) rotate(${offset * 0.6}deg)`,
+        transition: "transform 80ms linear",
+      }}
+    >
+      <span
+        className="text-3xl"
+        style={{
+          color: "#D4AF37",
+          filter: "drop-shadow(0 0 10px rgba(212,175,55,0.45))",
+        }}
+      >
+        ✿
+      </span>
+    </div>
+  )
+}
+
 function WisalTemplateView({ inv }: { inv: Invitation }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [particles, setParticles] = useState<GoldenParticle[]>([])
 
   // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
@@ -177,7 +242,10 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
         />
       )}
 
-      <div className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll">
+      <div
+        ref={scrollContainerRef}
+        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll"
+      >
         <div
           className={`relative transition-all duration-1000 w-full ${
             isOpen ? "opacity-100" : "opacity-0"
@@ -339,24 +407,50 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
             {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل */}
             <section className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]">
               <Reveal className="text-center max-w-lg w-full mb-24">
-                <h3 className="text-3xl font-bold text-[#F1D989] mb-10 custom-font-amiri">
-                  برنامج الحفل
-                </h3>
-                <div className="space-y-7 text-base md:text-lg text-[#F5EBE0]">
-                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-5">
-                    <span className="font-bold text-[#F1D989]">٧:٠٠ مساءً</span>
-                    <div className="flex-1 border-b border-dashed border-[#D4AF37]/30 mx-4" />
-                    <span>استقبال الضيوف</span>
+                <div className="flex items-center justify-center gap-3 mb-10">
+                  <span className="text-[#D4AF37] text-base opacity-80">
+                    ❁
+                  </span>
+                  <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
+                    برنامج الحفل
+                  </h3>
+                  <span className="text-[#D4AF37] text-base opacity-80">
+                    ❁
+                  </span>
+                </div>
+                <div className="text-base md:text-lg text-[#F5EBE0]">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-5">
+                    <span className="text-right custom-font-tajawal">
+                      استقبال الضيوف
+                    </span>
+                    <span className="text-[#D4AF37] text-xs">◆</span>
+                    <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
+                      ٧:٠٠ مساءً
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-5">
-                    <span className="font-bold text-[#F1D989]">٧:٣٠ مساءً</span>
-                    <div className="flex-1 border-b border-dashed border-[#D4AF37]/30 mx-4" />
-                    <span>عقد القران</span>
+
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-5">
+                    <span className="text-right custom-font-tajawal">
+                      عقد القران
+                    </span>
+                    <span className="text-[#D4AF37] text-xs">◆</span>
+                    <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
+                      ٧:٣٠ مساءً
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center border-b border-[#D4AF37]/20 pb-5">
-                    <span className="font-bold text-[#F1D989]">٩:٠٠ مساءً</span>
-                    <div className="flex-1 border-b border-dashed border-[#D4AF37]/30 mx-4" />
-                    <span>العشاء</span>
+
+                  <div className="py-3">
+                    <ScrollFlower containerRef={scrollContainerRef} />
+                  </div>
+
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-5">
+                    <span className="text-right custom-font-tajawal">
+                      العشاء
+                    </span>
+                    <span className="text-[#D4AF37] text-xs">◆</span>
+                    <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
+                      ٩:٠٠ مساءً
+                    </span>
                   </div>
                 </div>
               </Reveal>
