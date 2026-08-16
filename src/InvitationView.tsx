@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Invitation } from "./types"
 import { submitRSVP } from "./backend"
+import Reveal from "./Reveal"
 
 interface GoldenParticle {
   id: number
@@ -275,7 +276,7 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
             <section className="py-24 px-6 flex flex-col items-center">
-              <div className="text-center max-w-xl mb-20">
+              <Reveal className="text-center max-w-xl mb-20">
                 <p className="text-base tracking-widest text-[#8C7A6B] mb-5 custom-font-amiri">
                   بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                 </p>
@@ -283,11 +284,11 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                   {inv.verse}
                 </p>
                 <div className="mt-5 text-[#D4AF37] text-lg">✿</div>
-              </div>
+              </Reveal>
 
               <div className="w-28 h-[1px] bg-[#D4AF37]/30 mb-20" />
 
-              <div className="text-center max-w-lg mb-20">
+              <Reveal className="text-center max-w-lg mb-20">
                 <h3 className="text-3xl md:text-4xl font-bold text-[#4A3B2C] mb-7 custom-font-amiri">
                   بطاقة دعوة
                 </h3>
@@ -306,10 +307,10 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                     <p className="font-bold">{inv.brideFamily}</p>
                   </div>
                 </div>
-              </div>
+              </Reveal>
 
               {/* العداد التنازلي المكبر */}
-              <div className="text-center w-full max-w-lg mb-16">
+              <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   باقي على فرحنا
                 </h4>
@@ -342,12 +343,12 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                     <span className="text-sm text-[#8C7A6B] mt-1">يوم</span>
                   </div>
                 </div>
-              </div>
+              </Reveal>
             </section>
 
             {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل */}
             <section className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]">
-              <div className="text-center max-w-lg w-full mb-24">
+              <Reveal className="text-center max-w-lg w-full mb-24">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-10 custom-font-amiri">
                   برنامج الحفل
                 </h3>
@@ -368,9 +369,9 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                     <span>العشاء</span>
                   </div>
                 </div>
-              </div>
+              </Reveal>
 
-              <div className="text-center max-w-lg w-full mb-24">
+              <Reveal className="text-center max-w-lg w-full mb-24">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   مكان الحفل
                 </h3>
@@ -386,12 +387,12 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                 >
                   📍 الموقع على الخريطة
                 </a>
-              </div>
+              </Reveal>
             </section>
 
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل */}
             <section className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#D4AF37]">
-              <div className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg">
+              <Reveal className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg">
                 <div className="text-center mb-10">
                   <span className="text-lg">⚙️</span>
                   <h3 className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-amiri">
@@ -492,7 +493,7 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                     </button>
                   </form>
                 )}
-              </div>
+              </Reveal>
             </section>
           </div>
         </div>
@@ -558,13 +559,15 @@ export default function InvitationFullView({
             color: inv.accentColor,
           }}
         >
-          <h1
-            className="text-4xl font-bold mb-4"
-            style={{ fontFamily: "Amiri, serif" }}
-          >
-            {inv.title}
-          </h1>
-          <p className="text-xl">{inv.subtitle}</p>
+          <Reveal>
+            <h1
+              className="text-4xl font-bold mb-4"
+              style={{ fontFamily: "Amiri, serif" }}
+            >
+              {inv.title}
+            </h1>
+            <p className="text-xl">{inv.subtitle}</p>
+          </Reveal>
         </div>
       )}
     </div>
