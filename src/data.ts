@@ -6,6 +6,7 @@ export const defaultSiteSettings: SiteSettings = {
   siteName: "سما",
   siteNameEn: "SAMA",
   logoIcon: "✨",
+  logoImageUrl: "",
   heroTitle: "اختر دعوتك المثالية",
   whatsappNumberIraq: "9647718031245",
   whatsappNumberSaudi: "966580690167",
