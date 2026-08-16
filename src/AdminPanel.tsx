@@ -10,6 +10,7 @@ import {
   createSheetForInvitation,
   uploadMedia,
 } from "./backend"
+import DesignPanel from "./DesignPanel"
 
 const categories = [
   { id: "wedding", label: "زفاف" },
@@ -602,7 +603,8 @@ function InvitationForm({
   add column if not exists "mapUrl" text,
   add column if not exists "eventDateTime" text,
   add column if not exists "coverImage" text,
-  add column if not exists "hideCoverOverlay" boolean default false;`
+  add column if not exists "hideCoverOverlay" boolean default false,
+  add column if not exists "textStyles" jsonb;`
 
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
@@ -1432,6 +1434,7 @@ function InvitationRow({
   setDeletingId,
   onDelete,
   onEdit,
+  onDesign,
   onCopyAsPrivate,
 }: {
   inv: Invitation
@@ -1440,6 +1443,7 @@ function InvitationRow({
   setDeletingId: (id: number | null) => void
   onDelete: (id: number) => void
   onEdit: (inv: Invitation) => void
+  onDesign: (inv: Invitation) => void
   onCopyAsPrivate: (inv: Invitation, nextId: number) => void
 }) {
   return (
@@ -1498,6 +1502,13 @@ function InvitationRow({
           className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
         >
           تعديل
+        </button>
+        <button
+          onClick={() => onDesign(inv)}
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#D4AF37]/40 bg-[#faf5e8] text-[#8a6d1f] flex items-center gap-1"
+          title="تعديل خط وحجم ولون نصوص الدعوة من لوحة تصميم شبيهة بفيكما"
+        >
+          🎨 تصميم
         </button>
         <button
           onClick={() => onCopyAsPrivate(inv, nextId)}
@@ -1623,6 +1634,7 @@ export default function AdminPanel({
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState("")
+  const [designing, setDesigning] = useState<Invitation | null>(null)
 
   useEffect(() => {
     getCurrentSession().then((session) => {
@@ -1672,6 +1684,12 @@ export default function AdminPanel({
     setEditing(null)
     setEditingIsNew(false)
     setCreating(false)
+    setDesigning(null)
+  }
+
+  const handleDesignSaved = (_updated: Invitation) => {
+    setDesigning(null)
+    onRefresh()
   }
 
   const handleSaved = (_inv: Invitation, keepFormOpen?: boolean) => {
@@ -1781,7 +1799,7 @@ export default function AdminPanel({
           />
         )}
 
-        {activeTab === "invitations" && !editing && !creating && (
+        {activeTab === "invitations" && !editing && !creating && !designing && (
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold">الدعوات العامة</h2>
@@ -1817,6 +1835,7 @@ export default function AdminPanel({
                   setDeletingId={setDeletingId}
                   onDelete={handleDelete}
                   onEdit={startEdit}
+                  onDesign={setDesigning}
                   onCopyAsPrivate={startCopyAsPrivate}
                 />
               ))}
@@ -1824,7 +1843,7 @@ export default function AdminPanel({
           </>
         )}
 
-        {activeTab === "private" && !editing && !creating && (
+        {activeTab === "private" && !editing && !creating && !designing && (
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold">الدعوات الخاصة</h2>
@@ -1862,6 +1881,7 @@ export default function AdminPanel({
                   setDeletingId={setDeletingId}
                   onDelete={handleDelete}
                   onEdit={startEdit}
+                  onDesign={setDesigning}
                   onCopyAsPrivate={startCopyAsPrivate}
                 />
               ))}
@@ -1887,6 +1907,14 @@ export default function AdminPanel({
             isNew={editingIsNew}
             onCancel={closeForm}
             onSaved={handleSaved}
+          />
+        )}
+
+        {designing && (
+          <DesignPanel
+            invitation={designing}
+            onCancel={closeForm}
+            onSaved={handleDesignSaved}
           />
         )}
       </div>
