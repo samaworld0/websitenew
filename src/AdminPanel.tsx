@@ -604,7 +604,8 @@ function InvitationForm({
   add column if not exists "eventDateTime" text,
   add column if not exists "coverImage" text,
   add column if not exists "hideCoverOverlay" boolean default false,
-  add column if not exists "textStyles" jsonb;`
+  add column if not exists "textStyles" jsonb,
+  add column if not exists "textContent" jsonb;`
 
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
