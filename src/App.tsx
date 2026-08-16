@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Invitation } from "./types"
-import { invitations as seedInvitations, defaultSiteSettings } from "./data"
+import { defaultSiteSettings } from "./data"
 import { loadInvitations, loadSiteSettings } from "./backend"
 import AdminPanel from "./AdminPanel"
 import HomePage from "./HomePage"
@@ -11,10 +11,13 @@ import InvitationFullView from "./InvitationView"
 // 2) عرض دعوة كاملة (?preview=ID)
 // 3) الواجهة الرئيسية (HomePage) — بملفها المستقل src/HomePage.tsx
 export default function App() {
-  // نبدأ بالبيانات المحلية (seedInvitations) حتى ما تنعرض الصفحة فاضية
-  // لحظة التحميل الأول، وتنستبدل ببيانات Supabase الحقيقية أول ما توصل
-  const [allInvitations, setAllInvitations] =
-    useState<Invitation[]>(seedInvitations)
+  // نبدأ بـ null (مو seedInvitations) حتى ما نعرض بيانات وهمية/تجريبية
+  // ولو للحظة وحدة قبل ما توصل بيانات Supabase الحقيقية — بدل الفلاش
+  // (ظهور بيانات مختلفة ثم استبدالها ببياناتك الفعلية). null = لسه
+  // التحميل الأول ما خلص.
+  const [allInvitations, setAllInvitations] = useState<Invitation[] | null>(
+    null,
+  )
   const [siteSettings, setSiteSettings] = useState(defaultSiteSettings)
 
   useEffect(() => {
@@ -24,13 +27,33 @@ export default function App() {
 
   const urlParams = new URLSearchParams(window.location.search)
   const previewId = urlParams.get("preview")
-  const previewInv = allInvitations.find(
+  const previewInv = allInvitations?.find(
     (inv) => inv.id.toString() === previewId,
   )
   const isAdmin = urlParams.get("admin") === "1"
 
   const handlePreview = (inv: Invitation) => {
     window.location.href = `${window.location.pathname}?preview=${inv.id}`
+  }
+
+  // لسه ما وصلت بيانات Supabase الحقيقية (أول تحميل) — نعرض شاشة تحميل
+  // بسيطة بدل ما نعرض بيانات وهمية مؤقتة.
+  if (allInvitations === null) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#fefcf8" }}
+        dir="rtl"
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-full border-2 border-[#D4AF37] border-t-transparent animate-spin"
+            aria-hidden
+          />
+          <span className="text-sm text-[#8a7561]">...جارٍ التحميل</span>
+        </div>
+      </div>
+    )
   }
 
   if (isAdmin) {
