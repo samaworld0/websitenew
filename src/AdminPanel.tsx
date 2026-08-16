@@ -83,6 +83,17 @@ const inputClass =
 // حقل رفع ملف وسائط (صورة/فيديو/صوت) لـ Supabase Storage. يعرض معاينة
 // بسيطة للملف الحالي (لو موجود)، وزر رفع ملف جديد من جهاز المستخدم،
 // بدل ما يحتاج يختار من قائمة ملفات جاهزة بس.
+// يستخرج اسم ملف مقروء من رابط الرفع (يشيل المجلدات والـ timestamp
+// اللي يضيفه uploadMedia، حتى ما نعرض رابط طويل مبعثر بالواجهة).
+function getDisplayFilename(url: string): string {
+  try {
+    const last = decodeURIComponent(url.split("/").pop() || url)
+    return last.replace(/^\d+-/, "")
+  } catch {
+    return url
+  }
+}
+
 function MediaUploadField({
   label,
   hint,
@@ -128,56 +139,55 @@ function MediaUploadField({
       <span className="font-bold text-[#2C1810]">{label}</span>
 
       {value ? (
-        <div className="flex items-center gap-3 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg p-2">
+        <div className="flex items-center gap-2.5 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-2.5 py-2">
           {kind === "image" && (
             <img
               src={value}
               alt=""
-              className="w-14 h-14 rounded-md object-cover shrink-0 border border-[#e5d9c3]"
+              className="w-9 h-9 rounded-md object-cover shrink-0 border border-[#e5d9c3]"
             />
           )}
           {kind === "video" && (
-            <video
-              src={value}
-              muted
-              className="w-14 h-14 rounded-md object-cover shrink-0 border border-[#e5d9c3] bg-black"
-            />
+            <div className="w-9 h-9 rounded-md shrink-0 border border-[#e5d9c3] bg-[#2C1810] flex items-center justify-center text-sm">
+              🎬
+            </div>
           )}
           {kind === "audio" && (
-            <div className="w-14 h-14 rounded-md shrink-0 border border-[#e5d9c3] bg-white flex items-center justify-center text-xl">
+            <div className="w-9 h-9 rounded-md shrink-0 border border-[#e5d9c3] bg-white flex items-center justify-center text-sm">
               🎵
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <a
-              href={value}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-[#1a7f4b] hover:underline break-all line-clamp-2"
-            >
-              {value}
-            </a>
-          </div>
-          <div className="flex flex-col gap-1 shrink-0">
-            <label
-              htmlFor={inputId}
-              className="text-xs font-bold text-[#8a7561] hover:text-[#2C1810] cursor-pointer text-center"
-            >
-              استبدال
-            </label>
-            <button
-              type="button"
-              onClick={() => onChange("")}
-              className="text-xs text-red-600 hover:underline"
-            >
-              إزالة
-            </button>
-          </div>
+
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={value}
+            className="min-w-0 flex-1 text-xs text-[#2C1810] hover:text-[#1a7f4b] hover:underline truncate"
+          >
+            {getDisplayFilename(value)}
+          </a>
+
+          <label
+            htmlFor={inputId}
+            title="استبدال"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-[#8a7561] hover:bg-[#e5d9c3] hover:text-[#2C1810] cursor-pointer transition"
+          >
+            🔄
+          </label>
+          <button
+            type="button"
+            title="إزالة"
+            onClick={() => onChange("")}
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-red-500 hover:bg-red-50 transition"
+          >
+            🗑
+          </button>
         </div>
       ) : (
         <label
           htmlFor={inputId}
-          className="flex items-center justify-center gap-2 border-2 border-dashed border-[#e5d9c3] rounded-lg py-4 text-sm text-[#8a7561] hover:border-[#D4AF37] hover:text-[#2C1810] cursor-pointer transition"
+          className="flex items-center justify-center gap-2 border-2 border-dashed border-[#e5d9c3] rounded-lg py-3 text-sm text-[#8a7561] hover:border-[#D4AF37] hover:text-[#2C1810] cursor-pointer transition"
         >
           {uploading ? (
             <>
