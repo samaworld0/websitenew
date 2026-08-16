@@ -330,6 +330,246 @@ function MediaUploadField({
   )
 }
 
+// رابط الفيديو الافتراضي لو اللاحقة تدل إنه فيديو (نستخدمه لما المستخدم
+// يلصق رابط مباشر بدل ما يرفع ملف، حتى نعرف نحطه بحقل doorBgVideo أو
+// heroBg الصحيح).
+function looksLikeVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url)
+}
+
+// حقل خلفية القسم الأول — يجمع heroBg (صورة) و doorBgVideo (فيديو) بحقل
+// واحد: يرفع أي وحدة منهم والنظام يحدد نوعها تلقائياً ويخزنها بالمكان
+// الصح، وكل وحدة تلغي الثانية (إما صورة أو فيديو، مو الاثنين مع بعض).
+function HeroBackgroundField({
+  heroBg,
+  doorBgVideo,
+  onChangeHeroBg,
+  onChangeDoorBgVideo,
+}: {
+  heroBg: string
+  doorBgVideo: string
+  onChangeHeroBg: (url: string) => void
+  onChangeDoorBgVideo: (url: string) => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState("")
+  const [bucketMissing, setBucketMissing] = useState(false)
+  const [mode, setMode] = useState<"upload" | "link">("upload")
+  const [linkDraft, setLinkDraft] = useState("")
+  const [replacing, setReplacing] = useState(false)
+  const inputId = "upload-hero-section-media"
+
+  const value = doorBgVideo || heroBg
+  const kind: "image" | "video" = doorBgVideo ? "video" : "image"
+  const fallback = "/images/hero-bg.jpg"
+
+  const applyResult = (url: string, isVideo: boolean) => {
+    setReplacing(false)
+    if (isVideo) {
+      onChangeDoorBgVideo(url)
+      onChangeHeroBg("")
+    } else {
+      onChangeHeroBg(url)
+      onChangeDoorBgVideo("")
+    }
+  }
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return
+    const isVideo = file.type.startsWith("video/")
+    setUploading(true)
+    setError("")
+    setBucketMissing(false)
+    const result = await uploadMedia(file, isVideo ? "door-bg-video" : "hero-bg")
+    setUploading(false)
+    if (!result.success || !result.url) {
+      if (result.bucketMissing) {
+        setBucketMissing(true)
+      } else {
+        setError(result.error || "تعذّر رفع الملف، حاول مرة ثانية")
+      }
+      return
+    }
+    applyResult(result.url, isVideo)
+  }
+
+  const handleUseLink = () => {
+    const url = linkDraft.trim()
+    if (!url) return
+    applyResult(url, looksLikeVideoUrl(url))
+    setLinkDraft("")
+  }
+
+  const handleRemove = () => {
+    onChangeHeroBg("")
+    onChangeDoorBgVideo("")
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 text-sm">
+      <span className="font-bold text-[#2C1810]">
+        خلفية القسم الأول — صورة أو فيديو
+      </span>
+
+      {value ? (
+        <div className="flex items-center gap-2.5 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-2.5 py-2">
+          {kind === "image" ? (
+            <img
+              src={value}
+              alt=""
+              className="w-9 h-9 rounded-md object-cover shrink-0 border border-[#e5d9c3]"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-md shrink-0 border border-[#e5d9c3] bg-[#2C1810] flex items-center justify-center text-sm">
+              🎬
+            </div>
+          )}
+
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={value}
+            className="min-w-0 flex-1 text-xs text-[#2C1810] hover:text-[#1a7f4b] hover:underline truncate"
+          >
+            {getDisplayFilename(value)} · {kind === "image" ? "صورة" : "فيديو"}
+          </a>
+
+          <label
+            htmlFor={inputId}
+            title="استبدال"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-[#8a7561] hover:bg-[#e5d9c3] hover:text-[#2C1810] cursor-pointer transition"
+          >
+            🔄
+          </label>
+          <button
+            type="button"
+            title="إزالة"
+            onClick={handleRemove}
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-red-500 hover:bg-red-50 transition"
+          >
+            🗑
+          </button>
+        </div>
+      ) : !replacing ? (
+        <div className="flex items-center gap-2.5 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-2.5 py-2">
+          <img
+            src={fallback}
+            alt=""
+            className="w-9 h-9 rounded-md object-cover shrink-0 border border-[#e5d9c3]"
+          />
+          <span className="min-w-0 flex-1 text-xs text-[#8a7561]">
+            الخلفية الافتراضية اللي تظهر حالياً — ما رفعت صورة أو فيديو
+            خاص بهذي الدعوة بعد
+          </span>
+          <button
+            type="button"
+            onClick={() => setReplacing(true)}
+            className="shrink-0 px-3 py-1.5 rounded-md text-xs font-bold bg-[#D4AF37] text-[#2C1810]"
+          >
+            استبدال
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setReplacing(false)}
+            className="text-xs text-[#8a7561] hover:text-[#2C1810]"
+          >
+            ← رجوع للافتراضي
+          </button>
+          <div className="flex items-center gap-1 bg-[#f5efe2] rounded-full p-1 w-fit">
+            <button
+              type="button"
+              onClick={() => setMode("upload")}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${
+                mode === "upload"
+                  ? "bg-[#D4AF37] text-[#2C1810]"
+                  : "text-[#8a7561]"
+              }`}
+            >
+              ⬆️ رفع ملف
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("link")}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${
+                mode === "link"
+                  ? "bg-[#D4AF37] text-[#2C1810]"
+                  : "text-[#8a7561]"
+              }`}
+            >
+              🔗 رابط مباشر
+            </button>
+          </div>
+
+          {mode === "upload" ? (
+            <label
+              htmlFor={inputId}
+              className="flex items-center justify-center gap-2 border-2 border-dashed border-[#e5d9c3] rounded-lg py-3 text-sm text-[#8a7561] hover:border-[#D4AF37] hover:text-[#2C1810] cursor-pointer transition"
+            >
+              {uploading ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  <span>جارٍ الرفع...</span>
+                </>
+              ) : (
+                <>
+                  <span>⬆️</span>
+                  <span>اضغط لرفع صورة أو فيديو</span>
+                </>
+              )}
+            </label>
+          ) : (
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                dir="ltr"
+                value={linkDraft}
+                onChange={(e) => setLinkDraft(e.target.value)}
+                placeholder="https://..."
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={handleUseLink}
+                disabled={!linkDraft.trim()}
+                className="shrink-0 px-4 py-2 rounded-lg text-xs font-bold bg-[#D4AF37] text-[#2C1810] disabled:opacity-50"
+              >
+                استخدام
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <input
+        id={inputId}
+        type="file"
+        accept="image/*,video/*"
+        className="hidden"
+        disabled={uploading}
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+
+      <span className="text-xs text-[#8a7561]">
+        صورة ثابتة أو فيديو متحرك للخلفية الرئيسية بأول الدعوة — ارفع أي
+        وحدة منهم وبتنحط تلقائياً بالمكان الصح
+      </span>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+      {bucketMissing && (
+        <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          مخزن الملفات "invitation-media" غير موجود بعد بـ Supabase Storage.
+          روح لـ Supabase → Storage → New bucket → اكتب الاسم بالضبط
+          invitation-media وفعّل "Public bucket"، وبعدها جرّب الرفع مرة
+          ثانية.
+        </span>
+      )}
+    </div>
+  )
+}
+
 function InvitationForm({
   initial,
   isNew,
@@ -703,26 +943,11 @@ function InvitationForm({
           onChange={(url) => set("introVideo", url)}
         />
 
-        <MediaUploadField
-          label="خلفية القسم الأول — صورة (heroBg)"
-          hint="صورة الخلفية الثابتة للقسم الأول من الدعوة"
-          accept="image/*"
-          kind="image"
-          value={inv.heroBg || ""}
-          folder="hero-bg"
-          fallback="/images/hero-bg.jpg"
-          onChange={(url) => set("heroBg", url)}
-        />
-
-        <MediaUploadField
-          label="خلفية القسم الأول — مقطع فيديو (doorBgVideo)"
-          hint="فيديو متحرك اختياري يشتغل فوق صورة الخلفية بنفس القسم"
-          accept="video/*"
-          kind="video"
-          value={inv.doorBgVideo || ""}
-          folder="door-bg-video"
-          fallback="/videos/door-bg.mp4"
-          onChange={(url) => set("doorBgVideo", url)}
+        <HeroBackgroundField
+          heroBg={inv.heroBg || ""}
+          doorBgVideo={inv.doorBgVideo || ""}
+          onChangeHeroBg={(url) => set("heroBg", url)}
+          onChangeDoorBgVideo={(url) => set("doorBgVideo", url)}
         />
 
         <MediaUploadField
