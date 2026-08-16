@@ -224,6 +224,7 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
       siteName: data.siteName ?? defaultSiteSettings.siteName,
       siteNameEn: data.siteNameEn ?? defaultSiteSettings.siteNameEn,
       logoIcon: data.logoIcon ?? defaultSiteSettings.logoIcon,
+      logoImageUrl: data.logoImageUrl ?? defaultSiteSettings.logoImageUrl,
       heroTitle: data.heroTitle ?? defaultSiteSettings.heroTitle,
       whatsappNumberIraq:
         data.whatsappNumberIraq ?? defaultSiteSettings.whatsappNumberIraq,
