@@ -1138,7 +1138,13 @@ function SiteSettingsForm({
   add column if not exists "logoIcon" text,
   add column if not exists "heroTitle" text,
   add column if not exists "whatsappNumberIraq" text,
-  add column if not exists "whatsappNumberSaudi" text;`
+  add column if not exists "whatsappNumberSaudi" text,
+  add column if not exists "topHeroBadge" text,
+  add column if not exists "topHeroTitleBefore" text,
+  add column if not exists "topHeroTitleAccent" text,
+  add column if not exists "topHeroTitleAfter" text,
+  add column if not exists "topHeroSubtitle" text,
+  add column if not exists "topHeroButtonText" text;`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1284,6 +1290,70 @@ function SiteSettingsForm({
             value={settings.whatsappNumberSaudi}
             onChange={(e) => set("whatsappNumberSaudi", e.target.value)}
             dir="ltr"
+          />
+        </Field>
+      </fieldset>
+
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          القسم الرئيسي العلوي (Hero)
+        </legend>
+        <p className="col-span-full text-xs text-[#8a7561] -mt-2 mb-1">
+          هذا القسم يظهر أول شي بالصفحة الرئيسية، فوق شبكة الدعوات — البادج،
+          العنوان الكبير، والنص تحته.
+        </p>
+
+        <Field
+          label="نص البادج العلوي"
+          hint="الشريط الصغير المستدير فوق العنوان"
+        >
+          <input
+            className={inputClass}
+            value={settings.topHeroBadge}
+            onChange={(e) => set("topHeroBadge", e.target.value)}
+          />
+        </Field>
+        <div />
+
+        <Field label="العنوان — قبل الكلمة المميزة">
+          <input
+            className={inputClass}
+            value={settings.topHeroTitleBefore}
+            onChange={(e) => set("topHeroTitleBefore", e.target.value)}
+          />
+        </Field>
+        <Field
+          label="الكلمة المميزة"
+          hint="تظهر بتأثير ذهبي متحرك (shimmer)"
+        >
+          <input
+            className={inputClass}
+            value={settings.topHeroTitleAccent}
+            onChange={(e) => set("topHeroTitleAccent", e.target.value)}
+          />
+        </Field>
+        <Field label="العنوان — السطر الثاني">
+          <input
+            className={inputClass}
+            value={settings.topHeroTitleAfter}
+            onChange={(e) => set("topHeroTitleAfter", e.target.value)}
+          />
+        </Field>
+        <div />
+
+        <Field label="النص الفرعي" hint="فقرة قصيرة تحت العنوان">
+          <textarea
+            className={inputClass}
+            rows={3}
+            value={settings.topHeroSubtitle}
+            onChange={(e) => set("topHeroSubtitle", e.target.value)}
+          />
+        </Field>
+        <Field label="نص الزر" hint="الزر اللي يسكرول لشبكة الدعوات">
+          <input
+            className={inputClass}
+            value={settings.topHeroButtonText}
+            onChange={(e) => set("topHeroButtonText", e.target.value)}
           />
         </Field>
       </fieldset>
