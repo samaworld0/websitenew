@@ -19,12 +19,26 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [particles, setParticles] = useState<GoldenParticle[]>([])
 
-  const [timeLeft, setTimeLeft] = useState({
-    days: 108,
-    hours: 14,
-    minutes: 51,
-    seconds: 12,
-  })
+  // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
+  // لو الدعوة ما عندها موعد محدد (دعوات قديمة قبل إضافة هالحقل)، نرجع
+  // لنفس القيم الافتراضية اللي كانت موجودة سابقاً حتى ما ينكسر العرض.
+  const calcTimeLeft = () => {
+    if (!inv.eventDateTime) {
+      return { days: 108, hours: 14, minutes: 51, seconds: 12 }
+    }
+    const diff = new Date(inv.eventDateTime).getTime() - Date.now()
+    if (isNaN(diff) || diff <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0 }
+    }
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / (1000 * 60)) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    }
+  }
+
+  const [timeLeft, setTimeLeft] = useState(calcTimeLeft)
   const [attendance, setAttendance] = useState("نعم")
   const [companions, setCompanions] = useState(0)
   const [guestName, setGuestName] = useState("")
@@ -49,17 +63,10 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 }
-        return {
-          ...prev,
-          seconds: 59,
-          minutes: prev.minutes > 0 ? prev.minutes - 1 : 59,
-        }
-      })
+      setTimeLeft(calcTimeLeft())
     }, 1000)
     return () => clearInterval(timer)
-  }, [])
+  }, [inv.eventDateTime])
 
   const completeOpening = () => {
     setIsOpen((prev) => {
@@ -372,7 +379,7 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                 </h4>
                 <p className="text-base text-[#E8DCC4]/80 mb-7">{inv.city}</p>
                 <a
-                  href="https://maps.google.com"
+                  href={inv.mapUrl || "https://maps.google.com"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white bg-[#B8862F] hover:bg-[#9E7024] shadow-md"
