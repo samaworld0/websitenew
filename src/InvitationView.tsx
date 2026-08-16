@@ -83,11 +83,13 @@ function Txt({
   const Tag = tag as any
   const override = ctx ? textStyleToCSS(ctx.inv.textStyles?.[id]) : {}
   const merged: React.CSSProperties = { ...style, ...override }
+  const contentOverride = ctx?.inv.textContent?.[id]
+  const content = contentOverride !== undefined && contentOverride !== "" ? contentOverride : children
 
   if (!ctx?.designMode) {
     return (
       <Tag className={className} style={merged}>
-        {children}
+        {content}
       </Tag>
     )
   }
@@ -105,7 +107,7 @@ function Txt({
         ctx.onSelect?.(id)
       }}
     >
-      {children}
+      {content}
     </Tag>
   )
 }
