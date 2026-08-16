@@ -1,116 +1,7 @@
-import { useState, useEffect, useRef, createContext, useContext, type RefObject } from "react"
-import { Invitation, TextStyle } from "./types"
+import { useState, useEffect, useRef, type RefObject } from "react"
+import { Invitation } from "./types"
 import { submitRSVP } from "./backend"
 import Reveal from "./Reveal"
-
-// ─── نظام تصميم العناصر النصية (شبيه بلوحة خصائص فيكما) ─────────────────────
-// كل عنصر نصي قابل للتخصيص بصفحة الدعوة إله معرّف (id) ثابت. لوحة التحكم
-// (DesignPanel) تعرض قائمة هالمعرّفات وتخلي المشرف يختار وحد منها ويعدّل
-// خطه/حجمه/لونه، فتنحفظ التخصيصات بـ inv.textStyles[id] وتنطبق هنا تلقائياً.
-
-// عناصر قالب "وصال" (باب متحرك) — بالترتيب اللي تظهر فيه بالصفحة.
-export const WISAL_TEXT_ELEMENTS: { id: string; label: string }[] = [
-  { id: "kicker", label: "نص علوي — دعوة زفاف" },
-  { id: "groomName", label: "اسم العريس" },
-  { id: "brideName", label: "اسم العروسة" },
-  { id: "heroDate", label: "التاريخ (أعلى الصفحة)" },
-  { id: "heroTagline", label: "شعار الدعوة" },
-  { id: "basmala", label: "البسملة" },
-  { id: "verseText", label: "النص الديني" },
-  { id: "cardTitle", label: "عنوان بطاقة الدعوة" },
-  { id: "cardBody", label: "نص بطاقة الدعوة" },
-  { id: "countdownTitle", label: "عنوان العد التنازلي" },
-  { id: "scheduleTitle", label: "عنوان برنامج الحفل" },
-  { id: "venueTitle", label: "عنوان مكان الحفل" },
-  { id: "venueName", label: "اسم القاعة" },
-  { id: "venueCity", label: "المدينة" },
-  { id: "rsvpTitle", label: "عنوان تأكيد الحضور" },
-]
-
-// عناصر القالب الافتراضي (البسيط، بدون قالب "وصال").
-export const DEFAULT_TEXT_ELEMENTS: { id: string; label: string }[] = [
-  { id: "defaultTitle", label: "العنوان الرئيسي" },
-  { id: "defaultSubtitle", label: "العنوان الفرعي" },
-]
-
-// خيارات الخطوط المستخدمة فعلياً بتصميم الدعوة، حتى لوحة التحكم تقترحها
-export const AVAILABLE_FONT_FAMILIES = [
-  { value: "", label: "افتراضي (حسب العنصر)" },
-  { value: "'Aref Ruqaa', serif", label: "Aref Ruqaa (خط الأسماء الكبير)" },
-  { value: "Amiri, serif", label: "Amiri" },
-  { value: "Tajawal, sans-serif", label: "Tajawal" },
-]
-
-function textStyleToCSS(ts?: TextStyle): React.CSSProperties {
-  if (!ts) return {}
-  const css: React.CSSProperties = {}
-  if (ts.fontFamily) css.fontFamily = ts.fontFamily
-  if (ts.fontWeight) css.fontWeight = ts.fontWeight
-  if (ts.fontSize) css.fontSize = `${ts.fontSize}px`
-  if (ts.lineHeight) css.lineHeight = `${ts.lineHeight}px`
-  if (ts.letterSpacing !== undefined) css.letterSpacing = `${ts.letterSpacing}px`
-  if (ts.color) css.color = ts.color
-  if (ts.opacity !== undefined) css.opacity = Math.max(0, Math.min(100, ts.opacity)) / 100
-  return css
-}
-
-interface DesignCtxValue {
-  inv: Invitation
-  designMode: boolean
-  selectedId?: string | null
-  onSelect?: (id: string) => void
-}
-const DesignContext = createContext<DesignCtxValue | null>(null)
-
-// غلاف حول أي عنصر نصي قابل للتخصيص. بوضع العرض العادي يرسم العنصر بس
-// مع تطبيق أي تخصيص محفوظ (textStyles) فوق التصميم الافتراضي. بوضع
-// التصميم (designMode) يضيف تظليل عند المرور والضغط لاختيار العنصر —
-// تماماً متل الضغط على عنصر بلوحة فيكما لتحديده.
-function Txt({
-  id,
-  tag = "span",
-  className,
-  style,
-  children,
-}: {
-  id: string
-  tag?: keyof JSX.IntrinsicElements
-  className?: string
-  style?: React.CSSProperties
-  children?: React.ReactNode
-}) {
-  const ctx = useContext(DesignContext)
-  const Tag = tag as any
-  const override = ctx ? textStyleToCSS(ctx.inv.textStyles?.[id]) : {}
-  const merged: React.CSSProperties = { ...style, ...override }
-  const contentOverride = ctx?.inv.textContent?.[id]
-  const content = contentOverride !== undefined && contentOverride !== "" ? contentOverride : children
-
-  if (!ctx?.designMode) {
-    return (
-      <Tag className={className} style={merged}>
-        {content}
-      </Tag>
-    )
-  }
-
-  const isSelected = ctx.selectedId === id
-  return (
-    <Tag
-      className={className}
-      style={merged}
-      data-design-id={id}
-      data-design-selected={isSelected ? "true" : undefined}
-      onClick={(e: React.MouseEvent) => {
-        e.stopPropagation()
-        e.preventDefault()
-        ctx.onSelect?.(id)
-      }}
-    >
-      {content}
-    </Tag>
-  )
-}
 
 interface GoldenParticle {
   id: number
@@ -133,6 +24,14 @@ function normalizeExternalUrl(url: string | undefined, fallback: string): string
   if (/^https?:\/\//i.test(trimmed)) return trimmed
   return `https://${trimmed}`
 }
+
+// برنامج الحفل الافتراضي — يُستخدم لو الدعوة ما عندها جدول مخصص محفوظ
+// (schedule فاضي أو غير موجود، مثلاً دعوات قديمة قبل إضافة هالحقل).
+const DEFAULT_SCHEDULE = [
+  { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
+  { label: "عقد القران", time: "٧:٣٠ مساءً" },
+  { label: "العشاء", time: "٩:٠٠ مساءً" },
+]
 
 // مسار برنامج الحفل: خط ذهبي رفيع يربط النقاط الذهبية، ووردة زخرفية
 // تبدأ من أول نقطة ذهبية (استقبال الضيوف) وتنزل تدريجياً مع تمرير
@@ -229,7 +128,7 @@ function ScheduleTrack({
 
       {items.map((item, i) => (
         <div
-          key={item.label}
+          key={`${i}-${item.label}`}
           className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-6"
         >
           <span className="text-right custom-font-tajawal">{item.label}</span>
@@ -254,17 +153,7 @@ function ScheduleTrack({
   )
 }
 
-export function WisalTemplateView({
-  inv,
-  designMode = false,
-  selectedElementId = null,
-  onSelectElement,
-}: {
-  inv: Invitation
-  designMode?: boolean
-  selectedElementId?: string | null
-  onSelectElement?: (id: string) => void
-}) {
+function WisalTemplateView({ inv }: { inv: Invitation }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -322,12 +211,6 @@ export function WisalTemplateView({
     return () => clearInterval(timer)
   }, [inv.eventDateTime])
 
-  // بوضع التصميم (لوحة التحكم) نفتح المحتوى مباشرة بدون انتظار ضغطة
-  // الباب، حتى المشرف يقدر يشوف ويعدّل كل النصوص من أول لحظة.
-  useEffect(() => {
-    if (designMode) setIsOpen(true)
-  }, [designMode])
-
   const completeOpening = () => {
     setIsOpen((prev) => {
       if (!prev) {
@@ -383,9 +266,6 @@ export function WisalTemplateView({
   }
 
   return (
-    <DesignContext.Provider
-      value={{ inv, designMode, selectedId: selectedElementId, onSelect: onSelectElement }}
-    >
     <div
       className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
       dir="rtl"
@@ -419,15 +299,6 @@ export function WisalTemplateView({
         .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
         .custom-font-amiri { font-family: 'Amiri', serif; }
         .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
-        ${
-          designMode
-            ? `
-        [data-design-id] { cursor: pointer; }
-        [data-design-id]:hover { outline: 1px dashed rgba(108,92,231,0.7); outline-offset: 3px; }
-        [data-design-id][data-design-selected="true"] { outline: 2px solid #6C5CE7; outline-offset: 3px; }
-        `
-            : ""
-        }
       `}</style>
 
       <audio
@@ -511,26 +382,26 @@ export function WisalTemplateView({
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div />
               <div className="my-auto flex flex-col items-center text-center">
-                <Txt id="kicker" tag="p" className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
+                <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
                   دعوة زفاف
-                </Txt>
+                </p>
                 <span className="text-[#D4AF37] text-xl mb-4">✿</span>
-                <Txt id="groomName" tag="h1" className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   {inv.groom}
-                </Txt>
+                </h1>
                 <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
                   و
                 </span>
-                <Txt id="brideName" tag="h1" className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   {inv.bride}
-                </Txt>
+                </h1>
                 <div className="mt-8 space-y-2">
-                  <Txt id="heroDate" tag="p" className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri">
+                  <p className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri">
                     {inv.date}
-                  </Txt>
-                  <Txt id="heroTagline" tag="p" className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
+                  </p>
+                  <p className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
                     فتحنا باب فرحتنا... وطارت البشائر تدعوكم
-                  </Txt>
+                  </p>
                 </div>
               </div>
               <div className="mb-4 flex flex-col items-center opacity-80">
@@ -551,33 +422,33 @@ export function WisalTemplateView({
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
             <section className="py-24 px-6 flex flex-col items-center">
               <Reveal className="text-center max-w-xl mb-20">
-                <Txt id="basmala" tag="p" className="text-base tracking-widest text-[#8C7A6B] mb-5 custom-font-amiri">
+                <p className="text-base tracking-widest text-[#8C7A6B] mb-5 custom-font-amiri">
                   بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                </Txt>
-                <Txt id="verseText" tag="p" className="text-xl md:text-2xl leading-loose text-[#5A4A3C] custom-font-amiri">
+                </p>
+                <p className="text-xl md:text-2xl leading-loose text-[#5A4A3C] custom-font-amiri">
                   {inv.verse}
-                </Txt>
+                </p>
                 <div className="mt-5 text-[#D4AF37] text-lg">✿</div>
               </Reveal>
 
               <div className="w-28 h-[1px] bg-[#D4AF37]/30 mb-20" />
 
               <Reveal className="text-center max-w-lg mb-20">
-                <Txt id="cardTitle" tag="h3" className="text-3xl md:text-4xl font-bold text-[#4A3B2C] mb-7 custom-font-amiri">
+                <h3 className="text-3xl md:text-4xl font-bold text-[#4A3B2C] mb-7 custom-font-amiri">
                   بطاقة دعوة
-                </Txt>
-                <Txt id="cardBody" tag="p" className="text-lg md:text-xl leading-relaxed text-[#5A4A3C] mb-12 custom-font-tajawal">
+                </h3>
+                <p className="text-lg md:text-xl leading-relaxed text-[#5A4A3C] mb-12 custom-font-tajawal">
                   بقلوب مفعمة بالفرح والسرور، نفتح لكم باب فرحتنا وندعوكم
                   لمشاركتنا أجمل لحظات حياتنا في حفل زفافنا. حضوركم شرف لنا
                   وبهجة تكتمل بها فرحتنا.
-                </Txt>
+                </p>
               </Reveal>
 
               {/* العداد التنازلي المكبر */}
               <Reveal className="text-center w-full max-w-lg mb-16">
-                <Txt id="countdownTitle" tag="h4" className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
+                <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   باقي على فرحنا
-                </Txt>
+                </h4>
                 <div
                   className="flex justify-center items-center gap-4"
                   dir="ltr"
@@ -617,9 +488,9 @@ export function WisalTemplateView({
                   <span className="text-[#D4AF37] text-base opacity-80">
                     ❁
                   </span>
-                  <Txt id="scheduleTitle" tag="h3" className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
+                  <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                     برنامج الحفل
-                  </Txt>
+                  </h3>
                   <span className="text-[#D4AF37] text-base opacity-80">
                     ❁
                   </span>
@@ -627,23 +498,23 @@ export function WisalTemplateView({
                 <div className="text-base md:text-lg text-[#F5EBE0]">
                   <ScheduleTrack
                     containerRef={scrollContainerRef}
-                    items={[
-                      { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
-                      { label: "عقد القران", time: "٧:٣٠ مساءً" },
-                      { label: "العشاء", time: "٩:٠٠ مساءً" },
-                    ]}
+                    items={
+                      inv.schedule && inv.schedule.length > 0
+                        ? inv.schedule
+                        : DEFAULT_SCHEDULE
+                    }
                   />
                 </div>
               </Reveal>
 
               <Reveal className="text-center max-w-lg w-full mb-24">
-                <Txt id="venueTitle" tag="h3" className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
+                <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   مكان الحفل
-                </Txt>
-                <Txt id="venueName" tag="h4" className="text-2xl font-bold text-[#F5EBE0] mb-3">
+                </h3>
+                <h4 className="text-2xl font-bold text-[#F5EBE0] mb-3">
                   {inv.venue}
-                </Txt>
-                <Txt id="venueCity" tag="p" className="text-base text-[#E8DCC4]/80 mb-7">{inv.city}</Txt>
+                </h4>
+                <p className="text-base text-[#E8DCC4]/80 mb-7">{inv.city}</p>
                 <a
                   href={normalizeExternalUrl(inv.mapUrl, "https://maps.google.com")}
                   target="_blank"
@@ -660,9 +531,9 @@ export function WisalTemplateView({
               <Reveal className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg">
                 <div className="text-center mb-10">
                   <span className="text-lg">⚙️</span>
-                  <Txt id="rsvpTitle" tag="h3" className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-amiri">
+                  <h3 className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-amiri">
                     تأكيد الحضور
-                  </Txt>
+                  </h3>
                   <p className="text-sm text-[#8C7A6B] mt-1">
                     يسعدنا تأكيد حضوركم
                   </p>
@@ -786,56 +657,6 @@ export function WisalTemplateView({
         </p>
       </div>
     </div>
-    </DesignContext.Provider>
-  )
-}
-
-// القالب الافتراضي البسيط (بدون باب متحرك) — يُستخدم لما ما تكون
-// templateType === "wisal". فيه عنصرين نصيين قابلين للتخصيص بس.
-export function DefaultTemplateView({
-  inv,
-  designMode = false,
-  selectedElementId = null,
-  onSelectElement,
-}: {
-  inv: Invitation
-  designMode?: boolean
-  selectedElementId?: string | null
-  onSelectElement?: (id: string) => void
-}) {
-  return (
-    <DesignContext.Provider
-      value={{ inv, designMode, selectedId: selectedElementId, onSelect: onSelectElement }}
-    >
-      <div
-        className="flex-1 w-full h-full overflow-y-auto p-12 text-center"
-        style={{
-          background: `linear-gradient(180deg, ${inv.gradient[0]}, ${inv.gradient[1]})`,
-          color: inv.accentColor,
-        }}
-      >
-        {designMode && (
-          <style>{`
-            [data-design-id] { cursor: pointer; }
-            [data-design-id]:hover { outline: 1px dashed rgba(108,92,231,0.7); outline-offset: 3px; }
-            [data-design-id][data-design-selected="true"] { outline: 2px solid #6C5CE7; outline-offset: 3px; }
-          `}</style>
-        )}
-        <Reveal>
-          <Txt
-            id="defaultTitle"
-            tag="h1"
-            className="text-4xl font-bold mb-4"
-            style={{ fontFamily: "Amiri, serif" }}
-          >
-            {inv.title}
-          </Txt>
-          <Txt id="defaultSubtitle" tag="p" className="text-xl">
-            {inv.subtitle}
-          </Txt>
-        </Reveal>
-      </div>
-    </DesignContext.Provider>
   )
 }
 
@@ -867,7 +688,23 @@ export default function InvitationFullView({
       {inv.templateType === "wisal" ? (
         <WisalTemplateView inv={inv} />
       ) : (
-        <DefaultTemplateView inv={inv} />
+        <div
+          className="flex-1 w-full h-full overflow-y-auto p-12 text-center"
+          style={{
+            background: `linear-gradient(180deg, ${inv.gradient[0]}, ${inv.gradient[1]})`,
+            color: inv.accentColor,
+          }}
+        >
+          <Reveal>
+            <h1
+              className="text-4xl font-bold mb-4"
+              style={{ fontFamily: "Amiri, serif" }}
+            >
+              {inv.title}
+            </h1>
+            <p className="text-xl">{inv.subtitle}</p>
+          </Reveal>
+        </div>
       )}
     </div>
   )
