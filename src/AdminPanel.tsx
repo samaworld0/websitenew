@@ -598,7 +598,9 @@ function InvitationForm({
   add column if not exists "date" text,
   add column if not exists "city" text,
   add column if not exists "groomFamily" text,
-  add column if not exists "brideFamily" text;`
+  add column if not exists "brideFamily" text,
+  add column if not exists "mapUrl" text,
+  add column if not exists "eventDateTime" text;`
 
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
@@ -665,6 +667,11 @@ function InvitationForm({
     if ((cleanInv.sheetId || cleanInv.sheetUrl) && !result.savedSheetLink) {
       notices.push(
         "⚠️ مهم: رابط شيت الحضور (sheetId/sheetUrl) ما انحفظ لأن أعمدتها غير موجودة بجدول invitations بعد — يعني زر 'شيت الحضور' راح يظل معطّل حتى لو حاطط القيمة هنا. لازم تضيف الأعمدة بالقاعدة أولاً (شوف التعليمات تحت).",
+      )
+    }
+    if (cleanInv.mapUrl && !result.savedMapUrl) {
+      notices.push(
+        "⚠️ مهم: رابط الموقع (mapUrl) ما انحفظ لأن عمودها غير موجود بجدول invitations بعد — يعني زر 'الموقع على الخريطة' راح يفتح الرابط الافتراضي مو الرابط اللي حاططه. لازم تضيف العمود بالقاعدة أولاً (شوف التعليمات تحت).",
       )
     }
     if (!result.savedExtraFields) {
