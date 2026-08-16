@@ -13,65 +13,6 @@ const categories = [
   { id: "birthday", label: "عيد ميلاد" },
 ]
 
-function OrnamentSVG({ color, scale = 1 }: { color: string; scale?: number }) {
-  return (
-    <svg
-      width={120 * scale}
-      height={30 * scale}
-      viewBox="0 0 120 30"
-      fill="none"
-    >
-      <line x1="0" y1="15" x2="48" y2="15" stroke={color} strokeWidth="0.8" />
-      <circle
-        cx="60"
-        cy="15"
-        r="6"
-        stroke={color}
-        strokeWidth="0.8"
-        fill="none"
-      />
-      <circle cx="60" cy="15" r="2" fill={color} />
-      <circle cx="48" cy="15" r="2" fill={color} />
-      <circle cx="72" cy="15" r="2" fill={color} />
-      <line x1="72" y1="15" x2="120" y2="15" stroke={color} strokeWidth="0.8" />
-      <path
-        d="M54 15 Q60 8 66 15"
-        stroke={color}
-        strokeWidth="0.8"
-        fill="none"
-      />
-    </svg>
-  )
-}
-
-function CornerOrnament({ color, flip }: { color: string; flip?: boolean }) {
-  return (
-    <svg
-      width="60"
-      height="60"
-      viewBox="0 0 50 50"
-      fill="none"
-      style={{ transform: flip ? "scaleX(-1)" : undefined }}
-    >
-      <path
-        d="M5 5 L5 25 Q5 35 15 35 L45 35"
-        stroke={color}
-        strokeWidth="0.7"
-        fill="none"
-      />
-      <path
-        d="M5 5 L25 5 Q35 5 35 15 L35 45"
-        stroke={color}
-        strokeWidth="0.7"
-        fill="none"
-      />
-      <circle cx="5" cy="5" r="2" fill={color} />
-      <circle cx="22" cy="35" r="1.5" fill={color} />
-      <circle cx="35" cy="22" r="1.5" fill={color} />
-    </svg>
-  )
-}
-
 function WhatsAppIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -648,14 +589,7 @@ function InvitationCard({
 }) {
   const [hovered, setHovered] = useState(false)
   const ac = inv.accentColor
-  const gradientBg = `linear-gradient(180deg, ${inv.gradient[0]} 0%, ${inv.gradient[1]} 100%)`
-  // لو محدد للدعوة صورة غلاف (coverImage)، تنعرض كخلفية الكرت مع تعتيم
-  // خفيف فوقها حتى يضل النص مقروء. وإلا نرجع للتدرج اللوني كخلفية.
-  const bg = inv.coverImage
-    ? `linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 100%), url(${inv.coverImage})`
-    : gradientBg
-  // إخفاء الزخارف والنصوص المرسومة فوق صورة الغلاف لو مفعّل الخيار
-  const showOverlay = !(inv.coverImage && inv.hideCoverOverlay)
+  const bg = `linear-gradient(180deg, ${inv.gradient[0]} 0%, ${inv.gradient[1]} 100%)`
 
   return (
     <div
@@ -668,39 +602,16 @@ function InvitationCard({
         style={{ aspectRatio: "3/4" }}
         onClick={() => onPreview(inv)}
       >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: bg,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        {showOverlay && (
-          <>
-            <div className="absolute top-3 right-3 opacity-70 scale-75">
-              <CornerOrnament color={ac} />
-            </div>
-            <div className="absolute top-3 left-3 opacity-70 scale-75">
-              <CornerOrnament color={ac} flip />
-            </div>
+        <div className="absolute inset-0" style={{ background: bg }} />
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-2">
-              <p className="text-[10px] tracking-widest text-white/70">
-                بسم الله الرحمن الرحيم
-              </p>
-              <div className="my-2">
-                <OrnamentSVG color={ac} scale={0.7} />
-              </div>
-              <p
-                className="text-lg font-bold leading-snug text-white"
-                style={{ fontFamily: "Amiri, serif" }}
-              >
-                {inv.subtitle}
-              </p>
-            </div>
-          </>
-        )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center gap-2">
+          <p
+            className="text-lg font-bold leading-snug text-white"
+            style={{ fontFamily: "Amiri, serif" }}
+          >
+            {inv.subtitle}
+          </p>
+        </div>
 
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition-all duration-300"
