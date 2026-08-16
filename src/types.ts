@@ -54,6 +54,7 @@ export interface SiteSettings {
   siteName: string
   siteNameEn: string
   logoIcon: string
+  logoImageUrl?: string
   heroTitle: string
   whatsappNumberIraq: string
   whatsappNumberSaudi: string
