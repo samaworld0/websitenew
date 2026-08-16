@@ -321,8 +321,16 @@ export default function HomePage({
       <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Reveal className="flex items-center gap-3" duration={600}>
-            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810]">
-              {siteSettings.logoIcon}
+            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810] overflow-hidden shrink-0">
+              {siteSettings.logoImageUrl ? (
+                <img
+                  src={siteSettings.logoImageUrl}
+                  alt={siteSettings.siteName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                siteSettings.logoIcon
+              )}
             </div>
             <div>
               <h1
