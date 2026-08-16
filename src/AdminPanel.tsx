@@ -1136,6 +1136,7 @@ function SiteSettingsForm({
   add column if not exists "siteName" text,
   add column if not exists "siteNameEn" text,
   add column if not exists "logoIcon" text,
+  add column if not exists "logoImageUrl" text,
   add column if not exists "heroTitle" text,
   add column if not exists "whatsappNumberIraq" text,
   add column if not exists "whatsappNumberSaudi" text,
@@ -1246,8 +1247,8 @@ function SiteSettingsForm({
           />
         </Field>
         <Field
-          label="أيقونة الشعار"
-          hint="إيموجي أو حرف واحد يظهر بالدائرة أعلى يسار الموقع"
+          label="أيقونة الشعار (إيموجي)"
+          hint="تُستخدم فقط لو ما رفعت صورة شعار تحت — إيموجي أو حرف واحد"
         >
           <input
             className={inputClass}
@@ -1256,6 +1257,17 @@ function SiteSettingsForm({
             maxLength={4}
           />
         </Field>
+        <div />
+
+        <MediaUploadField
+          label="صورة الشعار (اختياري)"
+          hint="لو رفعت صورة هنا، تظهر بدل الإيموجي بالدائرة أعلى يسار الموقع"
+          accept="image/*"
+          kind="image"
+          value={settings.logoImageUrl || ""}
+          folder="logo"
+          onChange={(url) => set("logoImageUrl", url)}
+        />
       </fieldset>
 
       <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
