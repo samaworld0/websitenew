@@ -12,6 +12,19 @@ interface GoldenParticle {
   delay: number
 }
 
+// رابط الموقع اللي يحطه المشرف بلوحة التحكم أحياناً يكون ناقص البروتوكول
+// (مثلاً "maps.google.com/..." أو "goo.gl/maps/xyz" بدون "https://" بالأول)
+// — بهالحالة يعامله المتصفح كرابط داخلي نسبي لموقعنا نفسه فيصير الزر ما
+// يسوي شي فعلياً (أو يوديك لصفحة غير موجودة بنفس الدومين) بدل ما يفتح
+// خرائط جوجل. هذي الدالة تتأكد إن الرابط دايماً يبدأ ببروتوكول صحيح قبل
+// ما نستخدمه بـ href، وترجع الرابط الافتراضي لو الحقل فاضي.
+function normalizeExternalUrl(url: string | undefined, fallback: string): string {
+  const trimmed = (url ?? "").trim()
+  if (!trimmed) return fallback
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 // مسار برنامج الحفل: خط ذهبي رفيع يربط النقاط الذهبية، ووردة زخرفية
 // تبدأ من أول نقطة ذهبية (استقبال الضيوف) وتنزل تدريجياً مع تمرير
 // الصفحة لتصل آخر نقطة (العشاء). نعتمد على موضع أول وآخر نقطة فعلياً
@@ -495,7 +508,7 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                 </h4>
                 <p className="text-base text-[#E8DCC4]/80 mb-7">{inv.city}</p>
                 <a
-                  href={inv.mapUrl || "https://maps.google.com"}
+                  href={normalizeExternalUrl(inv.mapUrl, "https://maps.google.com")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white bg-[#B8862F] hover:bg-[#9E7024] shadow-md"
