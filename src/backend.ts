@@ -98,7 +98,9 @@ function toDatabaseInvitation(inv: Invitation) {
 function toDatabaseInvitationCore(inv: Invitation) {
   const { sheetId, sheetUrl, ...rest } = toDatabaseInvitation(inv)
   return rest
-}// نكمّل بيانات الصف الراجع من القاعدة بالحقول المحلية (date, city,
+}
+
+// نكمّل بيانات الصف الراجع من القاعدة بالحقول المحلية (date, city,
 // groomFamily, brideFamily) من data.ts (لو كان نفس id موجود محلياً)، حتى
 // التصميم يستمر يعرضها كما هي بدون أي نقص، بانتظار إضافة أعمدتها بالقاعدة.
 function mergeWithLocalFields(row: any): Invitation {
@@ -146,20 +148,20 @@ export async function loadInvitations(): Promise<Invitation[]> {
   }
 }
 
-// نفس أعمدة toDatabaseInvitation بس مع إضافة خاصية "دعوة خاصة" (isPrivate)
-// لو انضاف عمودها بالجدول.
-function toDatabaseInvitationWithPrivacy(inv: Invitation) {
+// الحقول الاختيارية اللي ممكن أعمدتها ما تكون مضافة بعد بجدول
+// invitations (يختلف حسب كل مشروع أي أعمدة أضافها المستخدم فعلياً).
+// نجمعها كلها بصف وحد ونعتمد على saveInvitation تحت حتى تحاول تحفظها
+// كلها دفعة وحدة، وتشيل بس العمود المسبب فعلياً لو صار خطأ — بدل ما
+// نجمّعها بمجموعات ثابتة مسبقاً زي قبل (وهذا بالضبط سبب علة سابقة: كان
+// mapUrl مجمّع مع eventDateTime بنفس المحاولة، فلما عمود eventDateTime
+// ما كان موجود بقاعدة بيانات المستخدم، فشلت المحاولة كاملة وسقط رابط
+// الموقع بالصمت رغم إن عموده mapUrl نفسه كان موجود).
+function toDatabaseInvitationAllFields(inv: Invitation): Record<string, any> {
   return {
     ...toDatabaseInvitation(inv),
     isPrivate: inv.isPrivate ?? false,
-  }
-}
-
-// نفس الشي بس مع إضافة الحقول المحلية (date, city, groomFamily,
-// brideFamily) لو انضافت أعمدتها بالجدول لاحقاً.
-function toDatabaseInvitationFull(inv: Invitation) {
-  return {
-    ...toDatabaseInvitationWithLocation(inv),
+    mapUrl: inv.mapUrl ?? null,
+    eventDateTime: inv.eventDateTime ?? null,
     date: inv.date ?? null,
     city: inv.city ?? null,
     groomFamily: inv.groomFamily ?? null,
@@ -167,19 +169,16 @@ function toDatabaseInvitationFull(inv: Invitation) {
   }
 }
 
-// نفس toDatabaseInvitationWithPrivacy بس مع إضافة رابط الموقع (mapUrl)
-// وموعد المناسبة الكامل (eventDateTime). هذا Tier منفصل عن (date, city,
-// عائلة العريس، عائلة العروس) عمداً — لأن أعمدتها هي اللي غالباً غير
-// موجودة بالجدول (شوف الملاحظة فوق toDatabaseInvitation)، وكانت لما
-// mapUrl مجمّع وياهم بنفس المحاولة، أي عمود ناقص منهم كان يفشّل المحاولة
-// كاملة ويسقط رابط الموقع بالصمت بدون أي تنبيه للمستخدم — وهذا هو سبب
-// إن رابط الموقع ما ينحفظ حتى لو عمود mapUrl نفسه موجود بالقاعدة.
-function toDatabaseInvitationWithLocation(inv: Invitation) {
-  return {
-    ...toDatabaseInvitationWithPrivacy(inv),
-    mapUrl: inv.mapUrl ?? null,
-    eventDateTime: inv.eventDateTime ?? null,
-  }
+// نستخرج اسم العمود المسبب بالضبط من رسالة خطأ Supabase/Postgres، حتى
+// نقدر نشيله لحاله من صف الحفظ ونعيد المحاولة، بدل ما نشيل مجموعة حقول
+// مع بعض بناءً على تخمين مسبق.
+function extractMissingColumnName(error: any): string | null {
+  const msg: string = error?.message || ""
+  let m = msg.match(/'([^']+)'\s*column/i)
+  if (m) return m[1]
+  m = msg.match(/column\s+"([^"]+)"/i)
+  if (m) return m[1]
+  return null
 }
 
 function isMissingColumnError(error: any) {
@@ -283,63 +282,30 @@ export async function saveInvitation(inv: Invitation): Promise<{
   error?: string
 }> {
   try {
-    const attempts: Array<{
-      row: Record<string, any>
-      savedExtraFields: boolean
-      savedPrivacy: boolean
-      savedSheetLink: boolean
-      savedMapUrl: boolean
-    }> = [
-      {
-        row: toDatabaseInvitationFull(inv),
-        savedExtraFields: true,
-        savedPrivacy: true,
-        savedSheetLink: true,
-        savedMapUrl: true,
-      },
-      {
-        row: toDatabaseInvitationWithLocation(inv),
-        savedExtraFields: false,
-        savedPrivacy: true,
-        savedSheetLink: true,
-        savedMapUrl: true,
-      },
-      {
-        row: toDatabaseInvitationWithPrivacy(inv),
-        savedExtraFields: false,
-        savedPrivacy: true,
-        savedSheetLink: true,
-        savedMapUrl: false,
-      },
-      {
-        row: toDatabaseInvitation(inv),
-        savedExtraFields: false,
-        savedPrivacy: false,
-        savedSheetLink: true,
-        savedMapUrl: false,
-      },
-      {
-        row: toDatabaseInvitationCore(inv),
-        savedExtraFields: false,
-        savedPrivacy: false,
-        savedSheetLink: false,
-        savedMapUrl: false,
-      },
-    ]
-
+    // نحاول نحفظ كل الحقول دفعة وحدة أول شي. لو صار خطأ "عمود غير
+    // موجود"، نستخرج اسم العمود المسبب بالضبط ونشيله هو بس من صف
+    // الحفظ ونعيد المحاولة — فيضل أي حقل عموده موجود فعلاً بالقاعدة
+    // ينحفظ طبيعي، حتى لو حقل ثاني (غير مرتبط) عموده ناقص.
+    const row = toDatabaseInvitationAllFields(inv)
+    const dropped = new Set<string>()
     let lastError: any = null
-    for (const attempt of attempts) {
+
+    for (let i = 0; i < 12; i++) {
       const { error } = await supabase
         .from("invitations")
-        .upsert(attempt.row, { onConflict: "id" })
+        .upsert(row, { onConflict: "id" })
 
       if (!error) {
         return {
           success: true,
-          savedExtraFields: attempt.savedExtraFields,
-          savedPrivacy: attempt.savedPrivacy,
-          savedSheetLink: attempt.savedSheetLink,
-          savedMapUrl: attempt.savedMapUrl,
+          savedExtraFields:
+            !dropped.has("date") &&
+            !dropped.has("city") &&
+            !dropped.has("groomFamily") &&
+            !dropped.has("brideFamily"),
+          savedPrivacy: !dropped.has("isPrivate"),
+          savedSheetLink: !dropped.has("sheetId") && !dropped.has("sheetUrl"),
+          savedMapUrl: !dropped.has("mapUrl"),
         }
       }
 
@@ -355,6 +321,15 @@ export async function saveInvitation(inv: Invitation): Promise<{
           error: error.message,
         }
       }
+
+      const badColumn = extractMissingColumnName(error)
+      if (!badColumn || !(badColumn in row) || dropped.has(badColumn)) {
+        // ما قدرنا نحدد بالضبط شنو العمود المسبب (أو خلصت الحقول
+        // اللي نقدر نشيلها) — نوقف هنا بدل ما نلف بلا نهاية.
+        break
+      }
+      delete row[badColumn]
+      dropped.add(badColumn)
     }
 
     console.error("Supabase saveInvitation error:", lastError)
