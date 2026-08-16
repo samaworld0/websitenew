@@ -19,15 +19,15 @@ import InvitationFullView from "./InvitationView"
 // الشاشة زي وضعها العادي بصفحة ?preview=ID).
 function PhoneFramePreview({ inv }: { inv: Invitation }) {
   return (
-    <div className="lg:sticky lg:top-20">
+    <div>
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-xs font-bold text-[#8a7561]">
           🖥️ معاينة مباشرة — تتحدّث فوراً مع كل تعديل
         </span>
       </div>
       <div
-        className="mx-auto rounded-[2.2rem] border-[6px] border-[#2C1810] shadow-2xl overflow-hidden bg-[#0D0706]"
-        style={{ width: 300, height: 620 }}
+        className="mx-auto rounded-[2.2rem] border-[6px] border-[#2C1810] shadow-2xl overflow-hidden bg-[#0D0706] overscroll-contain"
+        style={{ width: 390, height: 800 }}
       >
         <InvitationFullView inv={inv} embedded onClose={() => {}} />
       </div>
@@ -745,7 +745,7 @@ function InvitationForm({
     <div
       className={
         showLivePreview
-          ? "lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6 lg:items-start"
+          ? "lg:grid lg:grid-cols-[minmax(0,1fr)_410px] lg:gap-6 lg:items-start"
           : ""
       }
     >
@@ -1760,7 +1760,7 @@ export default function AdminPanel({
       style={{ fontFamily: "Tajawal, sans-serif" }}
     >
       <nav className="sticky top-0 z-40 border-b border-[#e5d9c3] bg-[#fefcf8]/95 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
           <div>
             <h1
               className="text-lg font-bold leading-none"
@@ -1779,7 +1779,7 @@ export default function AdminPanel({
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-5 pt-3 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-5 pt-3 flex items-center justify-between">
         <div className="flex items-center gap-1 bg-[#f5efe2] rounded-full p-1">
           <button
             onClick={() => {
@@ -1829,7 +1829,7 @@ export default function AdminPanel({
         </button>
       </div>
 
-      <div className="max-w-5xl mx-auto px-5 py-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-5 py-8 space-y-6">
         {activeTab === "settings" && (
           <SiteSettingsForm
             initial={siteSettings}
