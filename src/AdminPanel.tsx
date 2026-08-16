@@ -605,6 +605,17 @@ function InvitationForm({
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
 
+  // نفس فكرة normalizeExternalUrl بصفحة الدعوة: لو المشرف لصق رابط بدون
+  // بروتوكول (مثلاً "maps.google.com/..." بدون https:// بالأول)، نضيفه
+  // هنا وقت الحفظ حتى الرابط المخزّن بالقاعدة يكون صحيح دايماً وما نعتمد
+  // بس على التصحيح وقت العرض.
+  const normalizeMapUrl = (url: string): string => {
+    const trimmed = url.trim()
+    if (!trimmed) return trimmed
+    if (/^https?:\/\//i.test(trimmed)) return trimmed
+    return `https://${trimmed}`
+  }
+
   const handleCreateSheet = async () => {
     setCreatingSheet(true)
     setSheetError("")
@@ -650,6 +661,7 @@ function InvitationForm({
     setNotice("")
     const cleanInv: Invitation = {
       ...inv,
+      mapUrl: normalizeMapUrl(inv.mapUrl || ""),
       templateType: inv.heroBg || inv.introVideo ? "wisal" : undefined,
     }
     const result = await saveInvitation(cleanInv)
