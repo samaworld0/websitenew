@@ -279,6 +279,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
   savedPrivacy: boolean
   savedSheetLink: boolean
   savedMapUrl: boolean
+  savedEventDateTime: boolean
   error?: string
 }> {
   try {
@@ -306,6 +307,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedPrivacy: !dropped.has("isPrivate"),
           savedSheetLink: !dropped.has("sheetId") && !dropped.has("sheetUrl"),
           savedMapUrl: !dropped.has("mapUrl"),
+          savedEventDateTime: !dropped.has("eventDateTime"),
         }
       }
 
@@ -318,6 +320,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedPrivacy: false,
           savedSheetLink: false,
           savedMapUrl: false,
+          savedEventDateTime: false,
           error: error.message,
         }
       }
@@ -339,6 +342,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedPrivacy: false,
       savedSheetLink: false,
       savedMapUrl: false,
+      savedEventDateTime: false,
       error: lastError?.message ?? "خطأ غير متوقع",
     }
   } catch (err: any) {
@@ -349,6 +353,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedPrivacy: false,
       savedSheetLink: false,
       savedMapUrl: false,
+      savedEventDateTime: false,
       error: err?.message ?? "خطأ غير متوقع",
     }
   }
