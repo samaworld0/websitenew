@@ -226,56 +226,93 @@ function TopHero({
 
         <Reveal duration={800} delay={400} className="mt-16">
           <div className="flex items-center justify-center gap-4 sm:gap-6">
-            {/* بطاقة 1: مغلّف بختم شمعي */}
+            {/* بطاقة 1: مغلّف بختم شمعي — أو صورة مرفوعة من إعدادات الواجهة */}
             <div
-              className="w-24 sm:w-32 aspect-[3/5] rounded-2xl shadow-xl -rotate-6 flex items-center justify-center"
-              style={{
-                background:
-                  "linear-gradient(160deg, var(--color-cream-100) 0%, var(--color-gold-100) 100%)",
-                border: "1px solid var(--color-gold-200)",
-              }}
+              className="w-24 sm:w-32 aspect-[3/5] rounded-2xl shadow-xl -rotate-6 flex items-center justify-center overflow-hidden"
+              style={
+                siteSettings.heroCard1Image
+                  ? {
+                      backgroundImage: `url("${siteSettings.heroCard1Image}")`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      border: "1px solid var(--color-gold-200)",
+                    }
+                  : {
+                      background:
+                        "linear-gradient(160deg, var(--color-cream-100) 0%, var(--color-gold-100) 100%)",
+                      border: "1px solid var(--color-gold-200)",
+                    }
+              }
             >
-              <div
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-md"
-                style={{ background: "var(--color-rose-500)" }}
-              >
-                س و ن
-              </div>
+              {!siteSettings.heroCard1Image && (
+                <div
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-md"
+                  style={{ background: "var(--color-rose-500)" }}
+                >
+                  س و ن
+                </div>
+              )}
             </div>
 
-            {/* بطاقة 2: قالب "وصال" — باب الفرح الذهبي */}
+            {/* بطاقة 2: قالب "وصال" — باب الفرح الذهبي — أو صورة مرفوعة */}
             <div
-              className="w-28 sm:w-36 aspect-[3/5] rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-2 relative z-10"
-              style={{
-                background:
-                  "linear-gradient(160deg, #1a0a00 0%, #2d1200 60%, #1a0a00 100%)",
-                border: "1px solid var(--color-gold-500)",
-              }}
+              className="w-28 sm:w-36 aspect-[3/5] rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-2 relative z-10 overflow-hidden"
+              style={
+                siteSettings.heroCard2Image
+                  ? {
+                      backgroundImage: `url("${siteSettings.heroCard2Image}")`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      border: "1px solid var(--color-gold-500)",
+                    }
+                  : {
+                      background:
+                        "linear-gradient(160deg, #1a0a00 0%, #2d1200 60%, #1a0a00 100%)",
+                      border: "1px solid var(--color-gold-500)",
+                    }
+              }
             >
-              <div
-                className="w-10 h-14 sm:w-12 sm:h-16 rounded-t-full flex items-center justify-center text-gold-300 text-[10px] font-bold"
-                style={{ border: "2px solid var(--color-gold-400)" }}
-              >
-                و ل
-              </div>
-              <span className="text-[9px] sm:text-[10px] text-gold-300 font-bold">
-                وصال
-              </span>
+              {!siteSettings.heroCard2Image && (
+                <>
+                  <div
+                    className="w-10 h-14 sm:w-12 sm:h-16 rounded-t-full flex items-center justify-center text-gold-300 text-[10px] font-bold"
+                    style={{ border: "2px solid var(--color-gold-400)" }}
+                  >
+                    و ل
+                  </div>
+                  <span className="text-[9px] sm:text-[10px] text-gold-300 font-bold">
+                    وصال
+                  </span>
+                </>
+              )}
             </div>
 
-            {/* بطاقة 3: قالب زهور */}
+            {/* بطاقة 3: قالب زهور — أو صورة مرفوعة */}
             <div
-              className="w-24 sm:w-32 aspect-[3/5] rounded-2xl shadow-xl rotate-6 flex flex-col items-center justify-center gap-1.5"
-              style={{
-                background:
-                  "linear-gradient(160deg, var(--color-rose-50) 0%, var(--color-cream-200) 100%)",
-                border: "1px solid var(--color-rose-200)",
-              }}
+              className="w-24 sm:w-32 aspect-[3/5] rounded-2xl shadow-xl rotate-6 flex flex-col items-center justify-center gap-1.5 overflow-hidden"
+              style={
+                siteSettings.heroCard3Image
+                  ? {
+                      backgroundImage: `url("${siteSettings.heroCard3Image}")`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      border: "1px solid var(--color-rose-200)",
+                    }
+                  : {
+                      background:
+                        "linear-gradient(160deg, var(--color-rose-50) 0%, var(--color-cream-200) 100%)",
+                      border: "1px solid var(--color-rose-200)",
+                    }
+              }
             >
-              <span className="text-lg sm:text-xl">🌸</span>
-              <span className="text-[9px] sm:text-[10px] text-rose-600 font-bold">
-                لمسة
-              </span>
+              {!siteSettings.heroCard3Image && (
+                <>
+                  <span className="text-lg sm:text-xl">🌸</span>
+                  <span className="text-[9px] sm:text-[10px] text-rose-600 font-bold">
+                    لمسة
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </Reveal>
