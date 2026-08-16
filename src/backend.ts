@@ -98,9 +98,7 @@ function toDatabaseInvitation(inv: Invitation) {
 function toDatabaseInvitationCore(inv: Invitation) {
   const { sheetId, sheetUrl, ...rest } = toDatabaseInvitation(inv)
   return rest
-}
-
-// نكمّل بيانات الصف الراجع من القاعدة بالحقول المحلية (date, city,
+}// نكمّل بيانات الصف الراجع من القاعدة بالحقول المحلية (date, city,
 // groomFamily, brideFamily) من data.ts (لو كان نفس id موجود محلياً)، حتى
 // التصميم يستمر يعرضها كما هي بدون أي نقص، بانتظار إضافة أعمدتها بالقاعدة.
 function mergeWithLocalFields(row: any): Invitation {
@@ -161,11 +159,24 @@ function toDatabaseInvitationWithPrivacy(inv: Invitation) {
 // brideFamily) لو انضافت أعمدتها بالجدول لاحقاً.
 function toDatabaseInvitationFull(inv: Invitation) {
   return {
-    ...toDatabaseInvitationWithPrivacy(inv),
+    ...toDatabaseInvitationWithLocation(inv),
     date: inv.date ?? null,
     city: inv.city ?? null,
     groomFamily: inv.groomFamily ?? null,
     brideFamily: inv.brideFamily ?? null,
+  }
+}
+
+// نفس toDatabaseInvitationWithPrivacy بس مع إضافة رابط الموقع (mapUrl)
+// وموعد المناسبة الكامل (eventDateTime). هذا Tier منفصل عن (date, city,
+// عائلة العريس، عائلة العروس) عمداً — لأن أعمدتها هي اللي غالباً غير
+// موجودة بالجدول (شوف الملاحظة فوق toDatabaseInvitation)، وكانت لما
+// mapUrl مجمّع وياهم بنفس المحاولة، أي عمود ناقص منهم كان يفشّل المحاولة
+// كاملة ويسقط رابط الموقع بالصمت بدون أي تنبيه للمستخدم — وهذا هو سبب
+// إن رابط الموقع ما ينحفظ حتى لو عمود mapUrl نفسه موجود بالقاعدة.
+function toDatabaseInvitationWithLocation(inv: Invitation) {
+  return {
+    ...toDatabaseInvitationWithPrivacy(inv),
     mapUrl: inv.mapUrl ?? null,
     eventDateTime: inv.eventDateTime ?? null,
   }
@@ -268,6 +279,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
   savedExtraFields: boolean
   savedPrivacy: boolean
   savedSheetLink: boolean
+  savedMapUrl: boolean
   error?: string
 }> {
   try {
@@ -276,30 +288,42 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedExtraFields: boolean
       savedPrivacy: boolean
       savedSheetLink: boolean
+      savedMapUrl: boolean
     }> = [
       {
         row: toDatabaseInvitationFull(inv),
         savedExtraFields: true,
         savedPrivacy: true,
         savedSheetLink: true,
+        savedMapUrl: true,
+      },
+      {
+        row: toDatabaseInvitationWithLocation(inv),
+        savedExtraFields: false,
+        savedPrivacy: true,
+        savedSheetLink: true,
+        savedMapUrl: true,
       },
       {
         row: toDatabaseInvitationWithPrivacy(inv),
         savedExtraFields: false,
         savedPrivacy: true,
         savedSheetLink: true,
+        savedMapUrl: false,
       },
       {
         row: toDatabaseInvitation(inv),
         savedExtraFields: false,
         savedPrivacy: false,
         savedSheetLink: true,
+        savedMapUrl: false,
       },
       {
         row: toDatabaseInvitationCore(inv),
         savedExtraFields: false,
         savedPrivacy: false,
         savedSheetLink: false,
+        savedMapUrl: false,
       },
     ]
 
@@ -315,6 +339,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedExtraFields: attempt.savedExtraFields,
           savedPrivacy: attempt.savedPrivacy,
           savedSheetLink: attempt.savedSheetLink,
+          savedMapUrl: attempt.savedMapUrl,
         }
       }
 
@@ -326,6 +351,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedExtraFields: false,
           savedPrivacy: false,
           savedSheetLink: false,
+          savedMapUrl: false,
           error: error.message,
         }
       }
@@ -337,6 +363,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedExtraFields: false,
       savedPrivacy: false,
       savedSheetLink: false,
+      savedMapUrl: false,
       error: lastError?.message ?? "خطأ غير متوقع",
     }
   } catch (err: any) {
@@ -346,6 +373,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedExtraFields: false,
       savedPrivacy: false,
       savedSheetLink: false,
+      savedMapUrl: false,
       error: err?.message ?? "خطأ غير متوقع",
     }
   }
