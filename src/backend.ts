@@ -229,6 +229,17 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
         data.whatsappNumberIraq ?? defaultSiteSettings.whatsappNumberIraq,
       whatsappNumberSaudi:
         data.whatsappNumberSaudi ?? defaultSiteSettings.whatsappNumberSaudi,
+      topHeroBadge: data.topHeroBadge ?? defaultSiteSettings.topHeroBadge,
+      topHeroTitleBefore:
+        data.topHeroTitleBefore ?? defaultSiteSettings.topHeroTitleBefore,
+      topHeroTitleAccent:
+        data.topHeroTitleAccent ?? defaultSiteSettings.topHeroTitleAccent,
+      topHeroTitleAfter:
+        data.topHeroTitleAfter ?? defaultSiteSettings.topHeroTitleAfter,
+      topHeroSubtitle:
+        data.topHeroSubtitle ?? defaultSiteSettings.topHeroSubtitle,
+      topHeroButtonText:
+        data.topHeroButtonText ?? defaultSiteSettings.topHeroButtonText,
     }
   } catch (err) {
     console.error("Supabase loadSiteSettings error:", err)
