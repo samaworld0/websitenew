@@ -57,4 +57,10 @@ export interface SiteSettings {
   heroTitle: string
   whatsappNumberIraq: string
   whatsappNumberSaudi: string
+  topHeroBadge: string
+  topHeroTitleBefore: string
+  topHeroTitleAccent: string
+  topHeroTitleAfter: string
+  topHeroSubtitle: string
+  topHeroButtonText: string
 }
