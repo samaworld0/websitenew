@@ -1145,7 +1145,10 @@ function SiteSettingsForm({
   add column if not exists "topHeroTitleAccent" text,
   add column if not exists "topHeroTitleAfter" text,
   add column if not exists "topHeroSubtitle" text,
-  add column if not exists "topHeroButtonText" text;`
+  add column if not exists "topHeroButtonText" text,
+  add column if not exists "heroCard1Image" text,
+  add column if not exists "heroCard2Image" text,
+  add column if not exists "heroCard3Image" text;`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1368,6 +1371,45 @@ function SiteSettingsForm({
             onChange={(e) => set("topHeroButtonText", e.target.value)}
           />
         </Field>
+      </fieldset>
+
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          البطاقات الثلاث الزخرفية (تحت القسم الرئيسي)
+        </legend>
+        <p className="col-span-full text-xs text-[#8a7561] -mt-2 mb-1">
+          ثلاث بطاقات صغيرة تظهر تحت العنوان والزر مباشرة. لكل بطاقة تقدر
+          ترفع صورة توديها بدال تصميمها الافتراضي (الإيموجي/الأيقونة
+          المرسومة). لو ما رفعت صورة لبطاقة معينة، تبقى بتصميمها الأصلي.
+        </p>
+
+        <MediaUploadField
+          label="صورة البطاقة 1 (يمين)"
+          hint="تظهر بدال دائرة الأحرف الوردية"
+          accept="image/*"
+          kind="image"
+          value={settings.heroCard1Image || ""}
+          folder="hero-cards"
+          onChange={(url) => set("heroCard1Image", url)}
+        />
+        <MediaUploadField
+          label="صورة البطاقة 2 (الوسط — وصال)"
+          hint="تظهر بدال الباب الذهبي وكلمة وصال"
+          accept="image/*"
+          kind="image"
+          value={settings.heroCard2Image || ""}
+          folder="hero-cards"
+          onChange={(url) => set("heroCard2Image", url)}
+        />
+        <MediaUploadField
+          label="صورة البطاقة 3 (يسار — لمسة)"
+          hint="تظهر بدال زهرة الكرزة وكلمة لمسة"
+          accept="image/*"
+          kind="image"
+          value={settings.heroCard3Image || ""}
+          folder="hero-cards"
+          onChange={(url) => set("heroCard3Image", url)}
+        />
       </fieldset>
 
       <div className="flex justify-end gap-3 pt-2">
