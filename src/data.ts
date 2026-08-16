@@ -9,6 +9,13 @@ export const defaultSiteSettings: SiteSettings = {
   heroTitle: "اختر دعوتك المثالية",
   whatsappNumberIraq: "9647718031245",
   whatsappNumberSaudi: "966580690167",
+  topHeroBadge: "✨ قوالب جاهزة بأنميشن حقيقي — جرّبها الحين",
+  topHeroTitleBefore: "دعوة إلكترونية",
+  topHeroTitleAccent: "تخطف الأنظار",
+  topHeroTitleAfter: "لمناسبتك القادمة",
+  topHeroSubtitle:
+    "رابط واحد ترسله لكل المدعوين، يفتح بأنميشن يشد الأنظار، وعداد تنازلي حقيقي لموعد مناسبتك — وتأكيد الحضور يوصلك فوراً عبر واتساب.",
+  topHeroButtonText: "شاهد القوالب",
 }
 
 // هذي البيانات تُستخدم فقط "لزرع" قاعدة بيانات Supabase أول مرة لو كانت
