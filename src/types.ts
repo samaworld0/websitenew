@@ -46,6 +46,23 @@ export interface Invitation {
   // دعوة خاصة: لا تظهر بشبكة الدعوات بالصفحة الرئيسية، توصل بس لمن عنده
   // رابط المعاينة المباشر (?preview=ID).
   isPrivate?: boolean
+  // تخصيصات تصميم لعناصر نصية محددة بصفحة الدعوة (شبيه بلوحة خصائص
+  // فيكما) — كل مفتاح هو معرّف عنصر نصي (مثلاً "groomName")، وقيمته
+  // تخصيصاته (الخط، الحجم، اللون...). العناصر اللي ما إلها مفتاح هنا
+  // تستخدم التصميم الافتراضي المكتوب بالكود.
+  textStyles?: Record<string, TextStyle>
+}
+
+// تخصيص تصميم عنصر نصي واحد بصفحة الدعوة — كل حقل اختياري، ولو غير
+// موجود يرجع العنصر لتصميمه الافتراضي بذاك الحقل بالذات.
+export interface TextStyle {
+  fontFamily?: string
+  fontWeight?: number
+  fontSize?: number
+  lineHeight?: number
+  letterSpacing?: number
+  color?: string
+  opacity?: number
 }
 
 // إعدادات الواجهة العامة للموقع (اسم الموقع، الشعار، رقم واتساب، عنوان
