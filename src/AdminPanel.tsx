@@ -102,6 +102,7 @@ function MediaUploadField({
   value,
   folder,
   onChange,
+  fallback,
 }: {
   label: string
   hint?: string
@@ -110,12 +111,14 @@ function MediaUploadField({
   value: string
   folder: string
   onChange: (url: string) => void
+  fallback?: string
 }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
   const [bucketMissing, setBucketMissing] = useState(false)
   const [mode, setMode] = useState<"upload" | "link">("upload")
   const [linkDraft, setLinkDraft] = useState("")
+  const [replacing, setReplacing] = useState(false)
   const inputId = `upload-${folder}-${label}`.replace(/\s+/g, "-")
 
   const handleFile = async (file: File | undefined) => {
@@ -133,12 +136,14 @@ function MediaUploadField({
       }
       return
     }
+    setReplacing(false)
     onChange(result.url)
   }
 
   const handleUseLink = () => {
     const url = linkDraft.trim()
     if (!url) return
+    setReplacing(false)
     onChange(url)
     setLinkDraft("")
   }
@@ -193,8 +198,50 @@ function MediaUploadField({
             🗑
           </button>
         </div>
+      ) : fallback && !replacing ? (
+        <div className="flex items-center gap-2.5 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-2.5 py-2">
+          {kind === "image" && (
+            <img
+              src={fallback}
+              alt=""
+              className="w-9 h-9 rounded-md object-cover shrink-0 border border-[#e5d9c3]"
+            />
+          )}
+          {kind === "video" && (
+            <div className="w-9 h-9 rounded-md shrink-0 border border-[#e5d9c3] bg-[#2C1810] flex items-center justify-center text-sm">
+              🎬
+            </div>
+          )}
+          {kind === "audio" && (
+            <div className="w-9 h-9 rounded-md shrink-0 border border-[#e5d9c3] bg-white flex items-center justify-center text-sm">
+              🎵
+            </div>
+          )}
+
+          <span className="min-w-0 flex-1 text-xs text-[#8a7561]">
+            الصورة/الملف الافتراضي اللي يظهر حالياً بالموقع — ما رفعت شي
+            خاص بهذي الدعوة بعد
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setReplacing(true)}
+            className="shrink-0 px-3 py-1.5 rounded-md text-xs font-bold bg-[#D4AF37] text-[#2C1810]"
+          >
+            استبدال
+          </button>
+        </div>
       ) : (
         <div className="space-y-2">
+          {fallback && (
+            <button
+              type="button"
+              onClick={() => setReplacing(false)}
+              className="text-xs text-[#8a7561] hover:text-[#2C1810]"
+            >
+              ← رجوع للافتراضي
+            </button>
+          )}
           <div className="flex items-center gap-1 bg-[#f5efe2] rounded-full p-1 w-fit">
             <button
               type="button"
@@ -641,6 +688,7 @@ function InvitationForm({
           kind="image"
           value={inv.introPoster || ""}
           folder="intro-poster"
+          fallback="/videos/intro-poster.jpg"
           onChange={(url) => set("introPoster", url)}
         />
 
@@ -651,6 +699,7 @@ function InvitationForm({
           kind="video"
           value={inv.introVideo || ""}
           folder="intro-video"
+          fallback="/videos/intro.mp4"
           onChange={(url) => set("introVideo", url)}
         />
 
@@ -661,6 +710,7 @@ function InvitationForm({
           kind="image"
           value={inv.heroBg || ""}
           folder="hero-bg"
+          fallback="/images/hero-bg.jpg"
           onChange={(url) => set("heroBg", url)}
         />
 
@@ -671,6 +721,7 @@ function InvitationForm({
           kind="video"
           value={inv.doorBgVideo || ""}
           folder="door-bg-video"
+          fallback="/videos/door-bg.mp4"
           onChange={(url) => set("doorBgVideo", url)}
         />
 
@@ -681,6 +732,7 @@ function InvitationForm({
           kind="audio"
           value={inv.musicUrl || ""}
           folder="music"
+          fallback="/music/background.mp3"
           onChange={(url) => set("musicUrl", url)}
         />
       </fieldset>
