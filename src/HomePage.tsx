@@ -141,7 +141,13 @@ function WhatsAppContactButton({
   )
 }
 
-function TopHero({ onShowTemplates }: { onShowTemplates: () => void }) {
+function TopHero({
+  siteSettings,
+  onShowTemplates,
+}: {
+  siteSettings: SiteSettings
+  onShowTemplates: () => void
+}) {
   const floatingDots = [
     { top: "10%", right: "50%", size: 9, color: "var(--color-rose-300)", delay: 0 },
     { top: "18%", right: "8%", size: 7, color: "var(--color-gold-400)", delay: 1.4 },
@@ -185,7 +191,7 @@ function TopHero({ onShowTemplates }: { onShowTemplates: () => void }) {
       <div className="max-w-4xl mx-auto px-6 text-center">
         <Reveal duration={600}>
           <span className="inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5 text-xs sm:text-sm font-bold text-gold-700">
-            ✨ قوالب جاهزة بأنميشن حقيقي — جرّبها الحين
+            {siteSettings.topHeroBadge}
           </span>
         </Reveal>
 
@@ -193,17 +199,18 @@ function TopHero({ onShowTemplates }: { onShowTemplates: () => void }) {
           <h1
             className="mt-6 font-display font-bold leading-[1.3] text-3xl sm:text-5xl text-warm-900"
           >
-            دعوة إلكترونية <span className="shimmer-text">تخطف الأنظار</span>
+            {siteSettings.topHeroTitleBefore}{" "}
+            <span className="shimmer-text">
+              {siteSettings.topHeroTitleAccent}
+            </span>
             <br />
-            لمناسبتك القادمة
+            {siteSettings.topHeroTitleAfter}
           </h1>
         </Reveal>
 
         <Reveal duration={700} delay={200}>
           <p className="mt-6 max-w-xl mx-auto text-base sm:text-lg text-warm-700 leading-relaxed">
-            رابط واحد ترسله لكل المدعوين، يفتح بأنميشن يشد الأنظار، وعداد
-            تنازلي حقيقي لموعد مناسبتك — وتأكيد الحضور يوصلك فوراً عبر
-            واتساب.
+            {siteSettings.topHeroSubtitle}
           </p>
         </Reveal>
 
@@ -213,7 +220,7 @@ function TopHero({ onShowTemplates }: { onShowTemplates: () => void }) {
             className="mt-8 inline-flex items-center gap-2 btn-gold text-white font-bold px-7 py-3.5 rounded-full text-sm sm:text-base"
           >
             <span aria-hidden>🎨</span>
-            شاهد القوالب
+            {siteSettings.topHeroButtonText}
           </button>
         </Reveal>
 
@@ -351,9 +358,12 @@ export default function HomePage({
         </div>
       </nav>
 
-      <TopHero onShowTemplates={() => {
-        document.getElementById("templates-grid")?.scrollIntoView({ behavior: "smooth" })
-      }} />
+      <TopHero
+        siteSettings={siteSettings}
+        onShowTemplates={() => {
+          document.getElementById("templates-grid")?.scrollIntoView({ behavior: "smooth" })
+        }}
+      />
 
       <section id="templates-grid" className="max-w-7xl mx-auto px-6 py-24">
         <Reveal className="text-center mb-16" as="div">
