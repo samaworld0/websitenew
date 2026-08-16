@@ -12,35 +12,54 @@ interface GoldenParticle {
   delay: number
 }
 
-// وردة زخرفية تتحرك (نزولاً وصعوداً) بنسبة أبطأ من باقي الصفحة أثناء
-// التمرير — تأثير "parallax" بسيط بدون أي مكتبة خارجية. نربطها بحاوية
-// السكرول الفعلية عبر containerRef (مو window، لأن صفحة الدعوة تستخدم
-// div داخلي قابل للتمرير بدل الصفحة نفسها).
-function ScrollFlower({
+// مسار برنامج الحفل: خط ذهبي رفيع يربط النقاط الذهبية، ووردة زخرفية
+// تبدأ من أول نقطة ذهبية (استقبال الضيوف) وتنزل تدريجياً مع تمرير
+// الصفحة لتصل آخر نقطة (العشاء). نعتمد على موضع أول وآخر نقطة فعلياً
+// (بدل نسب ثابتة) حتى تبقى الوردة مثبتة على الخط بالضبط مهما تغيّر ارتفاع
+// الأسطر. نربطها بحاوية السكرول الفعلية عبر containerRef (مو window، لأن
+// صفحة الدعوة تستخدم div داخلي قابل للتمرير بدل الصفحة نفسها).
+function ScheduleTrack({
+  items,
   containerRef,
 }: {
+  items: { label: string; time: string }[]
   containerRef: RefObject<HTMLDivElement | null>
 }) {
-  const flowerRef = useRef<HTMLDivElement>(null)
-  const [offset, setOffset] = useState(0)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const firstDotRef = useRef<HTMLSpanElement>(null)
+  const lastDotRef = useRef<HTMLSpanElement>(null)
+  const [line, setLine] = useState({ top: 0, bottom: 0 })
+  const [flowerTop, setFlowerTop] = useState(0)
 
   useEffect(() => {
     const container = containerRef.current
-    const el = flowerRef.current
-    if (!container || !el) return
+    const track = trackRef.current
+    const firstDot = firstDotRef.current
+    const lastDot = lastDotRef.current
+    if (!container || !track || !firstDot || !lastDot) return
 
     let ticking = false
     const update = () => {
       ticking = false
       const containerRect = container.getBoundingClientRect()
-      const elRect = el.getBoundingClientRect()
-      const elCenter = elRect.top + elRect.height / 2
+      const trackRect = track.getBoundingClientRect()
+      const firstRect = firstDot.getBoundingClientRect()
+      const lastRect = lastDot.getBoundingClientRect()
+
+      // موضع أول وآخر نقطة نسبةً لأعلى المسار (ثابت، ما يتغير إلا بتغيير الحجم)
+      const trackTop = firstRect.top + firstRect.height / 2 - trackRect.top
+      const trackBottom = lastRect.top + lastRect.height / 2 - trackRect.top
+      setLine({ top: trackTop, bottom: trackBottom })
+
+      // تقدّم التمرير: 0 لما توصل أول نقطة منتصف الشاشة المرئية للحاوية،
+      // و1 لما توصل آخر نقطة نفس المنتصف — فتتحرك الوردة تدريجياً بينهما.
       const containerCenter = containerRect.top + containerRect.height / 2
-      // الفرق بين مركز الوردة ومركز الشاشة المرئية، بنسبة مخففة (0.18)
-      // حتى تعطي إحساس عوم بطيء نزولاً وصعوداً بدل حركة عنيفة، مع حد
-      // أقصى (clamp) حتى ما تبعد كثير عن مكانها الأصلي.
-      const delta = (elCenter - containerCenter) * 0.18
-      setOffset(Math.max(-36, Math.min(36, delta)))
+      const start = trackRect.top + trackTop
+      const end = trackRect.top + trackBottom
+      let progress = end === start ? 0 : (containerCenter - start) / (end - start)
+      progress = Math.max(0, Math.min(1, progress))
+
+      setFlowerTop(trackTop + (trackBottom - trackTop) * progress)
     }
     const handleScroll = () => {
       if (!ticking) {
@@ -51,27 +70,63 @@ function ScrollFlower({
 
     update()
     container.addEventListener("scroll", handleScroll, { passive: true })
-    return () => container.removeEventListener("scroll", handleScroll)
+    window.addEventListener("resize", handleScroll)
+    return () => {
+      container.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("resize", handleScroll)
+    }
   }, [containerRef])
 
   return (
-    <div
-      ref={flowerRef}
-      className="flex items-center justify-center"
-      style={{
-        transform: `translateY(${offset}px) rotate(${offset * 0.6}deg)`,
-        transition: "transform 80ms linear",
-      }}
-    >
-      <span
-        className="text-3xl"
+    <div ref={trackRef} className="relative">
+      {/* الخط الذهبي الرفيع الواصل بين النقاط */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 w-px bg-[#D4AF37]/25"
+        style={{ top: line.top, height: Math.max(0, line.bottom - line.top) }}
+      />
+      {/* الوردة المتحركة فوق الخط */}
+      <div
+        className="absolute left-1/2 z-10 flex items-center justify-center pointer-events-none"
         style={{
-          color: "#D4AF37",
-          filter: "drop-shadow(0 0 10px rgba(212,175,55,0.45))",
+          top: flowerTop,
+          transform: "translate(-50%, -50%)",
+          transition: "top 80ms linear",
         }}
       >
-        ✿
-      </span>
+        <span
+          className="text-2xl"
+          style={{
+            color: "#D4AF37",
+            filter: "drop-shadow(0 0 10px rgba(212,175,55,0.45))",
+          }}
+        >
+          ✿
+        </span>
+      </div>
+
+      {items.map((item, i) => (
+        <div
+          key={item.label}
+          className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-6"
+        >
+          <span className="text-right custom-font-tajawal">{item.label}</span>
+          <span
+            ref={
+              i === 0
+                ? firstDotRef
+                : i === items.length - 1
+                  ? lastDotRef
+                  : undefined
+            }
+            className="relative z-10 bg-[#4E1019] px-1 text-[#D4AF37] text-xs"
+          >
+            ◆
+          </span>
+          <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
+            {item.time}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -419,39 +474,14 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                   </span>
                 </div>
                 <div className="text-base md:text-lg text-[#F5EBE0]">
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-5">
-                    <span className="text-right custom-font-tajawal">
-                      استقبال الضيوف
-                    </span>
-                    <span className="text-[#D4AF37] text-xs">◆</span>
-                    <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
-                      ٧:٠٠ مساءً
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-5">
-                    <span className="text-right custom-font-tajawal">
-                      عقد القران
-                    </span>
-                    <span className="text-[#D4AF37] text-xs">◆</span>
-                    <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
-                      ٧:٣٠ مساءً
-                    </span>
-                  </div>
-
-                  <div className="py-3">
-                    <ScrollFlower containerRef={scrollContainerRef} />
-                  </div>
-
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-5">
-                    <span className="text-right custom-font-tajawal">
-                      العشاء
-                    </span>
-                    <span className="text-[#D4AF37] text-xs">◆</span>
-                    <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
-                      ٩:٠٠ مساءً
-                    </span>
-                  </div>
+                  <ScheduleTrack
+                    containerRef={scrollContainerRef}
+                    items={[
+                      { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
+                      { label: "عقد القران", time: "٧:٣٠ مساءً" },
+                      { label: "العشاء", time: "٩:٠٠ مساءً" },
+                    ]}
+                  />
                 </div>
               </Reveal>
 
