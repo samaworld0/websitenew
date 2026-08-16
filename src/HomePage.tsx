@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Invitation, SiteSettings } from "./types"
 import { WhatsAppIcon } from "./icons"
+import Reveal from "./Reveal"
 
 const categories = [
   { id: "all", label: "الكل" },
@@ -176,7 +177,7 @@ export default function HomePage({
     >
       <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Reveal className="flex items-center gap-3" duration={600}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810]">
               {siteSettings.logoIcon}
             </div>
@@ -191,8 +192,12 @@ export default function HomePage({
                 {siteSettings.siteNameEn}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Reveal>
+          <Reveal
+            className="flex items-center gap-2"
+            duration={600}
+            delay={100}
+          >
             <a
               href="?admin=1"
               title="لوحة التحكم"
@@ -206,23 +211,25 @@ export default function HomePage({
               numberSaudi={siteSettings.whatsappNumberSaudi}
               message={generalMsg}
             />
-          </div>
+          </Reveal>
         </div>
       </nav>
 
       <section className="max-w-7xl mx-auto px-6 py-24">
-        <div className="text-center mb-16">
+        <Reveal className="text-center mb-16" as="div">
           <h2
             className="text-3xl md:text-4xl font-bold mb-3"
             style={{ fontFamily: "Amiri, serif" }}
           >
             {siteSettings.heroTitle}
           </h2>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
-          {filtered.map((inv) => (
-            <InvitationCard key={inv.id} inv={inv} onPreview={onPreview} />
+          {filtered.map((inv, index) => (
+            <Reveal key={inv.id} delay={(index % 4) * 90}>
+              <InvitationCard inv={inv} onPreview={onPreview} />
+            </Reveal>
           ))}
         </div>
       </section>
