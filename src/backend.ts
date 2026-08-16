@@ -114,6 +114,8 @@ function mergeWithLocalFields(row: any): Invitation {
     mapUrl: row.mapUrl ?? local?.mapUrl ?? "",
     eventDateTime: row.eventDateTime ?? local?.eventDateTime ?? "",
     isPrivate: row.isPrivate ?? local?.isPrivate ?? false,
+    coverImage: row.coverImage ?? local?.coverImage ?? "",
+    hideCoverOverlay: row.hideCoverOverlay ?? local?.hideCoverOverlay ?? false,
   } as Invitation
 }
 
@@ -166,6 +168,8 @@ function toDatabaseInvitationAllFields(inv: Invitation): Record<string, any> {
     city: inv.city ?? null,
     groomFamily: inv.groomFamily ?? null,
     brideFamily: inv.brideFamily ?? null,
+    coverImage: inv.coverImage ?? null,
+    hideCoverOverlay: inv.hideCoverOverlay ?? false,
   }
 }
 
@@ -280,6 +284,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
   savedSheetLink: boolean
   savedMapUrl: boolean
   savedEventDateTime: boolean
+  savedCoverImage: boolean
   error?: string
 }> {
   try {
@@ -308,6 +313,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedSheetLink: !dropped.has("sheetId") && !dropped.has("sheetUrl"),
           savedMapUrl: !dropped.has("mapUrl"),
           savedEventDateTime: !dropped.has("eventDateTime"),
+          savedCoverImage: !dropped.has("coverImage"),
         }
       }
 
@@ -321,6 +327,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedSheetLink: false,
           savedMapUrl: false,
           savedEventDateTime: false,
+          savedCoverImage: false,
           error: error.message,
         }
       }
@@ -343,6 +350,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedSheetLink: false,
       savedMapUrl: false,
       savedEventDateTime: false,
+      savedCoverImage: false,
       error: lastError?.message ?? "خطأ غير متوقع",
     }
   } catch (err: any) {
@@ -354,6 +362,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedSheetLink: false,
       savedMapUrl: false,
       savedEventDateTime: false,
+      savedCoverImage: false,
       error: err?.message ?? "خطأ غير متوقع",
     }
   }
