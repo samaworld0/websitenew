@@ -297,16 +297,6 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                   لمشاركتنا أجمل لحظات حياتنا في حفل زفافنا. حضوركم شرف لنا
                   وبهجة تكتمل بها فرحتنا.
                 </p>
-                <div className="grid grid-cols-2 gap-8 text-base md:text-lg text-[#6B5744] border-t border-b border-[#D4AF37]/20 py-7 custom-font-amiri">
-                  <div>
-                    <p className="text-sm text-[#8C7A6B] mb-1">والد العريس</p>
-                    <p className="font-bold">{inv.groomFamily}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-[#8C7A6B] mb-1">والد العروس</p>
-                    <p className="font-bold">{inv.brideFamily}</p>
-                  </div>
-                </div>
               </Reveal>
 
               {/* العداد التنازلي المكبر */}
