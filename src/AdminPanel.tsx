@@ -1534,233 +1534,6 @@ function InvitationRow({
   )
 }
 
-// قسم "التصميم المباشر" — تعديل سريع لنصوص أي دعوة ولون نصوصها، بدون
-// فتح نموذج التعديل الكامل بكل حقوله (الوسائط، واتساب، الشيت...).
-function LiveDesignPanel({
-  invitations,
-  onRefresh,
-}: {
-  invitations: Invitation[]
-  onRefresh: () => void
-}) {
-  const [selectedId, setSelectedId] = useState<number | null>(
-    invitations[0]?.id ?? null,
-  )
-  const selected = invitations.find((i) => i.id === selectedId) || null
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-[#e5d9c3] p-5 sm:p-7 space-y-4">
-        <h3
-          className="text-lg font-bold"
-          style={{ fontFamily: "Amiri, serif" }}
-        >
-          التصميم المباشر
-        </h3>
-        <p className="text-sm text-[#8a7561] -mt-2">
-          عدّل نصوص أي دعوة ولون نصوصها مباشرة من هنا.
-        </p>
-        <Field label="اختر الدعوة">
-          <select
-            className={inputClass}
-            value={selectedId ?? ""}
-            onChange={(e) => setSelectedId(Number(e.target.value))}
-          >
-            {invitations.length === 0 && (
-              <option value="">ما أكو دعوات بعد</option>
-            )}
-            {invitations.map((inv) => (
-              <option key={inv.id} value={inv.id}>
-                #{inv.id} — {inv.title}
-                {inv.isPrivate ? " (خاصة)" : ""}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
-
-      {selected && (
-        <LiveDesignEditor key={selected.id} inv={selected} onSaved={onRefresh} />
-      )}
-    </div>
-  )
-}
-
-function LiveDesignEditor({
-  inv: initial,
-  onSaved,
-}: {
-  inv: Invitation
-  onSaved: () => void
-}) {
-  const [inv, setInv] = useState<Invitation>(initial)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
-  const [notice, setNotice] = useState("")
-
-  const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
-    setInv((prev) => ({ ...prev, [key]: value }))
-
-  const handleSave = async () => {
-    setSaving(true)
-    setError("")
-    setNotice("")
-    const result = await saveInvitation(inv)
-    setSaving(false)
-    if (!result.success) {
-      setError(result.error || "صار خطأ أثناء الحفظ، حاول مرة ثانية")
-      return
-    }
-    setNotice("انحفظت التعديلات بنجاح ✅")
-    onSaved()
-  }
-
-  return (
-    <div className="bg-white rounded-2xl border border-[#e5d9c3] p-5 sm:p-7 space-y-6">
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
-          {error}
-        </div>
-      )}
-      {notice && (
-        <div className="rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3">
-          {notice}
-        </div>
-      )}
-
-      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
-          تعديل النصوص
-        </legend>
-        <Field label="العنوان (title)">
-          <input
-            className={inputClass}
-            value={inv.title}
-            onChange={(e) => set("title", e.target.value)}
-          />
-        </Field>
-        <Field label="العنوان الفرعي (subtitle)">
-          <input
-            className={inputClass}
-            value={inv.subtitle}
-            onChange={(e) => set("subtitle", e.target.value)}
-          />
-        </Field>
-        <Field label="اسم العريس">
-          <input
-            className={inputClass}
-            value={inv.groom}
-            onChange={(e) => set("groom", e.target.value)}
-          />
-        </Field>
-        <Field label="اسم العروسة">
-          <input
-            className={inputClass}
-            value={inv.bride}
-            onChange={(e) => set("bride", e.target.value)}
-          />
-        </Field>
-        <Field label="التاريخ (نص حر — هجري مثلاً)">
-          <input
-            className={inputClass}
-            value={inv.date}
-            onChange={(e) => set("date", e.target.value)}
-          />
-        </Field>
-        <Field label="التاريخ الميلادي">
-          <input
-            className={inputClass}
-            value={inv.dateGreg}
-            onChange={(e) => set("dateGreg", e.target.value)}
-          />
-        </Field>
-        <Field label="الوقت">
-          <input
-            className={inputClass}
-            value={inv.time}
-            onChange={(e) => set("time", e.target.value)}
-          />
-        </Field>
-        <Field label="القاعة / الموقع (venue)">
-          <input
-            className={inputClass}
-            value={inv.venue}
-            onChange={(e) => set("venue", e.target.value)}
-          />
-        </Field>
-        <Field label="المدينة">
-          <input
-            className={inputClass}
-            value={inv.city}
-            onChange={(e) => set("city", e.target.value)}
-          />
-        </Field>
-        <Field label="عائلة العريس">
-          <input
-            className={inputClass}
-            value={inv.groomFamily}
-            onChange={(e) => set("groomFamily", e.target.value)}
-          />
-        </Field>
-        <Field label="عائلة العروس">
-          <input
-            className={inputClass}
-            value={inv.brideFamily}
-            onChange={(e) => set("brideFamily", e.target.value)}
-          />
-        </Field>
-        <Field
-          label="الآية / الاقتباس (verse)"
-          hint="النص اللي يظهر أعلى صفحة الدعوة"
-        >
-          <textarea
-            rows={2}
-            className={inputClass}
-            value={inv.verse}
-            onChange={(e) => set("verse", e.target.value)}
-          />
-        </Field>
-      </fieldset>
-
-      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
-          لون النصوص
-        </legend>
-        <Field
-          label="لون التمييز (accentColor)"
-          hint="يتحكم بلون النص والتفاصيل بقالب الدعوات البسيطة (بدون باب متحرك)، وبلون شارة المعاينة بالصفحة الرئيسية"
-        >
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={inv.accentColor}
-              onChange={(e) => set("accentColor", e.target.value)}
-              className="h-9 w-12 rounded border border-[#e5d9c3]"
-            />
-            <input
-              className={inputClass}
-              value={inv.accentColor}
-              onChange={(e) => set("accentColor", e.target.value)}
-              dir="ltr"
-            />
-          </div>
-        </Field>
-      </fieldset>
-
-      <div className="flex justify-end gap-3 pt-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="px-6 py-2.5 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810] disabled:opacity-60"
-        >
-          {saving ? "جارِ الحفظ..." : "حفظ التعديلات"}
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function LoginGate({ onSuccess }: { onSuccess: () => void }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -1843,7 +1616,7 @@ export default function AdminPanel({
   const [checkingSession, setCheckingSession] = useState(true)
   const [authed, setAuthed] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "invitations" | "private" | "design" | "settings"
+    "invitations" | "private" | "settings"
   >("invitations")
   const [editing, setEditing] = useState<Invitation | null>(null)
   const [editingIsNew, setEditingIsNew] = useState(false)
@@ -1981,19 +1754,6 @@ export default function AdminPanel({
           <button
             onClick={() => {
               closeForm()
-              setActiveTab("design")
-            }}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-              activeTab === "design"
-                ? "bg-[#D4AF37] text-[#2C1810]"
-                : "text-[#8a7561]"
-            }`}
-          >
-            التصميم المباشر
-          </button>
-          <button
-            onClick={() => {
-              closeForm()
               setActiveTab("settings")
             }}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
@@ -2014,10 +1774,6 @@ export default function AdminPanel({
       </div>
 
       <div className="max-w-5xl mx-auto px-5 py-8 space-y-6">
-        {activeTab === "design" && (
-          <LiveDesignPanel invitations={invitations} onRefresh={onRefresh} />
-        )}
-
         {activeTab === "settings" && (
           <SiteSettingsForm
             initial={siteSettings}
