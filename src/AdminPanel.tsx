@@ -581,7 +581,7 @@ function InvitationForm({
   initial: Invitation
   isNew: boolean
   onCancel: () => void
-  onSaved: (inv: Invitation) => void
+  onSaved: (inv: Invitation, keepFormOpen?: boolean) => void
 }) {
   const [inv, setInv] = useState<Invitation>(initial)
   const [saving, setSaving] = useState(false)
@@ -692,7 +692,12 @@ function InvitationForm({
       )
     }
     if (notices.length > 0) setNotice(notices.join(" "))
-    onSaved(cleanInv)
+    // لو فيه تنبيه مهم (⚠️) نخلي النموذج مفتوح حتى يقراه المستخدم —
+    // قبل كانت onSaved تسكّر النموذج فوراً حتى لو كان فيه تنبيه، فينسكر
+    // قبل لا حتى يشوفه المستخدم (وهذا سبب ليش الرابط "يحفظ بدون أي
+    // رسالة" — الرسالة كانت تطلع وتختفي بنفس اللحظة).
+    const hasWarning = notices.some((n) => n.includes("⚠️"))
+    onSaved(cleanInv, hasWarning)
   }
 
   return (
@@ -1516,9 +1521,11 @@ export default function AdminPanel({
     setCreating(false)
   }
 
-  const handleSaved = () => {
-    closeForm()
+  const handleSaved = (_inv: Invitation, keepFormOpen?: boolean) => {
     onRefresh()
+    // لو فيه تنبيه مهم بالنموذج (⚠️ عمود ناقص بالقاعدة مثلاً)، ما نسكّر
+    // النموذج تلقائياً حتى يقدر المستخدم يقرا التنبيه وينسخ أمر الـ SQL.
+    if (!keepFormOpen) closeForm()
   }
 
   const startEdit = (inv: Invitation) => {
