@@ -852,6 +852,8 @@ function InvitationForm({
           hint="الرابط اللي ينفتح لما الضيف يضغط زر «الموقع على الخريطة». اتركه فاضي لاستخدام رابط خرائط جوجل الافتراضي"
         >
           <input
+            type="url"
+            dir="ltr"
             className={inputClass}
             value={inv.mapUrl || ""}
             onChange={(e) => set("mapUrl", e.target.value)}
