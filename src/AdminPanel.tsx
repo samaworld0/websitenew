@@ -114,6 +114,8 @@ function MediaUploadField({
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
   const [bucketMissing, setBucketMissing] = useState(false)
+  const [mode, setMode] = useState<"upload" | "link">("upload")
+  const [linkDraft, setLinkDraft] = useState("")
   const inputId = `upload-${folder}-${label}`.replace(/\s+/g, "-")
 
   const handleFile = async (file: File | undefined) => {
@@ -132,6 +134,13 @@ function MediaUploadField({
       return
     }
     onChange(result.url)
+  }
+
+  const handleUseLink = () => {
+    const url = linkDraft.trim()
+    if (!url) return
+    onChange(url)
+    setLinkDraft("")
   }
 
   return (
@@ -185,22 +194,70 @@ function MediaUploadField({
           </button>
         </div>
       ) : (
-        <label
-          htmlFor={inputId}
-          className="flex items-center justify-center gap-2 border-2 border-dashed border-[#e5d9c3] rounded-lg py-3 text-sm text-[#8a7561] hover:border-[#D4AF37] hover:text-[#2C1810] cursor-pointer transition"
-        >
-          {uploading ? (
-            <>
-              <span className="animate-spin">⏳</span>
-              <span>جارٍ الرفع...</span>
-            </>
+        <div className="space-y-2">
+          <div className="flex items-center gap-1 bg-[#f5efe2] rounded-full p-1 w-fit">
+            <button
+              type="button"
+              onClick={() => setMode("upload")}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${
+                mode === "upload"
+                  ? "bg-[#D4AF37] text-[#2C1810]"
+                  : "text-[#8a7561]"
+              }`}
+            >
+              ⬆️ رفع ملف
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("link")}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition ${
+                mode === "link"
+                  ? "bg-[#D4AF37] text-[#2C1810]"
+                  : "text-[#8a7561]"
+              }`}
+            >
+              🔗 رابط مباشر
+            </button>
+          </div>
+
+          {mode === "upload" ? (
+            <label
+              htmlFor={inputId}
+              className="flex items-center justify-center gap-2 border-2 border-dashed border-[#e5d9c3] rounded-lg py-3 text-sm text-[#8a7561] hover:border-[#D4AF37] hover:text-[#2C1810] cursor-pointer transition"
+            >
+              {uploading ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  <span>جارٍ الرفع...</span>
+                </>
+              ) : (
+                <>
+                  <span>⬆️</span>
+                  <span>اضغط لرفع ملف</span>
+                </>
+              )}
+            </label>
           ) : (
-            <>
-              <span>⬆️</span>
-              <span>اضغط لرفع ملف</span>
-            </>
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                dir="ltr"
+                value={linkDraft}
+                onChange={(e) => setLinkDraft(e.target.value)}
+                placeholder="https://..."
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={handleUseLink}
+                disabled={!linkDraft.trim()}
+                className="shrink-0 px-4 py-2 rounded-lg text-xs font-bold bg-[#D4AF37] text-[#2C1810] disabled:opacity-50"
+              >
+                استخدام
+              </button>
+            </div>
           )}
-        </label>
+        </div>
       )}
 
       <input
