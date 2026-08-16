@@ -116,6 +116,7 @@ function mergeWithLocalFields(row: any): Invitation {
     isPrivate: row.isPrivate ?? local?.isPrivate ?? false,
     coverImage: row.coverImage ?? local?.coverImage ?? "",
     hideCoverOverlay: row.hideCoverOverlay ?? local?.hideCoverOverlay ?? false,
+    schedule: row.schedule ?? local?.schedule ?? [],
   } as Invitation
 }
 
@@ -170,8 +171,7 @@ function toDatabaseInvitationAllFields(inv: Invitation): Record<string, any> {
     brideFamily: inv.brideFamily ?? null,
     coverImage: inv.coverImage ?? null,
     hideCoverOverlay: inv.hideCoverOverlay ?? false,
-    textStyles: inv.textStyles ?? null,
-    textContent: inv.textContent ?? null,
+    schedule: inv.schedule && inv.schedule.length > 0 ? inv.schedule : null,
   }
 }
 
@@ -305,8 +305,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
   savedMapUrl: boolean
   savedEventDateTime: boolean
   savedCoverImage: boolean
-  savedTextStyles: boolean
-  savedTextContent: boolean
+  savedSchedule: boolean
   error?: string
 }> {
   try {
@@ -336,8 +335,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedMapUrl: !dropped.has("mapUrl"),
           savedEventDateTime: !dropped.has("eventDateTime"),
           savedCoverImage: !dropped.has("coverImage"),
-          savedTextStyles: !dropped.has("textStyles"),
-          savedTextContent: !dropped.has("textContent"),
+          savedSchedule: !dropped.has("schedule"),
         }
       }
 
@@ -352,8 +350,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedMapUrl: false,
           savedEventDateTime: false,
           savedCoverImage: false,
-          savedTextStyles: false,
-          savedTextContent: false,
+          savedSchedule: false,
           error: error.message,
         }
       }
@@ -377,8 +374,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedMapUrl: false,
       savedEventDateTime: false,
       savedCoverImage: false,
-      savedTextStyles: false,
-      savedTextContent: false,
+      savedSchedule: false,
       error: lastError?.message ?? "خطأ غير متوقع",
     }
   } catch (err: any) {
@@ -391,8 +387,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedMapUrl: false,
       savedEventDateTime: false,
       savedCoverImage: false,
-      savedTextStyles: false,
-      savedTextContent: false,
+      savedSchedule: false,
       error: err?.message ?? "خطأ غير متوقع",
     }
   }
