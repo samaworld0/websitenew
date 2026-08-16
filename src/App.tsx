@@ -209,17 +209,14 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
               <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
             </div>
             <video
+              key={inv.doorBgVideo || "default-door-bg"}
+              src={inv.doorBgVideo || "/videos/door-bg.mp4"}
               autoPlay
               loop
               muted
               playsInline
               className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
-            >
-              <source
-                src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                type="video/mp4"
-              />
-            </video>
+            />
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
             <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
@@ -512,18 +509,15 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
         }`}
       >
         <video
+          key={inv.introVideo || "default-intro-video"}
           ref={videoRef}
+          src={inv.introVideo || "/videos/intro.mp4"}
           muted
           playsInline
           poster={inv.introPoster || "/videos/intro-poster.jpg"}
           onEnded={completeOpening}
           className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none"
-        >
-          <source
-            src={inv.introVideo || "/videos/intro.mp4"}
-            type="video/mp4"
-          />
-        </video>
+        />
         <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
           اضغط لفتح الدعوة
         </p>
