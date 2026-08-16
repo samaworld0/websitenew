@@ -782,13 +782,6 @@ function InvitationForm({
             onChange={(e) => set("tag", e.target.value)}
           />
         </Field>
-        <Field label="السعر">
-          <input
-            className={inputClass}
-            value={inv.price}
-            onChange={(e) => set("price", e.target.value)}
-          />
-        </Field>
       </fieldset>
 
       {/* أسماء وعوائل */}
@@ -810,26 +803,6 @@ function InvitationForm({
             onChange={(e) => set("bride", e.target.value)}
           />
         </Field>
-        <Field
-          label="عائلة العريس"
-          hint="قد لا ينحفظ بالقاعدة إذا العمود غير موجود بعد"
-        >
-          <input
-            className={inputClass}
-            value={inv.groomFamily}
-            onChange={(e) => set("groomFamily", e.target.value)}
-          />
-        </Field>
-        <Field
-          label="عائلة العروس"
-          hint="قد لا ينحفظ بالقاعدة إذا العمود غير موجود بعد"
-        >
-          <input
-            className={inputClass}
-            value={inv.brideFamily}
-            onChange={(e) => set("brideFamily", e.target.value)}
-          />
-        </Field>
       </fieldset>
 
       {/* تفاصيل المناسبة */}
@@ -837,30 +810,9 @@ function InvitationForm({
         <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
           تفاصيل المناسبة
         </legend>
-        <Field label="التاريخ الهجري" hint="قد لا ينحفظ بالقاعدة">
-          <input
-            className={inputClass}
-            value={inv.date}
-            onChange={(e) => set("date", e.target.value)}
-          />
-        </Field>
-        <Field label="التاريخ الميلادي (dateGreg)">
-          <input
-            className={inputClass}
-            value={inv.dateGreg}
-            onChange={(e) => set("dateGreg", e.target.value)}
-          />
-        </Field>
-        <Field label="الوقت">
-          <input
-            className={inputClass}
-            value={inv.time}
-            onChange={(e) => set("time", e.target.value)}
-          />
-        </Field>
         <Field
           label="موعد المناسبة (للعداد التنازلي)"
-          hint="هذا التاريخ والوقت هو اللي يُحسب عليه العداد التنازلي الحقيقي بصفحة الدعوة — منفصل عن حقول التاريخ النصية أعلاه"
+          hint="هذا التاريخ والوقت هو اللي يُحسب عليه العداد التنازلي الحقيقي بصفحة الدعوة"
         >
           <input
             type="datetime-local"
@@ -885,13 +837,6 @@ function InvitationForm({
             value={inv.mapUrl || ""}
             onChange={(e) => set("mapUrl", e.target.value)}
             placeholder="https://maps.google.com/..."
-          />
-        </Field>
-        <Field label="المدينة" hint="قد لا ينحفظ بالقاعدة">
-          <input
-            className={inputClass}
-            value={inv.city}
-            onChange={(e) => set("city", e.target.value)}
           />
         </Field>
       </fieldset>
