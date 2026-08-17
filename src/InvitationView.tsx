@@ -8,6 +8,7 @@ import {
   EditableText,
   EditableBackground,
   EditableButton,
+  EditableLinkBackground,
   EditPanel,
   useEditMode,
 } from "./LiveEditor"
@@ -651,14 +652,16 @@ function WisalTemplateView({
                 <p className="text-base text-[#E8DCC4]/80 mb-7">
                   <EditableText id="city">{inv.city}</EditableText>
                 </p>
-                <a
+                <EditableLinkBackground
+                  id="bg-map-button"
                   href={normalizeExternalUrl(inv.mapUrl, "https://maps.google.com")}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white bg-[#B8862F] hover:bg-[#9E7024] shadow-md"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
+                  style={{ backgroundColor: "#B8862F" }}
                 >
                   📍 <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
-                </a>
+                </EditableLinkBackground>
               </Reveal>
             </EditableBackground>
 
