@@ -192,6 +192,11 @@ export function EditModeProvider({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<SidebarTab | null>(null)
   const [zoom, setZoomState] = useState(1)
+  // مرجع دايم التحديث لآخر عنصر محدد — نستخدمه بمستمع لوحة المفاتيح
+  // (تحريك بالأسهم) حتى ما نحتاج نعيد تسجيل الـ listener كل مرة يتغيّر
+  // فيها التحديد (وإلا تصير كل خطوة سهم "تتأخر" خطوة عن آخر تحديث).
+  const selectedRef = useRef<string | null>(null)
+  selectedRef.current = selectedId
 
   // تراجع/إعادة بسيط: مكدّس من اللقطات الكاملة لـ styles
   const undoStack = useRef<Record<string, TextStyle>[]>([])
@@ -281,6 +286,47 @@ export function EditModeProvider({
       e.preventDefault()
       if (e.shiftKey) redo()
       else undo()
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable])
+
+  // تحريك بالأسهم: تحريك العنصر المحدد حبة حبة (خطوة صغيرة ثابتة) بدل
+  // السحب الحر — أدق وأسهل للتحكم، خصوصاً لضبط موضع دقيق. Shift+سهم
+  // يعطي خطوة أكبر للتحريك السريع. نتجاهل الضغط لو المستخدم يكتب داخل
+  // حقل نص/textarea (مثلاً بنموذج RSVP الحقيقي بالمعاينة) حتى ما نخطف
+  // أسهم لوحة المفاتيح من التمرير/التحرير داخل الحقل.
+  useEffect(() => {
+    if (!editable) return
+    const ARROW_KEYS: Record<string, [number, number]> = {
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+    }
+    const STEP = 0.4 // % — خطوة صغيرة دقيقة
+    const STEP_FAST = 2 // % — خطوة أكبر مع Shift
+    const handler = (e: KeyboardEvent) => {
+      const dir = ARROW_KEYS[e.key]
+      if (!dir) return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return
+      // عناصر الخلفية (EditableBackground) ما تدعم تحريك أصلاً (بس لون/صورة)
+      if (!selectedRef.current || selectedRef.current.startsWith("bg-")) return
+      e.preventDefault()
+      const step = e.shiftKey ? STEP_FAST : STEP
+      setStyles((prev) => {
+        pushHistory(prev)
+        const id = selectedRef.current as string
+        const cur = prev[id] || {}
+        const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, (cur.x || 0) + dir[0] * step))
+        const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, (cur.y || 0) + dir[1] * step))
+        const next = { ...prev, [id]: { ...cur, x: nextX, y: nextY } }
+        onStylesChange?.(next)
+        return next
+      })
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
@@ -615,6 +661,62 @@ export function EditableImage({
 }
 
 // ---------------------------------------------------------------------------
+// EditableButton — زر حقيقي (submit/button) بخلفية قابلة للتلوين من لوحة
+// التصميم. بوضع التعديل: الضغط يحدد الزر بدل ما ينفّذ فعله الأصلي (مهم
+// خصوصاً لأزرار type="submit" حتى ما ترسل نموذج RSVP فعلياً وإحنا بس
+// عم نلوّن الزر).
+// ---------------------------------------------------------------------------
+
+export function EditableButton({
+  id,
+  type = "button",
+  onClick,
+  className,
+  style,
+  children,
+  disabled,
+}: {
+  id: string
+  type?: "button" | "submit" | "reset"
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
+  className?: string
+  style?: React.CSSProperties
+  children?: ReactNode
+  disabled?: boolean
+}) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const st = styles[id] || {}
+  const isSelected = editable && selectedId === id
+
+  return (
+    <button
+      type={editable ? "button" : type}
+      disabled={disabled}
+      data-editable-id={id}
+      className={className}
+      style={{
+        ...style,
+        ...(st.bgColor ? { backgroundColor: st.bgColor } : null),
+        ...(st.color ? { color: st.color } : null),
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: 2,
+      }}
+      onClick={(e) => {
+        if (editable) {
+          e.preventDefault()
+          e.stopPropagation()
+          setSelectedId(id)
+          return
+        }
+        onClick?.(e)
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // EditableBackground — خلفية قسم قابلة لتغيير اللون/الصورة
 // ---------------------------------------------------------------------------
 
@@ -639,7 +741,7 @@ export function EditableBackground({
       className={className}
       style={{
         ...style,
-        ...(st.color ? { backgroundColor: st.color, backgroundImage: "none" } : null),
+        ...(st.bgColor ? { backgroundColor: st.bgColor, backgroundImage: "none" } : null),
         ...(st.imageUrl ? { backgroundImage: `url(${st.imageUrl})`, backgroundSize: "cover" } : null),
         position: "relative",
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
@@ -680,6 +782,10 @@ export function EditPanel() {
   if (!editable || !selectedId) return null
   const st = styles[selectedId] || {}
   const isDuplicate = !!st.duplicateOf
+  // عناصر الخلفية (EditableBackground) معرّفها يبدأ بـ "bg-" — نعرض لها
+  // لوحة مختصرة (لون خلفية + صورة + إخفاء) بدل كل خصائص النص اللي ما
+  // تنطبق عليها (حجم خط، خط، تدوير...).
+  const isBackground = selectedId.startsWith("bg-")
 
   const panelStyle: React.CSSProperties = {
     position: "fixed",
@@ -730,131 +836,184 @@ export function EditPanel() {
         <button style={btn} onClick={() => setSelectedId(null)}>✕</button>
       </div>
 
-      <div style={row}>
-        <label style={label}>النص</label>
-        <textarea
-          style={{ ...input, minHeight: 60, resize: "vertical" }}
-          value={st.text ?? ""}
-          placeholder="(النص الأصلي)"
-          onChange={(e) => updateStyle(selectedId, { text: e.target.value || undefined })}
-        />
-      </div>
-
-      <div style={row}>
-        <label style={label}>حجم الخط ({st.size ?? "افتراضي"})</label>
-        <input
-          type="range"
-          min={MIN_PX}
-          max={MAX_PX}
-          value={st.size ?? 24}
-          style={{ width: "100%" }}
-          onChange={(e) => updateStyle(selectedId, { size: Number(e.target.value) })}
-        />
-      </div>
-
-      <div style={row}>
-        <label style={label}>الخط</label>
-        <select
-          style={input}
-          value={st.font ?? ""}
-          onChange={(e) => {
-            const chosenFamily = e.target.value || undefined
-            // لو اختار خط مخصص (من قائمة "خطوط مضافة")، نخزن رابط ملفه
-            // (fontUrl) مع اسمه بنفس TextStyle العنصر، مو بس الاسم —
-            // حتى الخط يشتغل بأي صفحة يفتح فيها العنصر لحاله (مثل رابط
-            // المعاينة ?preview=ID) حتى لو ما وصلتها قائمة customFonts
-            // الكاملة لأي سبب، بدل ما يعتمد بس على حقن الخط العام وقت
-            // فتح لوحة التصميم.
-            const customMatch = customFonts.find((f) => f.name === chosenFamily)
-            updateStyle(selectedId, {
-              font: chosenFamily,
-              fontUrl: customMatch?.url,
-            })
-          }}
-        >
-          <option value="">افتراضي</option>
-          {FONT_OPTIONS.map((f) => (
-            <option key={f.family} value={f.family}>{f.label}</option>
-          ))}
-          {customFonts.length > 0 && (
-            <optgroup label="خطوط مضافة">
-              {customFonts.map((f) => (
-                <option key={f.name} value={f.name}>{f.name}</option>
+      {isBackground ? (
+        <>
+          <div style={row}>
+            <label style={label}>لون الخلفية</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateStyle(selectedId, { bgColor: c, imageUrl: undefined })}
+                  style={{
+                    width: 22, height: 22, borderRadius: "50%", background: c,
+                    border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                    cursor: "pointer",
+                  }}
+                />
               ))}
-            </optgroup>
+              <input
+                type="color"
+                value={st.bgColor || "#ffffff"}
+                onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value, imageUrl: undefined })}
+                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+              />
+              <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>افتراضي</button>
+            </div>
+          </div>
+
+          {onUploadImage && (
+            <div style={row}>
+              <label style={label}>صورة خلفية (اختياري)</label>
+              <input
+                type="file"
+                accept="image/*"
+                style={input}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const url = await onUploadImage(file)
+                  updateStyle(selectedId, { imageUrl: url })
+                }}
+              />
+              {st.imageUrl && (
+                <button style={{ ...btn, marginTop: 6 }} onClick={() => updateStyle(selectedId, { imageUrl: undefined })}>
+                  إزالة صورة الخلفية
+                </button>
+              )}
+            </div>
           )}
-        </select>
-      </div>
-
-      <div style={row}>
-        <label style={label}>لون النص</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {COLOR_PRESETS.map((c) => (
-            <button
-              key={c}
-              onClick={() => updateStyle(selectedId, { color: c })}
-              style={{
-                width: 22, height: 22, borderRadius: "50%", background: c,
-                border: st.color === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
-                cursor: "pointer",
-              }}
+        </>
+      ) : (
+        <>
+          <div style={row}>
+            <label style={label}>النص</label>
+            <textarea
+              style={{ ...input, minHeight: 60, resize: "vertical" }}
+              value={st.text ?? ""}
+              placeholder="(النص الأصلي)"
+              onChange={(e) => updateStyle(selectedId, { text: e.target.value || undefined })}
             />
-          ))}
-          <input
-            type="color"
-            value={st.color || "#ffffff"}
-            onChange={(e) => updateStyle(selectedId, { color: e.target.value })}
-            style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
-          />
-        </div>
-      </div>
+          </div>
 
-      <div style={row}>
-        <label style={label}>لون الخلفية</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {COLOR_PRESETS.map((c) => (
-            <button
-              key={c}
-              onClick={() => updateStyle(selectedId, { bgColor: c })}
-              style={{
-                width: 22, height: 22, borderRadius: "50%", background: c,
-                border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
-                cursor: "pointer",
-              }}
+          <div style={row}>
+            <label style={label}>حجم الخط ({st.size ?? "افتراضي"})</label>
+            <input
+              type="range"
+              min={MIN_PX}
+              max={MAX_PX}
+              value={st.size ?? 24}
+              style={{ width: "100%" }}
+              onChange={(e) => updateStyle(selectedId, { size: Number(e.target.value) })}
             />
-          ))}
-          <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>بدون</button>
-        </div>
-      </div>
+          </div>
 
-      {onUploadImage && (
-        <div style={row}>
-          <label style={label}>رفع صورة (لو العنصر صورة)</label>
-          <input
-            type="file"
-            accept="image/*"
-            style={input}
-            onChange={async (e) => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              const url = await onUploadImage(file)
-              updateStyle(selectedId, { imageUrl: url })
-            }}
-          />
-        </div>
+          <div style={row}>
+            <label style={label}>الخط</label>
+            <select
+              style={input}
+              value={st.font ?? ""}
+              onChange={(e) => {
+                const chosenFamily = e.target.value || undefined
+                // لو اختار خط مخصص (من قائمة "خطوط مضافة")، نخزن رابط ملفه
+                // (fontUrl) مع اسمه بنفس TextStyle العنصر، مو بس الاسم —
+                // حتى الخط يشتغل بأي صفحة يفتح فيها العنصر لحاله (مثل رابط
+                // المعاينة ?preview=ID) حتى لو ما وصلتها قائمة customFonts
+                // الكاملة لأي سبب، بدل ما يعتمد بس على حقن الخط العام وقت
+                // فتح لوحة التصميم.
+                const customMatch = customFonts.find((f) => f.name === chosenFamily)
+                updateStyle(selectedId, {
+                  font: chosenFamily,
+                  fontUrl: customMatch?.url,
+                })
+              }}
+            >
+              <option value="">افتراضي</option>
+              {FONT_OPTIONS.map((f) => (
+                <option key={f.family} value={f.family}>{f.label}</option>
+              ))}
+              {customFonts.length > 0 && (
+                <optgroup label="خطوط مضافة">
+                  {customFonts.map((f) => (
+                    <option key={f.name} value={f.name}>{f.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+
+          <div style={row}>
+            <label style={label}>لون النص</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateStyle(selectedId, { color: c })}
+                  style={{
+                    width: 22, height: 22, borderRadius: "50%", background: c,
+                    border: st.color === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
+              <input
+                type="color"
+                value={st.color || "#ffffff"}
+                onChange={(e) => updateStyle(selectedId, { color: e.target.value })}
+                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+              />
+            </div>
+          </div>
+
+          <div style={row}>
+            <label style={label}>لون الخلفية</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateStyle(selectedId, { bgColor: c })}
+                  style={{
+                    width: 22, height: 22, borderRadius: "50%", background: c,
+                    border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
+              <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>بدون</button>
+            </div>
+          </div>
+
+          {onUploadImage && (
+            <div style={row}>
+              <label style={label}>رفع صورة (لو العنصر صورة)</label>
+              <input
+                type="file"
+                accept="image/*"
+                style={input}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const url = await onUploadImage(file)
+                  updateStyle(selectedId, { imageUrl: url })
+                }}
+              />
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button
+              style={{ ...btn, flex: 1 }}
+              onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
+            >
+              {st.hidden ? "إظهار" : "إخفاء"}
+            </button>
+            <button style={{ ...btn, flex: 1 }} onClick={() => duplicateElement(selectedId)}>
+              ⧉ تكرار
+            </button>
+          </div>
+        </>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <button
-          style={{ ...btn, flex: 1 }}
-          onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
-        >
-          {st.hidden ? "إظهار" : "إخفاء"}
-        </button>
-        <button style={{ ...btn, flex: 1 }} onClick={() => duplicateElement(selectedId)}>
-          ⧉ تكرار
-        </button>
-      </div>
       <div style={{ marginTop: 8 }}>
         <button
           style={{ ...btn, width: "100%" }}
@@ -863,7 +1022,7 @@ export function EditPanel() {
             if (isDuplicate) setSelectedId(null)
           }}
         >
-          {isDuplicate ? "🗑 حذف النسخة" : "إرجاع الأصل"}
+          {isBackground ? "إرجاع الخلفية الأصلية" : isDuplicate ? "🗑 حذف النسخة" : "إرجاع الأصل"}
         </button>
       </div>
     </div>
