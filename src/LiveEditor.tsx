@@ -1085,6 +1085,98 @@ export function EditPanel() {
 }
 
 // ---------------------------------------------------------------------------
+// BackgroundsMenu — قائمة سريعة لتحديد أي خلفية بالصفحة بالاسم بدل الضغط
+// عليها مباشرة بالمعاينة. مفيدة لخلفيات صار مساحتها الظاهرة صغيرة/متغطاة
+// (مثل خلفية قسم كامل ورا بطاقة كبيرة بتاخذ كل المساحة) وصعب توصلها
+// بالضغط المباشر — هذا الطريق يضمن اختيارها دايماً بشكل مضمون ١٠٠٪.
+// ---------------------------------------------------------------------------
+
+export interface BackgroundSectionOption {
+  id: string
+  label: string
+}
+
+export function BackgroundsMenu({ sections }: { sections: BackgroundSectionOption[] }) {
+  const { editable, selectedId, setSelectedId } = useEditMode()
+  const [open, setOpen] = useState(false)
+
+  if (!editable || sections.length === 0) return null
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 16,
+        insetInlineStart: 16,
+        zIndex: 530,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+      }}
+    >
+      {open && (
+        <div
+          style={{
+            marginBottom: 8,
+            background: "#15100E",
+            border: "1px solid #3A2A1E",
+            borderRadius: 12,
+            padding: 6,
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            maxHeight: 320,
+            overflowY: "auto",
+            minWidth: 220,
+            boxShadow: "0 12px 30px rgba(0,0,0,.4)",
+          }}
+        >
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => {
+                setSelectedId(s.id)
+                setOpen(false)
+              }}
+              style={{
+                textAlign: "start",
+                padding: "7px 10px",
+                borderRadius: 8,
+                border: selectedId === s.id ? "1px solid #B8862F" : "1px solid transparent",
+                background: selectedId === s.id ? "rgba(184,134,47,.18)" : "transparent",
+                color: "#F1D989",
+                fontSize: 12,
+                fontFamily: "system-ui, sans-serif",
+                cursor: "pointer",
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.2)",
+          background: "rgba(0,0,0,.65)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        }}
+      >
+        🎨 الخلفيات
+      </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // ZoomControls — شريط تحكم بالزوم (اختياري، للعرض بالمحرر فقط)
 // ---------------------------------------------------------------------------
 
