@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Invitation, TextStyle } from "./types"
+import { Invitation, TextStyle, CustomFont } from "./types"
 import { saveInvitation } from "./backend"
 import InvitationFullView from "./InvitationView"
 
@@ -16,10 +16,14 @@ export default function DesignPanel({
   invitation,
   onClose,
   onSaved,
+  customFonts = [],
 }: {
   invitation: Invitation
   onClose: () => void
   onSaved: () => void
+  // خطوط مخصصة محفوظة بإعدادات الموقع (SiteSettings.customFonts) —
+  // تُعرض بقائمة اختيار الخط جنب الخطوط الجاهزة.
+  customFonts?: CustomFont[]
 }) {
   const stylesRef = useState<Record<string, TextStyle>>(
     invitation.textStyles || {},
@@ -87,6 +91,7 @@ export default function DesignPanel({
         onClose={onClose}
         editable
         onStylesChange={setStyles}
+        customFonts={customFonts}
       />
     </div>
   )
