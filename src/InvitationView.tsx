@@ -128,7 +128,7 @@ function ScheduleTrack({
             filter: "drop-shadow(0 0 10px rgba(212,175,55,0.45))",
           }}
         >
-          ✿
+          <EditableText id="schedule-flower-icon">✿</EditableText>
         </span>
       </div>
 
@@ -137,7 +137,11 @@ function ScheduleTrack({
           key={`${i}-${item.label}`}
           className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-6"
         >
-          <span className="text-right custom-font-tajawal">{item.label}</span>
+          <span className="text-right custom-font-tajawal">
+            <EditableText id={`schedule-item-${i}-label`}>
+              {item.label}
+            </EditableText>
+          </span>
           <span
             ref={
               i === 0
@@ -148,10 +152,12 @@ function ScheduleTrack({
             }
             className="relative z-10 bg-[#4E1019] px-1 text-[#D4AF37] text-xs"
           >
-            ◆
+            <EditableText id="schedule-bullet-icon">◆</EditableText>
           </span>
           <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
-            {item.time}
+            <EditableText id={`schedule-item-${i}-time`}>
+              {item.time}
+            </EditableText>
           </span>
         </div>
       ))}
@@ -436,7 +442,7 @@ function WisalTemplateView({
                   className="text-xl text-[#D4AF37]"
                   style={{ animation: "bounceDown 2s ease-in-out infinite" }}
                 >
-                  ↓
+                  <EditableText id="scroll-arrow">↓</EditableText>
                 </span>
               </div>
             </div>
@@ -447,24 +453,28 @@ function WisalTemplateView({
             <section className="py-24 px-6 flex flex-col items-center">
               <Reveal className="text-center max-w-xl mb-20">
                 <p className="text-base tracking-widest text-[#8C7A6B] mb-5 custom-font-amiri">
-                  بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                  <EditableText id="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</EditableText>
                 </p>
                 <p className="text-xl md:text-2xl leading-loose text-[#5A4A3C] custom-font-amiri">
                   <EditableText id="verse">{inv.verse}</EditableText>
                 </p>
-                <div className="mt-5 text-[#D4AF37] text-lg">✿</div>
+                <div className="mt-5 text-[#D4AF37] text-lg">
+                  <EditableText id="verse-icon">✿</EditableText>
+                </div>
               </Reveal>
 
               <div className="w-28 h-[1px] bg-[#D4AF37]/30 mb-20" />
 
               <Reveal className="text-center max-w-lg mb-20">
                 <h3 className="text-3xl md:text-4xl font-bold text-[#4A3B2C] mb-7 custom-font-amiri">
-                  بطاقة دعوة
+                  <EditableText id="card-title">بطاقة دعوة</EditableText>
                 </h3>
                 <p className="text-lg md:text-xl leading-relaxed text-[#5A4A3C] mb-12 custom-font-tajawal">
-                  بقلوب مفعمة بالفرح والسرور، نفتح لكم باب فرحتنا وندعوكم
-                  لمشاركتنا أجمل لحظات حياتنا في حفل زفافنا. حضوركم شرف لنا
-                  وبهجة تكتمل بها فرحتنا.
+                  <EditableText id="card-body">
+                    بقلوب مفعمة بالفرح والسرور، نفتح لكم باب فرحتنا وندعوكم
+                    لمشاركتنا أجمل لحظات حياتنا في حفل زفافنا. حضوركم شرف لنا
+                    وبهجة تكتمل بها فرحتنا.
+                  </EditableText>
                 </p>
               </Reveal>
 
@@ -481,25 +491,33 @@ function WisalTemplateView({
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri">
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">ثانية</span>
+                    <span className="text-sm text-[#8C7A6B] mt-1">
+                      <EditableText id="countdown-label-seconds">ثانية</EditableText>
+                    </span>
                   </div>
                   <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri">
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">دقيقة</span>
+                    <span className="text-sm text-[#8C7A6B] mt-1">
+                      <EditableText id="countdown-label-minutes">دقيقة</EditableText>
+                    </span>
                   </div>
                   <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri">
                       {String(timeLeft.hours).padStart(2, "0")}
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">ساعة</span>
+                    <span className="text-sm text-[#8C7A6B] mt-1">
+                      <EditableText id="countdown-label-hours">ساعة</EditableText>
+                    </span>
                   </div>
                   <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <span className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri">
                       {timeLeft.days}
                     </span>
-                    <span className="text-sm text-[#8C7A6B] mt-1">يوم</span>
+                    <span className="text-sm text-[#8C7A6B] mt-1">
+                      <EditableText id="countdown-label-days">يوم</EditableText>
+                    </span>
                   </div>
                 </div>
               </Reveal>
@@ -556,24 +574,28 @@ function WisalTemplateView({
             <section className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#D4AF37]">
               <Reveal className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg">
                 <div className="text-center mb-10">
-                  <span className="text-lg">⚙️</span>
+                  <span className="text-lg">
+                    <EditableText id="rsvp-icon">⚙️</EditableText>
+                  </span>
                   <h3 className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-amiri">
-                    تأكيد الحضور
+                    <EditableText id="rsvp-title">تأكيد الحضور</EditableText>
                   </h3>
                   <p className="text-sm text-[#8C7A6B] mt-1">
-                    يسعدنا تأكيد حضوركم
+                    <EditableText id="rsvp-subtitle">يسعدنا تأكيد حضوركم</EditableText>
                   </p>
                 </div>
 
                 {submitted ? (
                   <div className="text-center py-10 text-emerald-600 font-bold text-lg">
-                    تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
+                    <EditableText id="rsvp-success-message">
+                      تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
+                    </EditableText>
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        الاسم الكريم
+                        <EditableText id="rsvp-name-label">الاسم الكريم</EditableText>
                       </label>
                       <input
                         type="text"
@@ -587,7 +609,7 @@ function WisalTemplateView({
 
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        هل ستحضر؟
+                        <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
                       </label>
                       <div className="grid grid-cols-3 gap-3">
                         {["نعم", "لا", "ربما"].map((opt) => (
@@ -601,7 +623,9 @@ function WisalTemplateView({
                                 : "bg-[#FAF7F2] border border-[#D4AF37]/30 text-[#3D312A]"
                             }`}
                           >
-                            {opt}
+                            <EditableText id={`rsvp-option-${opt}`}>
+                              {opt}
+                            </EditableText>
                           </button>
                         ))}
                       </div>
@@ -609,7 +633,9 @@ function WisalTemplateView({
 
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
+                        <EditableText id="rsvp-companions-label">
+                          عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
+                        </EditableText>
                       </label>
                       <div className="flex items-center justify-center gap-6 bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl py-3">
                         <button
@@ -636,7 +662,9 @@ function WisalTemplateView({
 
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        كلمة للعروسين 💌
+                        <EditableText id="rsvp-note-label">
+                          كلمة للعروسين 💌
+                        </EditableText>
                       </label>
                       <textarea
                         rows={3}
@@ -651,7 +679,9 @@ function WisalTemplateView({
                       type="submit"
                       className="w-full py-4 bg-[#B8862F] hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
                     >
-                      إرسال التأكيد
+                      <EditableText id="rsvp-submit-button">
+                        إرسال التأكيد
+                      </EditableText>
                     </button>
                   </form>
                 )}
