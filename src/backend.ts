@@ -172,6 +172,10 @@ function toDatabaseInvitationAllFields(inv: Invitation): Record<string, any> {
     coverImage: inv.coverImage ?? null,
     hideCoverOverlay: inv.hideCoverOverlay ?? false,
     schedule: inv.schedule && inv.schedule.length > 0 ? inv.schedule : null,
+    textStyles:
+      inv.textStyles && Object.keys(inv.textStyles).length > 0
+        ? inv.textStyles
+        : null,
   }
 }
 
@@ -306,6 +310,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
   savedEventDateTime: boolean
   savedCoverImage: boolean
   savedSchedule: boolean
+  savedTextStyles: boolean
   error?: string
 }> {
   try {
@@ -336,6 +341,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedEventDateTime: !dropped.has("eventDateTime"),
           savedCoverImage: !dropped.has("coverImage"),
           savedSchedule: !dropped.has("schedule"),
+          savedTextStyles: !dropped.has("textStyles"),
         }
       }
 
@@ -351,7 +357,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
           savedEventDateTime: false,
           savedCoverImage: false,
           savedSchedule: false,
-          error: error.message,
+          savedTextStyles: false,
         }
       }
 
@@ -375,6 +381,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedEventDateTime: false,
       savedCoverImage: false,
       savedSchedule: false,
+      savedTextStyles: false,
       error: lastError?.message ?? "خطأ غير متوقع",
     }
   } catch (err: any) {
@@ -388,6 +395,7 @@ export async function saveInvitation(inv: Invitation): Promise<{
       savedEventDateTime: false,
       savedCoverImage: false,
       savedSchedule: false,
+      savedTextStyles: false,
       error: err?.message ?? "خطأ غير متوقع",
     }
   }
