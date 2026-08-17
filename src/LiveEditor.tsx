@@ -93,12 +93,20 @@ export const COLOR_PRESETS: string[] = [
 ]
 
 const injectedFonts = new Set<string>()
-function injectFontFace(family: string, url: string) {
+export function injectFontFace(family: string, url: string) {
   if (!family || !url || injectedFonts.has(family)) return
   injectedFonts.add(family)
   const styleEl = document.createElement("style")
   styleEl.textContent = `@font-face { font-family: '${family}'; src: url('${url}'); font-display: swap; }`
   document.head.appendChild(styleEl)
+}
+
+// خط مخصص واحد أضافه المشرف (اسم + رابط ملف الخط) — شكله هنا مطابق
+// لـ CustomFont بـ types.ts لكن معرّف محلياً حتى LiveEditor يضل مستقل
+// بالكامل عن باقي المشروع (شوف تعليق أعلى الملف).
+export interface CustomFontOption {
+  name: string
+  url: string
 }
 
 // ---------------------------------------------------------------------------
@@ -122,6 +130,9 @@ interface EditModeValue {
   setZoom: (z: number) => void
   // اختياري: تمرره لو تحتاج رفع صور حقيقية (بدل base64 المؤقت)
   onUploadImage?: (file: File) => Promise<string>
+  // خطوط مخصصة إضافية (فوق FONT_OPTIONS الثابتة) — تظهر بقائمة اختيار
+  // الخط بـ EditPanel. تُحقن كـ @font-face تلقائياً عند التوفر.
+  customFonts: CustomFontOption[]
 }
 
 const EditModeContext = createContext<EditModeValue>({
@@ -139,6 +150,7 @@ const EditModeContext = createContext<EditModeValue>({
   setActiveTab: () => {},
   zoom: 1,
   setZoom: () => {},
+  customFonts: [],
 })
 
 export function useEditMode() {
@@ -154,6 +166,7 @@ export function EditModeProvider({
   initialStyles = {},
   onStylesChange,
   onUploadImage,
+  customFonts = [],
   children,
 }: {
   editable: boolean
@@ -161,6 +174,10 @@ export function EditModeProvider({
   // يُستدعى مع كل تغيير — مرره لدالة تحفظ بمشروعك (API/DB). لا تخزين داخلي.
   onStylesChange?: (styles: Record<string, TextStyle>) => void
   onUploadImage?: (file: File) => Promise<string>
+  // خطوط مخصصة (اسم + رابط ملف) تضاف لقائمة اختيار الخط — مرّرها من
+  // إعدادات مشروعك (مثلاً SiteSettings.customFonts) حتى تبقى محفوظة
+  // ومتاحة بكل مكان يستخدم هذا الـ Provider.
+  customFonts?: CustomFontOption[]
   children: ReactNode
 }) {
   const [styles, setStyles] = useState<Record<string, TextStyle>>(initialStyles)
@@ -219,6 +236,14 @@ export function EditModeProvider({
 
   const setZoom = (z: number) => setZoomState(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z)))
 
+  // نحقن @font-face لكل خط مخصص فور توفره (لو الصفحة تحمّل خطوط قبل ما
+  // أي عنصر يختارها فعلياً) حتى معاينة الخط بقائمة الاختيار نفسها تبان
+  // بشكلها الصح فوراً، مو بس بعد ما ينحفظ باستايل عنصر.
+  useEffect(() => {
+    customFonts.forEach((f) => injectFontFace(f.name, f.url))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customFonts])
+
   // اختصارات لوحة المفاتيح: Ctrl/Cmd+Z للتراجع، Ctrl/Cmd+Shift+Z للإعادة
   useEffect(() => {
     if (!editable) return
@@ -252,6 +277,7 @@ export function EditModeProvider({
         zoom,
         setZoom,
         onUploadImage,
+        customFonts,
       }}
     >
       {children}
@@ -591,6 +617,7 @@ export function EditPanel() {
     canUndo,
     canRedo,
     onUploadImage,
+    customFonts,
   } = useEditMode()
 
   if (!editable || !selectedId) return null
@@ -678,6 +705,13 @@ export function EditPanel() {
           {FONT_OPTIONS.map((f) => (
             <option key={f.family} value={f.family}>{f.label}</option>
           ))}
+          {customFonts.length > 0 && (
+            <optgroup label="خطوط مضافة">
+              {customFonts.map((f) => (
+                <option key={f.name} value={f.name}>{f.name}</option>
+              ))}
+            </optgroup>
+          )}
         </select>
       </div>
 
