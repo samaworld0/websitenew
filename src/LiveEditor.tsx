@@ -1192,6 +1192,10 @@ export interface TransitionOption {
   id: string
   label: string
   defaultDuration?: number // ms — لو ما فيه قيمة محفوظة بعد
+  // اختياري: تمرّرها لو تبي زر "جرّب الآن" يعيد تشغيل الانتقال فعلياً
+  // بالمعاينة (بنفس المدة/السرعة الحالية) بدل ما يبقى بس سلايدر بدون
+  // نتيجة مرئية فورية.
+  onPreview?: () => void
 }
 
 const EASING_OPTIONS: {
@@ -1340,6 +1344,25 @@ export function TransitionsMenu({ items }: { items: TransitionOption[] }) {
               ))}
             </div>
           </div>
+
+          {active.onPreview && (
+            <button
+              onClick={active.onPreview}
+              style={{
+                padding: "9px 12px",
+                borderRadius: 10,
+                border: "1px solid #B8862F",
+                background: "rgba(184,134,47,.18)",
+                color: "#F1D989",
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "system-ui, sans-serif",
+                cursor: "pointer",
+              }}
+            >
+              ▶ جرّب الآن
+            </button>
+          )}
         </div>
       )}
       <button
