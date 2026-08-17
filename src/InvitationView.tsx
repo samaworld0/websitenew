@@ -590,7 +590,10 @@ function WisalTemplateView({
                 <p className="text-base tracking-widest text-[#8C7A6B] mb-5 custom-font-amiri">
                   <EditableText id="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</EditableText>
                 </p>
-                <p className="text-xl md:text-2xl leading-loose text-[#5A4A3C] custom-font-amiri">
+                <p
+                  className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
+                  style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
+                >
                   <EditableText id="verse">{inv.verse}</EditableText>
                 </p>
                 <div className="mt-5 text-[#D4AF37] text-lg">
@@ -885,7 +888,7 @@ function WisalTemplateView({
             playsInline
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none"
           />
           <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
