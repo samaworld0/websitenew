@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type RefObject } from "react"
-import { Invitation, TextStyle } from "./types"
+import { Invitation, TextStyle, CustomFont } from "./types"
 import { submitRSVP } from "./backend"
 import Reveal from "./Reveal"
 import {
@@ -229,10 +229,12 @@ function WisalTemplateView({
   inv,
   editable = false,
   onStylesChange,
+  customFonts = [],
 }: {
   inv: Invitation
   editable?: boolean
   onStylesChange?: (styles: Record<string, TextStyle>) => void
+  customFonts?: CustomFont[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -361,6 +363,7 @@ function WisalTemplateView({
       editable={editable}
       initialStyles={inv.textStyles || {}}
       onStylesChange={onStylesChange}
+      customFonts={customFonts}
     >
     <DeselectSurface>
     <div
@@ -790,11 +793,15 @@ export default function InvitationFullView({
   onClose,
   editable = false,
   onStylesChange,
+  customFonts = [],
 }: {
   inv: Invitation
   onClose: () => void
   editable?: boolean
   onStylesChange?: (styles: Record<string, TextStyle>) => void
+  // خطوط مخصصة (من SiteSettings.customFonts) — تمرّ لكل القوالب حتى
+  // تظهر بقائمة اختيار الخط بوضع "تعديل التصميم مباشر".
+  customFonts?: CustomFont[]
 }) {
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -821,12 +828,14 @@ export default function InvitationFullView({
           inv={inv}
           editable={editable}
           onStylesChange={onStylesChange}
+          customFonts={customFonts}
         />
       ) : (
         <EditModeProvider
           editable={editable}
           initialStyles={inv.textStyles || {}}
           onStylesChange={onStylesChange}
+          customFonts={customFonts}
         >
         <DeselectSurface>
         <div
