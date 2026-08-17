@@ -1,3 +1,9 @@
+// نموذج بيانات "التعديل المباشر" (Live Editor) — مستورد من مكتبة LiveEditor
+// المستقلة (src/LiveEditor.tsx). كل عنصر قابل للتعديل بالدعوة (اسم، تاريخ،
+// قاعة...) يخزّن تعديلاته هنا بمفتاح معرّفه.
+export type { TextStyle } from "./LiveEditor"
+import type { TextStyle } from "./LiveEditor"
+
 export interface Invitation {
   id: number
   category: string
@@ -51,6 +57,10 @@ export interface Invitation {
   // أو غير موجود، تترجع الدعوة تلقائياً لبرنامج افتراضي ثابت (استقبال
   // الضيوف، عقد القران، العشاء) حتى ما ينكسر عرض الدعوات القديمة.
   schedule?: { label: string; time: string }[]
+  // تعديلات "التصميم المباشر" (نص/لون/حجم/موضع مخصص لكل عنصر) — يتخزن
+  // بعمود jsonb واحد بقاعدة البيانات (شوف backend.ts). لو فاضي، تُعرض
+  // الدعوة بتصميمها الأصلي بدون أي تعديل.
+  textStyles?: Record<string, TextStyle>
 }
 
 // إعدادات الواجهة العامة للموقع (اسم الموقع، الشعار، رقم واتساب، عنوان
