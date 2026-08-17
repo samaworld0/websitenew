@@ -46,6 +46,10 @@ export interface TextStyle {
   hidden?: boolean
   text?: string // نص مخصص يحل محل النص الأصلي
   imageUrl?: string // للصور المضافة يدويًا فقط
+  // لو العنصر ده "نسخة مكرّرة" من عنصر ثاني (زر "تكرار العنصر")، هذا
+  // الحقل يحمل معرّف العنصر الأصلي اللي انسخت منه. العنصر الأصلي (id)
+  // نفسه هو اللي يتكفّل يعرض كل نسخه المكرّرة جنبه (شوف EditableText).
+  duplicateOf?: string
 }
 
 export type SidebarTab = "text" | "background" | "properties" | "insert"
@@ -120,6 +124,9 @@ interface EditModeValue {
   setSelectedId: (id: string | null) => void
   updateStyle: (id: string, patch: Partial<TextStyle>) => void
   resetStyle: (id: string) => void
+  // ينشئ نسخة جديدة كاملة من عنصر موجود (نفس الستايل) بمعرّف جديد،
+  // ويحددها تلقائياً حتى يقدر المستخدم يسحبها لمكانها فوراً.
+  duplicateElement: (id: string) => void
   undo: () => void
   redo: () => void
   canUndo: boolean
@@ -142,6 +149,7 @@ const EditModeContext = createContext<EditModeValue>({
   setSelectedId: () => {},
   updateStyle: () => {},
   resetStyle: () => {},
+  duplicateElement: () => {},
   undo: () => {},
   redo: () => {},
   canUndo: false,
@@ -214,6 +222,26 @@ export function EditModeProvider({
     })
   }
 
+  // تكرار عنصر: ننسخ كل خصائص التصميم الحالية للعنصر الأصلي (النص،
+  // اللون، الخط، الحجم...) بمعرّف جديد فريد، ونربطه بالأصل عبر
+  // duplicateOf حتى EditableText يعرف يعرض النسخة جنب عنصرها الأصلي.
+  // ننزّل النسخة شوي (y +6%) حتى تبان كعنصر منفصل بدل ما تتراكب بالضبط
+  // فوق الأصل، ونحددها فوراً حتى المستخدم يقدر يسحبها لمكانها.
+  const duplicateElement = (id: string) => {
+    const newId = `${id}__dup${Date.now()}`
+    setStyles((prev) => {
+      pushHistory(prev)
+      const base = prev[id] || {}
+      const next = {
+        ...prev,
+        [newId]: { ...base, duplicateOf: id, y: (base.y || 0) + 6 },
+      }
+      onStylesChange?.(next)
+      return next
+    })
+    setSelectedId(newId)
+  }
+
   const undo = () => {
     const prev = undoStack.current.pop()
     if (!prev) return
@@ -268,6 +296,7 @@ export function EditModeProvider({
         setSelectedId,
         updateStyle,
         resetStyle,
+        duplicateElement,
         undo,
         redo,
         canUndo: undoStack.current.length > 0,
@@ -341,36 +370,60 @@ export function EditableText({
   const Tag = as as any
   const displayChildren = currentStyle?.text !== undefined ? currentStyle.text : children
 
+  // أي عناصر ثانية بستايلز الصفحة مربوطة بهالعنصر عن طريق duplicateOf
+  // (يعني اتسوّت له بزر "تكرار") — نعرضها كنسخ شقيقة جنبه مباشرة، بنفس
+  // الشكل (as/className/style/children) بس كل وحدة فيها تدير نفسها
+  // بمعرّفها الخاص (موقعها/لونها/نصها...) بشكل مستقل تماماً عن الأصل.
+  const duplicateIds = Object.keys(styles).filter(
+    (key) => styles[key]?.duplicateOf === id,
+  )
+  const duplicatesNode =
+    duplicateIds.length > 0 ? (
+      <>
+        {duplicateIds.map((dupId) => (
+          <EditableText key={dupId} id={dupId} as={as} className={className} style={style}>
+            {children}
+          </EditableText>
+        ))}
+      </>
+    ) : null
+
   // ---- وضع العرض العادي (خارج التعديل) ----
   if (!editable) {
     const saved = styles[id]
-    if (saved?.hidden) return null
+    if (saved?.hidden) return duplicatesNode
     if (!saved) {
       return (
-        <Tag className={className} style={style}>
-          {children}
-        </Tag>
+        <>
+          <Tag className={className} style={style}>
+            {children}
+          </Tag>
+          {duplicatesNode}
+        </>
       )
     }
     const x = percentToPx(Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, saved.x || 0)))
     const y = percentToPx(Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, saved.y || 0)))
     return (
-      <Tag
-        className={className}
-        style={{
-          ...style,
-          ...(saved.size ? { fontSize: `${saved.size}px` } : null),
-          ...(saved.font ? { fontFamily: saved.font } : null),
-          ...(saved.color ? { color: saved.color } : null),
-          ...(saved.bgColor ? { backgroundColor: saved.bgColor } : null),
-          transform: `translate(${x}px, ${y}px)`,
-          ...(saved.rotation ? { rotate: `${saved.rotation}deg` } : null),
-          display: "inline-block",
-          position: "relative",
-        }}
-      >
-        {displayChildren}
-      </Tag>
+      <>
+        <Tag
+          className={className}
+          style={{
+            ...style,
+            ...(saved.size ? { fontSize: `${saved.size}px` } : null),
+            ...(saved.font ? { fontFamily: saved.font } : null),
+            ...(saved.color ? { color: saved.color } : null),
+            ...(saved.bgColor ? { backgroundColor: saved.bgColor } : null),
+            transform: `translate(${x}px, ${y}px)`,
+            ...(saved.rotation ? { rotate: `${saved.rotation}deg` } : null),
+            display: "inline-block",
+            position: "relative",
+          }}
+        >
+          {displayChildren}
+        </Tag>
+        {duplicatesNode}
+      </>
     )
   }
 
@@ -447,6 +500,7 @@ export function EditableText({
   }
 
   return (
+    <>
     <Tag
       ref={ref}
       className={className}
@@ -501,6 +555,8 @@ export function EditableText({
         </span>
       )}
     </Tag>
+    {duplicatesNode}
+    </>
   )
 }
 
@@ -611,6 +667,7 @@ export function EditPanel() {
     styles,
     updateStyle,
     resetStyle,
+    duplicateElement,
     setSelectedId,
     undo,
     redo,
@@ -622,6 +679,7 @@ export function EditPanel() {
 
   if (!editable || !selectedId) return null
   const st = styles[selectedId] || {}
+  const isDuplicate = !!st.duplicateOf
 
   const panelStyle: React.CSSProperties = {
     position: "fixed",
@@ -793,8 +851,19 @@ export function EditPanel() {
         >
           {st.hidden ? "إظهار" : "إخفاء"}
         </button>
-        <button style={{ ...btn, flex: 1 }} onClick={() => resetStyle(selectedId)}>
-          إرجاع الأصل
+        <button style={{ ...btn, flex: 1 }} onClick={() => duplicateElement(selectedId)}>
+          ⧉ تكرار
+        </button>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <button
+          style={{ ...btn, width: "100%" }}
+          onClick={() => {
+            resetStyle(selectedId)
+            if (isDuplicate) setSelectedId(null)
+          }}
+        >
+          {isDuplicate ? "🗑 حذف النسخة" : "إرجاع الأصل"}
         </button>
       </div>
     </div>
