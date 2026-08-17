@@ -10,6 +10,7 @@ import {
   EditableButton,
   EditableLinkBackground,
   EditPanel,
+  BackgroundsMenu,
   useEditMode,
 } from "./LiveEditor"
 
@@ -847,6 +848,21 @@ function WisalTemplateView({
     </div>
     </DeselectSurface>
     {editable && <EditPanel />}
+    {editable && (
+      <BackgroundsMenu
+        sections={[
+          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "bg-map-button", label: "خلفية زر الموقع على الخريطة" },
+          { id: "bg-rsvp-section", label: "خلفية قسم تأكيد الحضور (كاملة)" },
+          { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
+          { id: "bg-rsvp-companions-box", label: "خلفية صندوق عدد المرافقين" },
+          { id: "bg-rsvp-counter-btn", label: "خلفية زري + / -" },
+          { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
+          { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
+          { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
+        ]}
+      />
+    )}
     </EditModeProvider>
   )
 }
