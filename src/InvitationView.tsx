@@ -330,6 +330,7 @@ function WisalTemplateView({
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-1000)،
   // بدل الاعتماد على opacity/pointer-events فقط.
   const [doorRemoved, setDoorRemoved] = useState(false)
+  const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
 
   const generateGoldenParticles = () => {
     const items: GoldenParticle[] = []
@@ -509,13 +510,9 @@ function WisalTemplateView({
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={
-              inv.doorBgVideo
-                ? undefined
-                : {
-                    backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-                  }
-            }
+            style={{
+              backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
+            }}
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
@@ -524,7 +521,7 @@ function WisalTemplateView({
               <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
               <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
             </div>
-            {(inv.doorBgVideo || !inv.heroBg) && (
+            {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
               <video
                 key={inv.doorBgVideo || "default-door-bg"}
                 src={inv.doorBgVideo || "/videos/door-bg.mp4"}
@@ -532,6 +529,7 @@ function WisalTemplateView({
                 loop
                 muted
                 playsInline
+                onError={() => setDoorBgVideoFailed(true)}
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
               />
             )}
@@ -876,7 +874,7 @@ function WisalTemplateView({
       {!doorRemoved && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black/85 ${
+          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
@@ -888,7 +886,7 @@ function WisalTemplateView({
             playsInline
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
           <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
