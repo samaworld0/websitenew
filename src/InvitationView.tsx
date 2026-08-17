@@ -525,29 +525,27 @@ function WisalTemplateView({
 
             {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل */}
             <section className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]">
-              <Reveal className="text-center max-w-lg w-full mb-24">
-                <div className="flex items-center justify-center gap-3 mb-10">
-                  <span className="text-[#D4AF37] text-base opacity-80">
-                    ❁
-                  </span>
-                  <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
-                    <EditableText id="schedule-title">برنامج الحفل</EditableText>
-                  </h3>
-                  <span className="text-[#D4AF37] text-base opacity-80">
-                    ❁
-                  </span>
-                </div>
-                <div className="text-base md:text-lg text-[#F5EBE0]">
-                  <ScheduleTrack
-                    containerRef={scrollContainerRef}
-                    items={
-                      inv.schedule && inv.schedule.length > 0
-                        ? inv.schedule
-                        : DEFAULT_SCHEDULE
-                    }
-                  />
-                </div>
-              </Reveal>
+              {inv.schedule && inv.schedule.length > 0 && (
+                <Reveal className="text-center max-w-lg w-full mb-24">
+                  <div className="flex items-center justify-center gap-3 mb-10">
+                    <span className="text-[#D4AF37] text-base opacity-80">
+                      ❁
+                    </span>
+                    <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
+                      <EditableText id="schedule-title">برنامج الحفل</EditableText>
+                    </h3>
+                    <span className="text-[#D4AF37] text-base opacity-80">
+                      ❁
+                    </span>
+                  </div>
+                  <div className="text-base md:text-lg text-[#F5EBE0]">
+                    <ScheduleTrack
+                      containerRef={scrollContainerRef}
+                      items={inv.schedule}
+                    />
+                  </div>
+                </Reveal>
+              )}
 
               <Reveal className="text-center max-w-lg w-full mb-24">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
