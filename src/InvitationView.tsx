@@ -120,6 +120,13 @@ function ScheduleTrack({
   const lastDotRef = useRef<HTMLSpanElement>(null)
   const [line, setLine] = useState({ top: 0, bottom: 0 })
   const [flowerTop, setFlowerTop] = useState(0)
+  // نقطة ◆ الفاصلة بين كل بند تحتاج خلفية بنفس لون خلفية القسم (مو لون
+  // ثابت) حتى "تقطع" الخط الذهبي اللي ماشي وراها بدون ما تبين كصندوق
+  // غريب أو "مرقّع" لو المستخدم غيّر لون خلفية القسم (bg-venue-section)
+  // من لوحة التصميم المباشر. نقرأها من نفس التخزين اللي تقرأ منه
+  // EditableBackground حتى تبقى متزامنة تلقائياً بدون أي إعداد إضافي.
+  const { styles } = useEditMode()
+  const sectionBg = styles["bg-venue-section"]?.bgColor || "#4E1019"
 
   useEffect(() => {
     const container = containerRef.current
@@ -213,7 +220,8 @@ function ScheduleTrack({
                   ? lastDotRef
                   : undefined
             }
-            className="relative z-10 bg-[#4E1019] px-1 text-[#D4AF37] text-xs"
+            className="relative z-10 px-1 text-[#D4AF37] text-xs"
+            style={{ backgroundColor: sectionBg }}
           >
             <EditableText id="schedule-bullet-icon">◆</EditableText>
           </span>
