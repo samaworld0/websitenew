@@ -85,4 +85,16 @@ export interface SiteSettings {
   heroCard1Image?: string
   heroCard2Image?: string
   heroCard3Image?: string
+  // مكتبة الخطوط المخصصة اللي يضيفها المشرف (ملف خط مرفوع أو رابط خط) —
+  // تنحفظ مرة وحدة هنا وتظهر تلقائياً بقائمة اختيار الخط بكل الدعوات
+  // (شوف LiveEditor.tsx -> EditModeProvider customFonts + EditPanel).
+  customFonts?: CustomFont[]
+}
+
+// خط مخصص واحد أضافه المشرف: اسم يظهر بقائمة الاختيار + رابط ملف
+// الخط الفعلي (مرفوع لـ Supabase Storage أو رابط خارجي مباشر لملف
+// woff/woff2/ttf/otf).
+export interface CustomFont {
+  name: string
+  url: string
 }
