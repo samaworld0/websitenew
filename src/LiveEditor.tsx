@@ -607,6 +607,61 @@ export function EditableText({
 }
 
 // ---------------------------------------------------------------------------
+// EditableLinkBackground — رابط <a> حقيقي (مثل زر "الموقع على الخريطة")
+// بخلفية قابلة للتلوين. بوضع التعديل: الضغط يحدد الرابط بدل ما يفتحه
+// فعلياً (حتى ما ينقلك لصفحة الخريطة وأنت بس عم تلوّن الزر).
+// ---------------------------------------------------------------------------
+
+export function EditableLinkBackground({
+  id,
+  href,
+  target,
+  rel,
+  className,
+  style,
+  children,
+}: {
+  id: string
+  href: string
+  target?: string
+  rel?: string
+  className?: string
+  style?: React.CSSProperties
+  children?: ReactNode
+}) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const st = styles[id] || {}
+  const isSelected = editable && selectedId === id
+
+  return (
+    <a
+      href={editable ? undefined : href}
+      target={editable ? undefined : target}
+      rel={editable ? undefined : rel}
+      data-editable-id={id}
+      className={className}
+      style={{
+        ...style,
+        ...(st.bgColor ? { backgroundColor: st.bgColor } : null),
+        ...(st.color ? { color: st.color } : null),
+        cursor: editable ? "pointer" : undefined,
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: 2,
+      }}
+      onClick={(e) => {
+        if (editable) {
+          e.preventDefault()
+          e.stopPropagation()
+          setSelectedId(id)
+        }
+      }}
+    >
+      {children}
+    </a>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // EditableImage — نفس فكرة EditableText بس لصورة (بدون لون/خط)
 // ---------------------------------------------------------------------------
 
