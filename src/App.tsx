@@ -74,6 +74,7 @@ export default function App() {
         onClose={() => {
           window.location.href = window.location.pathname
         }}
+        customFonts={siteSettings.customFonts}
       />
     )
   }
