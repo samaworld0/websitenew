@@ -7,6 +7,7 @@ import {
   DeselectSurface,
   EditableText,
   EditPanel,
+  useEditMode,
 } from "./LiveEditor"
 
 interface GoldenParticle {
@@ -16,6 +17,65 @@ interface GoldenParticle {
   size: number
   duration: number
   delay: number
+}
+
+// معرّف عنصر "ثيم الورد المتطاير" بنظام التصميم المباشر — عنصر واحد يتحكم
+// بشكل كل الجزيئات المتطايرة دفعة وحدة (مو كل وردة لحالها). التعديل يتم من
+// نفس لوحة الخصائص العادية: النص (الحقل "النص") يغيّر الرمز (✿، ❤، ★...)،
+// ولون النص يغيّر لون كل الورود مرة وحدة.
+const PARTICLES_THEME_ID = "particles-theme"
+
+// عنصر جزيئات الخلفية المتطايرة — قابل للتحديد بوضع التعديل مثل أي عنصر
+// ثاني، ويقرأ شكله (الرمز) ولونه من TextStyle الخاص بمعرّفه بدل ما يكون
+// مثبّت على "✿" دايماً.
+function FloatingParticles({ particles }: { particles: GoldenParticle[] }) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const style = styles[PARTICLES_THEME_ID] || {}
+  const glyph = style.text || "✿"
+  const color = style.color || "#F1D989"
+  const isSelected = editable && selectedId === PARTICLES_THEME_ID
+
+  return (
+    <div
+      data-editable-id={PARTICLES_THEME_ID}
+      className="absolute inset-0 z-10 overflow-hidden"
+      style={{
+        pointerEvents: editable ? "auto" : "none",
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: -2,
+        cursor: editable ? "pointer" : undefined,
+      }}
+      onClick={(e) => {
+        if (!editable) return
+        e.stopPropagation()
+        setSelectedId(PARTICLES_THEME_ID)
+      }}
+    >
+      {editable && (
+        <span
+          className="absolute top-3 inset-inline-end-3 z-30 px-2.5 py-1 rounded-full text-[10px] font-bold"
+          style={{ background: "#1A1210", border: "1px solid #B8862F", color: "#F1D989" }}
+        >
+          🌸 ثيم الورد المتطاير — اضغط هنا وعدّل «النص» أو «اللون» بلوحة اليمين
+        </span>
+      )}
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute bottom-0 opacity-70 pointer-events-none"
+          style={{
+            left: `${p.left}%`,
+            fontSize: `${style.size ?? p.size}px`,
+            color,
+            animation: `goldenParticle ${p.duration}s linear infinite`,
+            animationDelay: `-${p.delay}s`,
+          }}
+        >
+          {glyph}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 // رابط الموقع اللي يحطه المشرف بلوحة التحكم أحياناً يكون ناقص البروتوكول
@@ -231,6 +291,17 @@ function WisalTemplateView({
     return () => clearInterval(timer)
   }, [inv.eventDateTime])
 
+  // بوضع "التصميم المباشر" نتخطى شاشة الفتح (الباب) ونولّد الورد المتطاير
+  // فوراً، حتى يشوف المشرف تعديلاته على ثيم الورد بشكل حي بدون ما يضطر
+  // يضغط الباب أول شي كل مرة يفتح المحرر.
+  useEffect(() => {
+    if (editable) {
+      generateGoldenParticles()
+      setIsOpen(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable])
+
   const completeOpening = () => {
     setIsOpen((prev) => {
       if (!prev) {
@@ -388,22 +459,7 @@ function WisalTemplateView({
             <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
 
-            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-              {particles.map((p) => (
-                <div
-                  key={p.id}
-                  className="absolute bottom-0 text-[#F1D989] opacity-70"
-                  style={{
-                    left: `${p.left}%`,
-                    fontSize: `${p.size}px`,
-                    animation: `goldenParticle ${p.duration}s linear infinite`,
-                    animationDelay: `-${p.delay}s`,
-                  }}
-                >
-                  ✿
-                </div>
-              ))}
-            </div>
+            <FloatingParticles particles={particles} />
 
             <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
               <div />
