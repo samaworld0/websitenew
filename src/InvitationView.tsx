@@ -110,7 +110,11 @@ function DoorTextReveal({
       className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen"
       style={{
         opacity: doorRemoved ? 1 : 0,
-        transition: `opacity ${duration}ms ${easing}`,
+        // الإخفاء فوري (بدون transition) — التلاشي المقصود اتجاه واحد بس:
+        // الظهور بعد اختفاء الباب. هذا كمان يخلي إعادة التشغيل (زر "جرّب
+        // الآن") تشتغل صح: تختفي النصوص فوراً ثم تتلاشى للظهور من جديد
+        // بنفس المدة/السرعة، بدل ما يتصادم اتجاهي الحركة مع بعض.
+        transition: doorRemoved ? `opacity ${duration}ms ${easing}` : "none",
       }}
     >
       {children}
@@ -360,6 +364,17 @@ function WisalTemplateView({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable])
+
+  // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
+  // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
+  // ثم نرجعها تظهر بالإطار التالي، حتى تشتغل حركة CSS transition من جديد
+  // بنفس المدة/السرعة المختارة حالياً، وتشوف المصمم النتيجة النهائية فوراً.
+  const replayDoorTextTransition = () => {
+    setDoorRemoved(false)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setDoorRemoved(true))
+    })
+  }
 
   const completeOpening = () => {
     setIsOpen((prev) => {
@@ -902,6 +917,7 @@ function WisalTemplateView({
             id: DOOR_TEXT_TRANSITION_ID,
             label: "تلاشي نصوص القسم الأول",
             defaultDuration: 1000,
+            onPreview: replayDoorTextTransition,
           },
         ]}
       />
