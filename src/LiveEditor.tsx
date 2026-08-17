@@ -50,6 +50,11 @@ export interface TextStyle {
   // الحقل يحمل معرّف العنصر الأصلي اللي انسخت منه. العنصر الأصلي (id)
   // نفسه هو اللي يتكفّل يعرض كل نسخه المكرّرة جنبه (شوف EditableText).
   duplicateOf?: string
+  // مدة انتقال/تلاشي (بالميلي ثانية) — تُستخدم بعناصر "انتقال" خاصة
+  // (مو نص عادي) زي عنصر تلاشي فتح الدعوة. شوف TransitionsMenu.
+  duration?: number
+  // نوع منحنى الحركة (سرعة الانتقال) — CSS transition-timing-function.
+  easing?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"
 }
 
 export type SidebarTab = "text" | "background" | "properties" | "insert"
@@ -1171,6 +1176,188 @@ export function BackgroundsMenu({ sections }: { sections: BackgroundSectionOptio
         }}
       >
         🎨 الخلفيات
+      </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// TransitionsMenu — قائمة سريعة للتحكم بمدة/سرعة أي "انتقال تلاشي" بالصفحة
+// (مثل تلاشي ظهور النصوص بعد فتح الدعوة). كل عنصر انتقال له id مستقل
+// يُخزَّن ضبطه (duration + easing) بنفس نظام styles العام، فينحفظ وينحمّل
+// تلقائياً زي أي تعديل ثاني بدون أي تخزين إضافي.
+// ---------------------------------------------------------------------------
+
+export interface TransitionOption {
+  id: string
+  label: string
+  defaultDuration?: number // ms — لو ما فيه قيمة محفوظة بعد
+}
+
+const EASING_OPTIONS: {
+  value: NonNullable<TextStyle["easing"]>
+  label: string
+}[] = [
+  { value: "linear", label: "ثابتة" },
+  { value: "ease", label: "طبيعية" },
+  { value: "ease-in", label: "بطيئة البداية" },
+  { value: "ease-out", label: "بطيئة النهاية" },
+  { value: "ease-in-out", label: "بطيئة الطرفين" },
+]
+
+export function TransitionsMenu({ items }: { items: TransitionOption[] }) {
+  const { editable, styles, updateStyle } = useEditMode()
+  const [open, setOpen] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(items[0]?.id ?? null)
+
+  if (!editable || items.length === 0) return null
+
+  const active = items.find((i) => i.id === activeId) || items[0]
+  const st = styles[active.id] || {}
+  const duration = st.duration ?? active.defaultDuration ?? 1000
+  const easing = st.easing || "ease"
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 16,
+        insetInlineStart: 150,
+        zIndex: 530,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+      }}
+    >
+      {open && (
+        <div
+          style={{
+            marginBottom: 8,
+            background: "#15100E",
+            border: "1px solid #3A2A1E",
+            borderRadius: 12,
+            padding: 14,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            minWidth: 240,
+            boxShadow: "0 12px 30px rgba(0,0,0,.4)",
+          }}
+        >
+          {items.length > 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {items.map((it) => (
+                <button
+                  key={it.id}
+                  onClick={() => setActiveId(it.id)}
+                  style={{
+                    textAlign: "start",
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    border:
+                      activeId === it.id
+                        ? "1px solid #B8862F"
+                        : "1px solid transparent",
+                    background:
+                      activeId === it.id
+                        ? "rgba(184,134,47,.18)"
+                        : "transparent",
+                    color: "#F1D989",
+                    fontSize: 12,
+                    fontFamily: "system-ui, sans-serif",
+                    cursor: "pointer",
+                  }}
+                >
+                  {it.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <label
+              style={{
+                color: "#F1D989",
+                fontSize: 11,
+                fontFamily: "system-ui, sans-serif",
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 4,
+              }}
+            >
+              <span>مدة التلاشي</span>
+              <span>{(duration / 1000).toFixed(1)} ثانية</span>
+            </label>
+            <input
+              type="range"
+              min={200}
+              max={3000}
+              step={100}
+              value={duration}
+              onChange={(e) =>
+                updateStyle(active.id, { duration: Number(e.target.value) })
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
+
+          <div>
+            <label
+              style={{
+                color: "#F1D989",
+                fontSize: 11,
+                fontFamily: "system-ui, sans-serif",
+                display: "block",
+                marginBottom: 6,
+              }}
+            >
+              سرعة الحركة
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {EASING_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => updateStyle(active.id, { easing: opt.value })}
+                  style={{
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    fontSize: 11,
+                    fontFamily: "system-ui, sans-serif",
+                    border:
+                      easing === opt.value
+                        ? "1px solid #B8862F"
+                        : "1px solid rgba(255,255,255,.15)",
+                    background:
+                      easing === opt.value
+                        ? "rgba(184,134,47,.25)"
+                        : "transparent",
+                    color: "#F1D989",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.2)",
+          background: "rgba(0,0,0,.65)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        }}
+      >
+        ⏱️ الانتقالات
       </button>
     </div>
   )
