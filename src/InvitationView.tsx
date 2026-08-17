@@ -723,22 +723,27 @@ function WisalTemplateView({
                         <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
                       </label>
                       <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setAttendance(opt)}
-                            className={`py-3 rounded-xl text-base font-medium transition ${
-                              attendance === opt
-                                ? "bg-[#B8862F] text-white shadow"
-                                : "bg-[#FAF7F2] border border-[#D4AF37]/30 text-[#3D312A]"
-                            }`}
-                          >
-                            <EditableText id={`rsvp-option-${opt}`}>
-                              {opt}
-                            </EditableText>
-                          </button>
-                        ))}
+                        {["نعم", "لا", "ربما"].map((opt) => {
+                          const isActive = attendance === opt
+                          return (
+                            <EditableButton
+                              key={opt}
+                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
+                              type="button"
+                              onClick={() => setAttendance(opt)}
+                              className={`py-3 rounded-xl text-base font-medium transition ${
+                                isActive
+                                  ? "text-white shadow"
+                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
+                              }`}
+                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
+                            >
+                              <EditableText id={`rsvp-option-${opt}`}>
+                                {opt}
+                              </EditableText>
+                            </EditableButton>
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -748,27 +753,35 @@ function WisalTemplateView({
                           عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
                         </EditableText>
                       </label>
-                      <div className="flex items-center justify-center gap-6 bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl py-3">
-                        <button
+                      <EditableBackground
+                        id="bg-rsvp-companions-box"
+                        className="flex items-center justify-center gap-6 border border-[#D4AF37]/30 rounded-2xl py-3"
+                        style={{ backgroundColor: "#FAF7F2" }}
+                      >
+                        <EditableButton
+                          id="bg-rsvp-counter-btn"
                           type="button"
                           onClick={() =>
                             setCompanions(Math.max(0, companions - 1))
                           }
-                          className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          style={{ backgroundColor: "#ffffff" }}
                         >
                           -
-                        </button>
+                        </EditableButton>
                         <span className="text-xl font-bold text-[#4A3B2C]">
                           {companions}
                         </span>
-                        <button
+                        <EditableButton
+                          id="bg-rsvp-counter-btn"
                           type="button"
                           onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full bg-white border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          style={{ backgroundColor: "#ffffff" }}
                         >
                           +
-                        </button>
-                      </div>
+                        </EditableButton>
+                      </EditableBackground>
                     </div>
 
                     <div>
