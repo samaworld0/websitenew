@@ -418,7 +418,7 @@ function WisalTemplateView({
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
                 <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
-                  و
+                  <EditableText id="names-separator">و</EditableText>
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="bride">{inv.bride}</EditableText>
@@ -709,7 +709,7 @@ function WisalTemplateView({
           className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none"
         />
         <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
-          اضغط لفتح الدعوة
+          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
         </p>
       </div>
     </div>
