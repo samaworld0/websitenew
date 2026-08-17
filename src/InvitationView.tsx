@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type RefObject } from "react"
+import { useState, useEffect, useRef, type RefObject, type ReactNode } from "react"
 import { Invitation, TextStyle, CustomFont } from "./types"
 import { submitRSVP } from "./backend"
 import Reveal from "./Reveal"
@@ -11,6 +11,7 @@ import {
   EditableLinkBackground,
   EditPanel,
   BackgroundsMenu,
+  TransitionsMenu,
   useEditMode,
 } from "./LiveEditor"
 
@@ -28,6 +29,11 @@ interface GoldenParticle {
 // نفس لوحة الخصائص العادية: النص (الحقل "النص") يغيّر الرمز (✿، ❤، ★...)،
 // ولون النص يغيّر لون كل الورود مرة وحدة.
 const PARTICLES_THEME_ID = "particles-theme"
+
+// معرّف عنصر "انتقال تلاشي نصوص القسم الأول" — يتحكم بمدة/سرعة ظهور
+// النصوص والعناصر (بعد اختفاء الباب/الفيديو بالكامل) من لوحة التعديل
+// عبر TransitionsMenu، بدل ما تكون مثبّتة بالكود (1000ms).
+const DOOR_TEXT_TRANSITION_ID = "transition-door-text"
 
 // عنصر جزيئات الخلفية المتطايرة — قابل للتحديد بوضع التعديل مثل أي عنصر
 // ثاني، ويقرأ شكله (الرمز) ولونه من TextStyle الخاص بمعرّفه بدل ما يكون
@@ -78,6 +84,36 @@ function FloatingParticles({ particles }: { particles: GoldenParticle[] }) {
           {glyph}
         </div>
       ))}
+    </div>
+  )
+}
+
+// حاوية نصوص وعناصر القسم الأول (اسم العريس/العروسة، التاريخ، رسالة
+// الترحيب...) — تتلاشى للظهور بعد ما يختفي الباب/الفيديو بالكامل
+// (doorRemoved)، مو بنفس لحظته. مدة وسرعة هذا التلاشي قابلة للتحكم من
+// لوحة "⏱️ الانتقالات" بوضع التصميم المباشر (شوف TransitionsMenu)
+// بدل ما تكون مثبّتة بالكود.
+function DoorTextReveal({
+  doorRemoved,
+  children,
+}: {
+  doorRemoved: boolean
+  children: ReactNode
+}) {
+  const { styles } = useEditMode()
+  const st = styles[DOOR_TEXT_TRANSITION_ID] || {}
+  const duration = st.duration ?? 1000
+  const easing = st.easing || "ease"
+
+  return (
+    <div
+      className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen"
+      style={{
+        opacity: doorRemoved ? 1 : 0,
+        transition: `opacity ${duration}ms ${easing}`,
+      }}
+    >
+      {children}
     </div>
   )
 }
@@ -489,11 +525,7 @@ function WisalTemplateView({
 
             <FloatingParticles particles={particles} />
 
-            <div
-              className={`relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen transition-opacity duration-1000 ${
-                doorRemoved ? "opacity-100" : "opacity-0"
-              }`}
-            >
+            <DoorTextReveal doorRemoved={doorRemoved}>
               <div />
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
@@ -533,7 +565,7 @@ function WisalTemplateView({
                   <EditableText id="scroll-arrow">↓</EditableText>
                 </span>
               </div>
-            </div>
+            </DoorTextReveal>
           </section>
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
@@ -860,6 +892,17 @@ function WisalTemplateView({
           { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
           { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
           { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
+        ]}
+      />
+    )}
+    {editable && (
+      <TransitionsMenu
+        items={[
+          {
+            id: DOOR_TEXT_TRANSITION_ID,
+            label: "تلاشي نصوص القسم الأول",
+            defaultDuration: 1000,
+          },
         ]}
       />
     )}
