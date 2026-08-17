@@ -403,9 +403,11 @@ function WisalTemplateView({
               <div />
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
-                  دعوة زفاف
+                  <EditableText id="intro-title">دعوة زفاف</EditableText>
                 </p>
-                <span className="text-[#D4AF37] text-xl mb-4">✿</span>
+                <span className="text-[#D4AF37] text-xl mb-4">
+                  <EditableText id="intro-icon">✿</EditableText>
+                </span>
                 <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
@@ -420,13 +422,15 @@ function WisalTemplateView({
                     <EditableText id="date">{inv.date}</EditableText>
                   </p>
                   <p className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
-                    فتحنا باب فرحتنا... وطارت البشائر تدعوكم
+                    <EditableText id="welcome-message">
+                      فتحنا باب فرحتنا... وطارت البشائر تدعوكم
+                    </EditableText>
                   </p>
                 </div>
               </div>
               <div className="mb-4 flex flex-col items-center opacity-80">
                 <p className="text-sm tracking-widest text-[#E8DCC4] mb-1 custom-font-tajawal">
-                  مرر للأسفل
+                  <EditableText id="scroll-hint">مرر للأسفل</EditableText>
                 </p>
                 <span
                   className="text-xl text-[#D4AF37]"
@@ -467,7 +471,7 @@ function WisalTemplateView({
               {/* العداد التنازلي المكبر */}
               <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
-                  باقي على فرحنا
+                  <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
                 <div
                   className="flex justify-center items-center gap-4"
@@ -509,7 +513,7 @@ function WisalTemplateView({
                     ❁
                   </span>
                   <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
-                    برنامج الحفل
+                    <EditableText id="schedule-title">برنامج الحفل</EditableText>
                   </h3>
                   <span className="text-[#D4AF37] text-base opacity-80">
                     ❁
@@ -529,7 +533,7 @@ function WisalTemplateView({
 
               <Reveal className="text-center max-w-lg w-full mb-24">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
-                  مكان الحفل
+                  <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
                 <h4 className="text-2xl font-bold text-[#F5EBE0] mb-3">
                   <EditableText id="venue">{inv.venue}</EditableText>
@@ -543,7 +547,7 @@ function WisalTemplateView({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white bg-[#B8862F] hover:bg-[#9E7024] shadow-md"
                 >
-                  📍 الموقع على الخريطة
+                  📍 <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
                 </a>
               </Reveal>
             </section>
