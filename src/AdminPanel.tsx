@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Invitation, SiteSettings } from "./types"
+import { Invitation, SiteSettings, CustomFont } from "./types"
 import {
   saveInvitation,
   deleteInvitation,
@@ -326,6 +326,159 @@ function MediaUploadField({
       />
 
       {hint && <span className="text-xs text-[#8a7561]">{hint}</span>}
+      {error && <span className="text-xs text-red-600">{error}</span>}
+      {bucketMissing && (
+        <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          مخزن الملفات "invitation-media" غير موجود بعد بـ Supabase Storage.
+          روح لـ Supabase → Storage → New bucket → اكتب الاسم بالضبط
+          invitation-media وفعّل "Public bucket"، وبعدها جرّب الرفع مرة
+          ثانية.
+        </span>
+      )}
+    </div>
+  )
+}
+
+// إدارة مكتبة الخطوط المخصصة (SiteSettings.customFonts). كل خط = اسم
+// يظهر بقائمة اختيار الخط + رابط ملف الخط الفعلي (يترفع لنفس مخزن
+// invitation-media بمجلد "fonts"، أو تقدر تلصق رابط ملف خط جاهز مباشرة).
+// التغييرات هنا محلية بس (state الفورم) لحد ما يضغط المستخدم "حفظ
+// إعدادات الواجهة" بالفورم الأب — نفس سلوك باقي حقول SiteSettingsForm.
+function FontsManagerField({
+  value,
+  onChange,
+}: {
+  value: CustomFont[]
+  onChange: (fonts: CustomFont[]) => void
+}) {
+  const [nameDraft, setNameDraft] = useState("")
+  const [linkDraft, setLinkDraft] = useState("")
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState("")
+  const [bucketMissing, setBucketMissing] = useState(false)
+
+  const addFont = (url: string) => {
+    const name = nameDraft.trim()
+    if (!name || !url.trim()) return
+    if (value.some((f) => f.name === name)) {
+      setError("فيه خط باسم مطابق مسجل مسبقاً — اختر اسم ثاني")
+      return
+    }
+    onChange([...value, { name, url: url.trim() }])
+    setNameDraft("")
+    setLinkDraft("")
+    setError("")
+  }
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return
+    if (!nameDraft.trim()) {
+      setError("اكتب اسم الخط أول قبل ما ترفع الملف")
+      return
+    }
+    setUploading(true)
+    setError("")
+    setBucketMissing(false)
+    const result = await uploadMedia(file, "fonts")
+    setUploading(false)
+    if (!result.success || !result.url) {
+      if (result.bucketMissing) setBucketMissing(true)
+      else setError(result.error || "تعذّر رفع ملف الخط، حاول مرة ثانية")
+      return
+    }
+    addFont(result.url)
+  }
+
+  const removeFont = (name: string) => {
+    onChange(value.filter((f) => f.name !== name))
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {value.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {value.map((f) => (
+            <li
+              key={f.name}
+              className="flex items-center gap-2.5 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-3 py-2"
+            >
+              <span
+                className="min-w-0 flex-1 text-sm font-bold text-[#2C1810] truncate"
+                style={{ fontFamily: `'${f.name}'` }}
+                title={f.name}
+              >
+                {f.name} — أبجد هوز
+              </span>
+              <button
+                type="button"
+                title="إزالة"
+                onClick={() => removeFont(f.name)}
+                className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-red-500 hover:bg-red-50 transition"
+              >
+                🗑
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex flex-col gap-2 bg-[#f5efe2] rounded-lg p-3">
+        <input
+          className={inputClass}
+          placeholder="اسم الخط (مثلاً: خط الدعوة الجديد)"
+          value={nameDraft}
+          onChange={(e) => setNameDraft(e.target.value)}
+        />
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="font-file-upload"
+            className={`flex-1 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg py-2.5 text-sm cursor-pointer transition ${
+              nameDraft.trim()
+                ? "border-[#e5d9c3] text-[#8a7561] hover:border-[#D4AF37] hover:text-[#2C1810]"
+                : "border-[#e5d9c3] text-[#c9bda6] cursor-not-allowed"
+            }`}
+          >
+            {uploading ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                <span>جارٍ الرفع...</span>
+              </>
+            ) : (
+              <>
+                <span>⬆️</span>
+                <span>رفع ملف خط (ttf/otf/woff/woff2)</span>
+              </>
+            )}
+          </label>
+          <input
+            id="font-file-upload"
+            type="file"
+            accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2"
+            className="hidden"
+            disabled={uploading || !nameDraft.trim()}
+            onChange={(e) => handleFile(e.target.files?.[0])}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="url"
+            dir="ltr"
+            className={inputClass}
+            placeholder="أو الصق رابط ملف خط مباشر (https://...woff2)"
+            value={linkDraft}
+            onChange={(e) => setLinkDraft(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => addFont(linkDraft)}
+            disabled={!nameDraft.trim() || !linkDraft.trim()}
+            className="shrink-0 px-4 py-2 rounded-lg text-xs font-bold bg-[#D4AF37] text-[#2C1810] disabled:opacity-50"
+          >
+            إضافة
+          </button>
+        </div>
+      </div>
+
       {error && <span className="text-xs text-red-600">{error}</span>}
       {bucketMissing && (
         <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -1285,7 +1438,8 @@ function SiteSettingsForm({
   add column if not exists "topHeroButtonText" text,
   add column if not exists "heroCard1Image" text,
   add column if not exists "heroCard2Image" text,
-  add column if not exists "heroCard3Image" text;`
+  add column if not exists "heroCard3Image" text,
+  add column if not exists "customFonts" jsonb;`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1546,6 +1700,22 @@ function SiteSettingsForm({
           value={settings.heroCard3Image || ""}
           folder="hero-cards"
           onChange={(url) => set("heroCard3Image", url)}
+        />
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-sm font-bold text-[#D4AF37] mb-1">
+          الخطوط
+        </legend>
+        <p className="text-xs text-[#8a7561] -mt-2 mb-1">
+          أضف خط جديد (ملف .ttf / .otf / .woff / .woff2) هنا مرة وحدة —
+          يصير متاح تلقائياً بقائمة اختيار الخط بكل الدعوات عبر "تعديل
+          التصميم مباشر"، ويبقى محفوظ حتى لو سكرت الصفحة (لازم تضغط "حفظ
+          إعدادات الواجهة" تحت حتى يثبت نهائياً).
+        </p>
+        <FontsManagerField
+          value={settings.customFonts || []}
+          onChange={(fonts) => set("customFonts", fonts)}
         />
       </fieldset>
 
@@ -2046,6 +2216,7 @@ export default function AdminPanel({
           invitation={designEditingInv}
           onClose={() => setDesignEditingInv(null)}
           onSaved={onRefresh}
+          customFonts={siteSettings.customFonts || []}
         />
       )}
     </div>
