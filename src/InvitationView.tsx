@@ -396,6 +396,11 @@ function WisalTemplateView({
           100% { opacity: 0; }
         }
         .royal-scroll::-webkit-scrollbar { display: none; }
+        .royal-scroll {
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-y: contain;
+          touch-action: pan-y;
+        }
         .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
         .custom-font-amiri { font-family: 'Amiri', serif; }
         .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
@@ -843,6 +848,9 @@ export default function InvitationFullView({
           style={{
             background: `linear-gradient(180deg, ${inv.gradient[0]}, ${inv.gradient[1]})`,
             color: inv.accentColor,
+            WebkitOverflowScrolling: "touch",
+            overscrollBehaviorY: "contain",
+            touchAction: "pan-y",
           }}
         >
           <Reveal>
