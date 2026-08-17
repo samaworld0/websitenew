@@ -510,9 +510,13 @@ function WisalTemplateView({
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={{
-              backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-            }}
+            style={
+              inv.doorBgVideo && !doorBgVideoFailed
+                ? undefined
+                : {
+                    backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
+                  }
+            }
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
