@@ -6,6 +6,8 @@ import {
   EditModeProvider,
   DeselectSurface,
   EditableText,
+  EditableBackground,
+  EditableButton,
   EditPanel,
   useEditMode,
 } from "./LiveEditor"
@@ -611,8 +613,12 @@ function WisalTemplateView({
               </Reveal>
             </section>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#4E1019] text-[#F5EBE0] border-t-2 border-[#D4AF37]">
+            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            <EditableBackground
+              id="bg-venue-section"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              style={{ backgroundColor: "#4E1019" }}
+            >
               {inv.schedule && inv.schedule.length > 0 && (
                 <Reveal className="text-center max-w-lg w-full mb-24">
                   <div className="flex items-center justify-center gap-3 mb-10">
@@ -654,11 +660,19 @@ function WisalTemplateView({
                   📍 <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
                 </a>
               </Reveal>
-            </section>
+            </EditableBackground>
 
-            {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل */}
-            <section className="py-20 px-6 flex flex-col items-center bg-[#FAF7F2] border-t-2 border-[#D4AF37]">
-              <Reveal className="max-w-md w-full bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg">
+            {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            <EditableBackground
+              id="bg-rsvp-section"
+              className="py-20 px-6 flex flex-col items-center border-t-2 border-[#D4AF37]"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
+              <Reveal className="max-w-md w-full">
+              <EditableBackground
+                id="bg-rsvp-card"
+                className="bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg"
+              >
                 <div className="text-center mb-10">
                   <span className="text-lg">
                     <EditableText id="rsvp-icon">⚙️</EditableText>
@@ -761,18 +775,21 @@ function WisalTemplateView({
                       />
                     </div>
 
-                    <button
+                    <EditableButton
+                      id="bg-rsvp-submit"
                       type="submit"
-                      className="w-full py-4 bg-[#B8862F] hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
+                      className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
+                      style={{ backgroundColor: "#B8862F" }}
                     >
                       <EditableText id="rsvp-submit-button">
                         إرسال التأكيد
                       </EditableText>
-                    </button>
+                    </EditableButton>
                   </form>
                 )}
+              </EditableBackground>
               </Reveal>
-            </section>
+            </EditableBackground>
           </div>
         </div>
       </div>
