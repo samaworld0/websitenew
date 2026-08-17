@@ -11,6 +11,7 @@ import {
   uploadMedia,
 } from "./backend"
 import DesignPanel from "./DesignPanel"
+import { DEFAULT_SCHEDULE } from "./InvitationView"
 
 const categories = [
   { id: "wedding", label: "زفاف" },
@@ -589,7 +590,17 @@ function InvitationForm({
   onCancel: () => void
   onSaved: (inv: Invitation, keepFormOpen?: boolean) => void
 }) {
-  const [inv, setInv] = useState<Invitation>(initial)
+  // لو الدعوة ما عندها برنامج حفل مخصص محفوظ، نبدأ النموذج بنفس القيم
+  // الافتراضية اللي تظهر فعلياً بصفحة الدعوة (DEFAULT_SCHEDULE) بدل قائمة
+  // فاضية — حتى المشرف يشوف وين بالضبط يعدّل، مو يبدأ من الصفر بالضغط
+  // على "+" ثلاث مرات أول شي.
+  const [inv, setInv] = useState<Invitation>(() => ({
+    ...initial,
+    schedule:
+      initial.schedule && initial.schedule.length > 0
+        ? initial.schedule
+        : DEFAULT_SCHEDULE.map((item) => ({ ...item })),
+  }))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
@@ -939,7 +950,9 @@ function InvitationForm({
         </legend>
         <p className="text-xs text-[#8a7561] -mt-2">
           يظهر كخط ذهبي بصفحة الدعوة. كل صف عنصر (مثلاً "عقد القران") مع
-          وقته (مثلاً "٧:٣٠ مساءً"). لو تركته فاضياً بالكامل، تُستخدم القيم
+          وقته (مثلاً "٧:٣٠ مساءً"). القائمة تحت مبيّنة لك بالقيم
+          الافتراضية جاهزة للتعديل — عدّلها كما تحب، أو احذف كل الصفوف
+          وخليها فاضية بالكامل حتى تستمر صفحة الدعوة تعرض نفس القيم
           الافتراضية تلقائياً.
         </p>
         <div className="flex flex-col gap-2">
