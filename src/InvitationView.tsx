@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef, type RefObject } from "react"
-import { Invitation } from "./types"
+import { Invitation, TextStyle } from "./types"
 import { submitRSVP } from "./backend"
 import Reveal from "./Reveal"
+import {
+  EditModeProvider,
+  DeselectSurface,
+  EditableText,
+  EditPanel,
+} from "./LiveEditor"
 
 interface GoldenParticle {
   id: number
@@ -153,7 +159,15 @@ function ScheduleTrack({
   )
 }
 
-function WisalTemplateView({ inv }: { inv: Invitation }) {
+function WisalTemplateView({
+  inv,
+  editable = false,
+  onStylesChange,
+}: {
+  inv: Invitation
+  editable?: boolean
+  onStylesChange?: (styles: Record<string, TextStyle>) => void
+}) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -266,6 +280,12 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
   }
 
   return (
+    <EditModeProvider
+      editable={editable}
+      initialStyles={inv.textStyles || {}}
+      onStylesChange={onStylesChange}
+    >
+    <DeselectSurface>
     <div
       className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
       dir="rtl"
@@ -387,17 +407,17 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                 </p>
                 <span className="text-[#D4AF37] text-xl mb-4">✿</span>
                 <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  {inv.groom}
+                  <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
                 <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
                   و
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  {inv.bride}
+                  <EditableText id="bride">{inv.bride}</EditableText>
                 </h1>
                 <div className="mt-8 space-y-2">
                   <p className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri">
-                    {inv.date}
+                    <EditableText id="date">{inv.date}</EditableText>
                   </p>
                   <p className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
                     فتحنا باب فرحتنا... وطارت البشائر تدعوكم
@@ -426,7 +446,7 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                   بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                 </p>
                 <p className="text-xl md:text-2xl leading-loose text-[#5A4A3C] custom-font-amiri">
-                  {inv.verse}
+                  <EditableText id="verse">{inv.verse}</EditableText>
                 </p>
                 <div className="mt-5 text-[#D4AF37] text-lg">✿</div>
               </Reveal>
@@ -512,9 +532,11 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
                   مكان الحفل
                 </h3>
                 <h4 className="text-2xl font-bold text-[#F5EBE0] mb-3">
-                  {inv.venue}
+                  <EditableText id="venue">{inv.venue}</EditableText>
                 </h4>
-                <p className="text-base text-[#E8DCC4]/80 mb-7">{inv.city}</p>
+                <p className="text-base text-[#E8DCC4]/80 mb-7">
+                  <EditableText id="city">{inv.city}</EditableText>
+                </p>
                 <a
                   href={normalizeExternalUrl(inv.mapUrl, "https://maps.google.com")}
                   target="_blank"
@@ -657,15 +679,22 @@ function WisalTemplateView({ inv }: { inv: Invitation }) {
         </p>
       </div>
     </div>
+    </DeselectSurface>
+    {editable && <EditPanel />}
+    </EditModeProvider>
   )
 }
 
 export default function InvitationFullView({
   inv,
   onClose,
+  editable = false,
+  onStylesChange,
 }: {
   inv: Invitation
   onClose: () => void
+  editable?: boolean
+  onStylesChange?: (styles: Record<string, TextStyle>) => void
 }) {
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -677,17 +706,29 @@ export default function InvitationFullView({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-[#0D0706]">
-      <div className="absolute top-6 left-6 z-[100]">
-        <button
-          onClick={onClose}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-lg bg-black/60 text-white backdrop-blur-md border border-white/20"
-        >
-          ← رجوع للرئيسية
-        </button>
-      </div>
+      {!editable && (
+        <div className="absolute top-6 left-6 z-[100]">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-lg bg-black/60 text-white backdrop-blur-md border border-white/20"
+          >
+            ← رجوع للرئيسية
+          </button>
+        </div>
+      )}
       {inv.templateType === "wisal" ? (
-        <WisalTemplateView inv={inv} />
+        <WisalTemplateView
+          inv={inv}
+          editable={editable}
+          onStylesChange={onStylesChange}
+        />
       ) : (
+        <EditModeProvider
+          editable={editable}
+          initialStyles={inv.textStyles || {}}
+          onStylesChange={onStylesChange}
+        >
+        <DeselectSurface>
         <div
           className="flex-1 w-full h-full overflow-y-auto p-12 text-center"
           style={{
@@ -696,15 +737,22 @@ export default function InvitationFullView({
           }}
         >
           <Reveal>
-            <h1
+            <EditableText
+              id="title"
+              as="h1"
               className="text-4xl font-bold mb-4"
               style={{ fontFamily: "Amiri, serif" }}
             >
               {inv.title}
-            </h1>
-            <p className="text-xl">{inv.subtitle}</p>
+            </EditableText>
+            <EditableText id="subtitle" as="p" className="text-xl">
+              {inv.subtitle}
+            </EditableText>
           </Reveal>
         </div>
+        </DeselectSurface>
+        {editable && <EditPanel />}
+        </EditModeProvider>
       )}
     </div>
   )
