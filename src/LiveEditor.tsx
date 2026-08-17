@@ -699,7 +699,20 @@ export function EditPanel() {
         <select
           style={input}
           value={st.font ?? ""}
-          onChange={(e) => updateStyle(selectedId, { font: e.target.value || undefined })}
+          onChange={(e) => {
+            const chosenFamily = e.target.value || undefined
+            // لو اختار خط مخصص (من قائمة "خطوط مضافة")، نخزن رابط ملفه
+            // (fontUrl) مع اسمه بنفس TextStyle العنصر، مو بس الاسم —
+            // حتى الخط يشتغل بأي صفحة يفتح فيها العنصر لحاله (مثل رابط
+            // المعاينة ?preview=ID) حتى لو ما وصلتها قائمة customFonts
+            // الكاملة لأي سبب، بدل ما يعتمد بس على حقن الخط العام وقت
+            // فتح لوحة التصميم.
+            const customMatch = customFonts.find((f) => f.name === chosenFamily)
+            updateStyle(selectedId, {
+              font: chosenFamily,
+              fontUrl: customMatch?.url,
+            })
+          }}
         >
           <option value="">افتراضي</option>
           {FONT_OPTIONS.map((f) => (
