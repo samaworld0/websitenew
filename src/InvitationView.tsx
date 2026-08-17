@@ -33,7 +33,7 @@ function normalizeExternalUrl(url: string | undefined, fallback: string): string
 
 // برنامج الحفل الافتراضي — يُستخدم لو الدعوة ما عندها جدول مخصص محفوظ
 // (schedule فاضي أو غير موجود، مثلاً دعوات قديمة قبل إضافة هالحقل).
-const DEFAULT_SCHEDULE = [
+export const DEFAULT_SCHEDULE = [
   { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
   { label: "عقد القران", time: "٧:٣٠ مساءً" },
   { label: "العشاء", time: "٩:٠٠ مساءً" },
