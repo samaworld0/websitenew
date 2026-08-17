@@ -20,6 +20,7 @@ export const defaultSiteSettings: SiteSettings = {
   heroCard1Image: "",
   heroCard2Image: "",
   heroCard3Image: "",
+  customFonts: [],
 }
 
 // هذي البيانات تُستخدم فقط "لزرع" قاعدة بيانات Supabase أول مرة لو كانت
