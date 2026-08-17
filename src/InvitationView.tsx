@@ -452,11 +452,7 @@ function WisalTemplateView({
         ref={scrollContainerRef}
         className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll"
       >
-        <div
-          className={`relative transition-all duration-1000 w-full ${
-            isOpen ? "opacity-100" : "opacity-0"
-          }`}
-        >
+        <div className="relative w-full">
           {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
@@ -493,7 +489,11 @@ function WisalTemplateView({
 
             <FloatingParticles particles={particles} />
 
-            <div className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen">
+            <div
+              className={`relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen transition-opacity duration-1000 ${
+                isOpen ? "opacity-100" : "opacity-0"
+              }`}
+            >
               <div />
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
