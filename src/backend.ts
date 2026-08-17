@@ -253,6 +253,7 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
         data.heroCard2Image ?? defaultSiteSettings.heroCard2Image,
       heroCard3Image:
         data.heroCard3Image ?? defaultSiteSettings.heroCard3Image,
+      customFonts: data.customFonts ?? defaultSiteSettings.customFonts,
     }
   } catch (err) {
     console.error("Supabase loadSiteSettings error:", err)
