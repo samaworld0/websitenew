@@ -491,7 +491,7 @@ function WisalTemplateView({
 
             <div
               className={`relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen transition-opacity duration-1000 ${
-                isOpen ? "opacity-100" : "opacity-0"
+                doorRemoved ? "opacity-100" : "opacity-0"
               }`}
             >
               <div />
