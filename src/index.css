@@ -39,6 +39,12 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 html {
   direction: rtl;
   scroll-behavior: smooth;
@@ -49,6 +55,7 @@ body {
   background-color: #fefcf8;
   color: #1c0f07;
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
 }
 
 .font-display {
