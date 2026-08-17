@@ -270,6 +270,14 @@ function WisalTemplateView({
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [showFlash, setShowFlash] = useState(false)
+  // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
+  // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
+  // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
+  // التمرير باللمس حتى لو صارت شفافة تماماً — كإنها تفضل "عالقة" بمنطقة
+  // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
+  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-1000)،
+  // بدل الاعتماد على opacity/pointer-events فقط.
+  const [doorRemoved, setDoorRemoved] = useState(false)
 
   const generateGoldenParticles = () => {
     const items: GoldenParticle[] = []
@@ -300,6 +308,7 @@ function WisalTemplateView({
     if (editable) {
       generateGoldenParticles()
       setIsOpen(true)
+      setDoorRemoved(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editable])
@@ -310,6 +319,9 @@ function WisalTemplateView({
         generateGoldenParticles()
         setShowFlash(true)
         setTimeout(() => setShowFlash(false), 900)
+        // نفس مدة "transition-opacity duration-1000" لطبقة الباب، حتى
+        // ننتظر التلاشي يخلص بصرياً قبل ما نشيلها فعلياً من الصفحة.
+        setTimeout(() => setDoorRemoved(true), 1050)
       }
       return true
     })
@@ -765,27 +777,32 @@ function WisalTemplateView({
         </div>
       </div>
 
-      {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر */}
-      <div
-        onClick={handleDoorTap}
-        className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black/85 ${
-          isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}
-      >
-        <video
-          key={inv.introVideo || "default-intro-video"}
-          ref={videoRef}
-          src={inv.introVideo || "/videos/intro.mp4"}
-          muted
-          playsInline
-          poster={inv.introPoster || "/videos/intro-poster.jpg"}
-          onEnded={completeOpening}
-          className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none"
-        />
-        <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
-          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
-        </p>
-      </div>
+      {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر.
+          ملاحظة: ما نشيلها فوراً لمن isOpen تصير true، لأن هذا يقطع
+          حركة التلاشي البصرية. بدل هيك نخليها opacity-0 لحد ما تخلص
+          الحركة (١٠٠٠ملي ثانية) ثم doorRemoved يشيلها كلياً. */}
+      {!doorRemoved && (
+        <div
+          onClick={handleDoorTap}
+          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black/85 ${
+            isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
+        >
+          <video
+            key={inv.introVideo || "default-intro-video"}
+            ref={videoRef}
+            src={inv.introVideo || "/videos/intro.mp4"}
+            muted
+            playsInline
+            poster={inv.introPoster || "/videos/intro-poster.jpg"}
+            onEnded={completeOpening}
+            className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none"
+          />
+          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
+            <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
+          </p>
+        </div>
+      )}
     </div>
     </DeselectSurface>
     {editable && <EditPanel />}
