@@ -10,6 +10,7 @@ import {
   createSheetForInvitation,
   uploadMedia,
 } from "./backend"
+import DesignPanel from "./DesignPanel"
 
 const categories = [
   { id: "wedding", label: "زفاف" },
@@ -1557,6 +1558,7 @@ function InvitationRow({
   onDelete,
   onEdit,
   onCopyAsPrivate,
+  onDesignEdit,
 }: {
   inv: Invitation
   nextId: number
@@ -1565,6 +1567,7 @@ function InvitationRow({
   onDelete: (id: number) => void
   onEdit: (inv: Invitation) => void
   onCopyAsPrivate: (inv: Invitation, nextId: number) => void
+  onDesignEdit: (inv: Invitation) => void
 }) {
   return (
     <div className="bg-white rounded-xl border border-[#e5d9c3] p-4 flex flex-wrap items-center justify-between gap-3">
@@ -1622,6 +1625,12 @@ function InvitationRow({
           className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
         >
           تعديل
+        </button>
+        <button
+          onClick={() => onDesignEdit(inv)}
+          className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#4A2B32] text-white"
+        >
+          🎨 تعديل التصميم مباشر
         </button>
         <button
           onClick={() => onCopyAsPrivate(inv, nextId)}
@@ -1747,6 +1756,9 @@ export default function AdminPanel({
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [deleteError, setDeleteError] = useState("")
+  const [designEditingInv, setDesignEditingInv] = useState<Invitation | null>(
+    null,
+  )
 
   useEffect(() => {
     getCurrentSession().then((session) => {
@@ -1942,6 +1954,7 @@ export default function AdminPanel({
                   onDelete={handleDelete}
                   onEdit={startEdit}
                   onCopyAsPrivate={startCopyAsPrivate}
+                  onDesignEdit={setDesignEditingInv}
                 />
               ))}
             </div>
@@ -1987,6 +2000,7 @@ export default function AdminPanel({
                   onDelete={handleDelete}
                   onEdit={startEdit}
                   onCopyAsPrivate={startCopyAsPrivate}
+                  onDesignEdit={setDesignEditingInv}
                 />
               ))}
             </div>
@@ -2014,6 +2028,14 @@ export default function AdminPanel({
           />
         )}
       </div>
+
+      {designEditingInv && (
+        <DesignPanel
+          invitation={designEditingInv}
+          onClose={() => setDesignEditingInv(null)}
+          onSaved={onRefresh}
+        />
+      )}
     </div>
   )
 }
