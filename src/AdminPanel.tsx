@@ -1202,10 +1202,13 @@ function InvitationForm({
             ))}
           </div>
         </Field>
-        <Field label="الآية / النص الديني" hint="يظهر أعلى الدعوة">
+        <Field
+          label="الآية / النص الديني"
+          hint="يظهر أعلى الدعوة — كل سطر تكتبه يظهر بسطر مستقل بنفس الشكل"
+        >
           <textarea
             className={inputClass}
-            rows={2}
+            rows={6}
             value={inv.verse}
             onChange={(e) => set("verse", e.target.value)}
           />
