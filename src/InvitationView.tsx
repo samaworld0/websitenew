@@ -977,16 +977,6 @@ export default function InvitationFullView({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-[#0D0706]">
-      {!editable && (
-        <div className="absolute top-6 left-6 z-[100]">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold shadow-lg bg-black/60 text-white backdrop-blur-md border border-white/20"
-          >
-            ← رجوع للرئيسية
-          </button>
-        </div>
-      )}
       {inv.templateType === "wisal" ? (
         <WisalTemplateView
           inv={inv}
