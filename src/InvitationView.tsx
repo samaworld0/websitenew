@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type RefObject, type ReactNode } from "rea
 import { Invitation, TextStyle, CustomFont } from "./types"
 import { submitRSVP } from "./backend"
 import Reveal from "./Reveal"
+import { RoseIcon } from "./icons"
 import {
   EditModeProvider,
   DeselectSurface,
@@ -168,6 +169,12 @@ function ScheduleTrack({
   // EditableBackground حتى تبقى متزامنة تلقائياً بدون أي إعداد إضافي.
   const { styles } = useEditMode()
   const sectionBg = styles["bg-venue-section"]?.bgColor || "#4E1019"
+  // لون الوردة المتحركة — نقرأه هنا (مو بس جوّا EditableText) حتى نقدر
+  // نستخدمه بتوهج الظل (drop-shadow) لحظة تحريكها بنفس اللون المختار.
+  const flowerColor = styles["schedule-flower-icon"]?.color || "#D4AF37"
+  // لون الخط الرفيع الواصل بين النقاط — قابل للتغيير من قائمة "الخلفيات"
+  // بالتصميم المباشر (معرّفه bg-schedule-line)، بنفس آلية لون خلفية القسم.
+  const lineColor = styles["bg-schedule-line"]?.bgColor || "#D4AF37"
 
   useEffect(() => {
     const container = containerRef.current
@@ -217,10 +224,12 @@ function ScheduleTrack({
 
   return (
     <div ref={trackRef} className="relative">
-      {/* الخط الذهبي الرفيع الواصل بين النقاط */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 w-px bg-[#D4AF37]/25"
-        style={{ top: line.top, height: Math.max(0, line.bottom - line.top) }}
+      {/* الخط الذهبي الرفيع الواصل بين النقاط — لونه قابل للتغيير من قائمة
+          "الخلفيات" بالتصميم المباشر (معرّفه bg-schedule-line) */}
+      <EditableBackground
+        id="bg-schedule-line"
+        className="absolute left-1/2 -translate-x-1/2 w-px opacity-25"
+        style={{ top: line.top, height: Math.max(0, line.bottom - line.top), backgroundColor: lineColor }}
       />
       {/* الوردة المتحركة فوق الخط — نحركها بـ transform (مو top) حتى تكون
           الحركة أنعم (GPU-accelerated)، ومدة أطول مع تسارع طبيعي بدل القفز
@@ -235,11 +244,13 @@ function ScheduleTrack({
         <span
           className="text-2xl"
           style={{
-            color: "#D4AF37",
+            color: flowerColor,
             filter: "drop-shadow(0 0 10px rgba(212,175,55,0.45))",
           }}
         >
-          <EditableText id="schedule-flower-icon">✿</EditableText>
+          <EditableText id="schedule-flower-icon">
+            <RoseIcon />
+          </EditableText>
         </span>
       </div>
 
@@ -587,7 +598,13 @@ function WisalTemplateView({
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
-            <section className="py-24 px-6 flex flex-col items-center">
+            {/* قسم الآية وبطاقة الدعوة والعداد التنازلي — خلفية كريمية
+                (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
+            <EditableBackground
+              id="bg-verse-section"
+              className="py-24 px-6 flex flex-col items-center"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
               <Reveal className="text-center max-w-xl mb-20">
                 <p className="text-base tracking-widest text-[#8C7A6B] mb-5 custom-font-amiri">
                   <EditableText id="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</EditableText>
@@ -673,7 +690,7 @@ function WisalTemplateView({
                   </div>
                 </div>
               </Reveal>
-            </section>
+            </EditableBackground>
 
             {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
@@ -903,7 +920,11 @@ function WisalTemplateView({
     {editable && (
       <BackgroundsMenu
         sections={[
+          { id: "bg-verse-section", label: "خلفية قسم الآية والعداد التنازلي" },
           { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
+          { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
+          { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
           { id: "bg-map-button", label: "خلفية زر الموقع على الخريطة" },
           { id: "bg-rsvp-section", label: "خلفية قسم تأكيد الحضور (كاملة)" },
           { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
