@@ -1442,6 +1442,9 @@ function SiteSettingsForm({
   add column if not exists "heroCard1Image" text,
   add column if not exists "heroCard2Image" text,
   add column if not exists "heroCard3Image" text,
+  add column if not exists "footerSocialHandle" text,
+  add column if not exists "footerInstagramUrl" text,
+  add column if not exists "footerTiktokUrl" text,
   add column if not exists "customFonts" jsonb;`
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1704,6 +1707,43 @@ function SiteSettingsForm({
           folder="hero-cards"
           onChange={(url) => set("heroCard3Image", url)}
         />
+      </fieldset>
+
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          الفوتر — التواصل الاجتماعي
+        </legend>
+        <p className="col-span-full text-xs text-[#8a7561] -mt-2 mb-1">
+          تظهر هذي بأسفل الصفحة الرئيسية (الفوتر). لو تركت رابط إنستغرام أو
+          تيك توك فاضي، ما تظهر أيقونته.
+        </p>
+        <Field label="المعرّف الظاهر" hint="مثال: ‎@sama">
+          <input
+            className={inputClass}
+            value={settings.footerSocialHandle || ""}
+            onChange={(e) => set("footerSocialHandle", e.target.value)}
+            dir="ltr"
+          />
+        </Field>
+        <div />
+        <Field label="رابط إنستغرام" hint="اختياري">
+          <input
+            className={inputClass}
+            value={settings.footerInstagramUrl || ""}
+            onChange={(e) => set("footerInstagramUrl", e.target.value)}
+            dir="ltr"
+            placeholder="https://instagram.com/..."
+          />
+        </Field>
+        <Field label="رابط تيك توك" hint="اختياري">
+          <input
+            className={inputClass}
+            value={settings.footerTiktokUrl || ""}
+            onChange={(e) => set("footerTiktokUrl", e.target.value)}
+            dir="ltr"
+            placeholder="https://tiktok.com/@..."
+          />
+        </Field>
       </fieldset>
 
       <fieldset className="flex flex-col gap-3">
