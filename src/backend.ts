@@ -253,6 +253,12 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
         data.heroCard2Image ?? defaultSiteSettings.heroCard2Image,
       heroCard3Image:
         data.heroCard3Image ?? defaultSiteSettings.heroCard3Image,
+      footerSocialHandle:
+        data.footerSocialHandle ?? defaultSiteSettings.footerSocialHandle,
+      footerInstagramUrl:
+        data.footerInstagramUrl ?? defaultSiteSettings.footerInstagramUrl,
+      footerTiktokUrl:
+        data.footerTiktokUrl ?? defaultSiteSettings.footerTiktokUrl,
       customFonts: data.customFonts ?? defaultSiteSettings.customFonts,
     }
   } catch (err) {
