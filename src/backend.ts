@@ -89,6 +89,7 @@ function toDatabaseInvitation(inv: Invitation) {
     introVideo: inv.introVideo ?? null,
     introPoster: inv.introPoster ?? null,
     musicUrl: inv.musicUrl ?? null,
+    doorStyle: inv.doorStyle ?? null,
   }
 }
 
