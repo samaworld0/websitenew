@@ -606,21 +606,13 @@ function WisalTemplateView({
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="text-center max-w-xl mb-20">
-                <p className="text-base tracking-widest text-[#8C7A6B] mb-5 custom-font-amiri">
-                  <EditableText id="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</EditableText>
-                </p>
                 <p
                   className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
                   style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
                 >
                   <EditableText id="verse">{inv.verse}</EditableText>
                 </p>
-                <div className="mt-5 text-[#D4AF37] text-lg">
-                  <EditableText id="verse-icon">✿</EditableText>
-                </div>
               </Reveal>
-
-              <div className="w-28 h-[1px] bg-[#D4AF37]/30 mb-20" />
 
               {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
                   (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
