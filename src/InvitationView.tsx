@@ -942,17 +942,18 @@ function WisalTemplateView({
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 pointer-events-none" />
 
-          {/* إطار زخرفي رفيع بزوايا مدورة، مقتبس داخل الشاشة */}
-          <div className="absolute inset-5 md:inset-10 rounded-[1.75rem] border border-[#D4AF37]/50 pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col items-center text-center px-8">
-            <p className="text-sm md:text-base tracking-[0.3em] text-[#E8DCC4] mb-4 custom-font-amiri">
+          {/* المربع الصغير في منتصف الشاشة */}
+          <div
+            className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl"
+            style={{ backgroundColor: "rgba(38, 30, 22, 0.78)", backdropFilter: "blur(3px)" }}
+          >
+            <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
             </p>
-            <p className="text-3xl md:text-5xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg mb-6">
+            <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg mb-3">
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
-            <p className="text-lg md:text-xl text-[#E8DCC4] custom-font-amiri">
+            <p className="text-base text-[#E8DCC4] custom-font-amiri">
               <EditableText id="door-card-names">
                 {`${inv.groom} & ${inv.bride}`}
               </EditableText>
