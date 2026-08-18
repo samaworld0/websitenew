@@ -91,6 +91,21 @@ export interface SiteSettings {
   footerSocialHandle?: string
   footerInstagramUrl?: string
   footerTiktokUrl?: string
+  // تخصيص ألوان ونصوص الفوتر (أسفل الصفحة الرئيسية) — كل حقل اختياري،
+  // لو فاضي يترجع تلقائياً للتصميم الافتراضي (شوف defaultSiteSettings
+  // بـ data.ts و Footer.tsx). يشمل لون خلفية الفوتر، لون النصوص، ونص/ألوان
+  // شعار الفوتر العلوي (البادج الوردي المستدير).
+  footerBgColor?: string
+  footerTextColor?: string
+  footerLinkColor?: string
+  footerLogoText?: string
+  footerLogoBgColor1?: string
+  footerLogoBgColor2?: string
+  footerLogoTextColor?: string
+  footerLink1Text?: string
+  footerLink2Text?: string
+  footerPaymentText?: string
+  footerWhatsappText?: string
   // مكتبة الخطوط المخصصة اللي يضيفها المشرف (ملف خط مرفوع أو رابط خط) —
   // تنحفظ مرة وحدة هنا وتظهر تلقائياً بقائمة اختيار الخط بكل الدعوات
   // (شوف LiveEditor.tsx -> EditModeProvider customFonts + EditPanel).
