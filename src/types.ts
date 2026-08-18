@@ -85,6 +85,12 @@ export interface SiteSettings {
   heroCard1Image?: string
   heroCard2Image?: string
   heroCard3Image?: string
+  // إعدادات الفوتر (أسفل الصفحة الرئيسية): المعرّف اللي يظهر جنب أيقونات
+  // التواصل، ورابطي إنستغرام وتيك توك. كل حقل اختياري — لو فاضي ما تظهر
+  // أيقونته بالفوتر.
+  footerSocialHandle?: string
+  footerInstagramUrl?: string
+  footerTiktokUrl?: string
   // مكتبة الخطوط المخصصة اللي يضيفها المشرف (ملف خط مرفوع أو رابط خط) —
   // تنحفظ مرة وحدة هنا وتظهر تلقائياً بقائمة اختيار الخط بكل الدعوات
   // (شوف LiveEditor.tsx -> EditModeProvider customFonts + EditPanel).
