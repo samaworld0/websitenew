@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Invitation, SiteSettings } from "./types"
 import { WhatsAppIcon } from "./icons"
 import Reveal from "./Reveal"
+import Footer from "./Footer"
 
 const categories = [
   { id: "all", label: "الكل" },
@@ -349,6 +350,12 @@ export default function HomePage({
     "السلام عليكم، أود الاستفسار عن الدعوات الإلكترونية",
   )
 
+  const scrollToTemplates = () => {
+    document
+      .getElementById("templates-grid")
+      ?.scrollIntoView({ behavior: "smooth" })
+  }
+
   return (
     <div
       className="min-h-screen bg-background"
@@ -403,12 +410,7 @@ export default function HomePage({
         </div>
       </nav>
 
-      <TopHero
-        siteSettings={siteSettings}
-        onShowTemplates={() => {
-          document.getElementById("templates-grid")?.scrollIntoView({ behavior: "smooth" })
-        }}
-      />
+      <TopHero siteSettings={siteSettings} onShowTemplates={scrollToTemplates} />
 
       <section id="templates-grid" className="max-w-7xl mx-auto px-6 py-24">
         <Reveal className="text-center mb-16" as="div">
@@ -428,6 +430,8 @@ export default function HomePage({
           ))}
         </div>
       </section>
+
+      <Footer siteSettings={siteSettings} onShowTemplates={scrollToTemplates} />
     </div>
   )
 }
