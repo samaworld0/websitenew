@@ -6,6 +6,24 @@ export function WhatsAppIcon({ size = 20 }: { size?: number }) {
   )
 }
 
+export function InstagramIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="12" cy="12" r="4.4" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function TikTokIcon({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16.6 2h-3.2v13.4a2.9 2.9 0 1 1-2.05-2.77V9.4a6.1 6.1 0 1 0 5.25 6.05V8.75a7.8 7.8 0 0 0 4.6 1.48V7.1a4.55 4.55 0 0 1-4.6-4.55V2z" />
+    </svg>
+  )
+}
+
 // أيقونة وردة زخرفية — تُستخدم كأيقونة افتراضية بدل رمز نصي ("✿")، بلون
 // موحّد مع بقية النص (fill="currentColor") حتى تنلوّن تلقائياً من لوحة
 // التصميم المباشر (لون النص العادي)، وحجمها بوحدة "em" حتى تكبر/تصغر مع
