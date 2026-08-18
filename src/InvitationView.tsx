@@ -342,6 +342,11 @@ function WisalTemplateView({
   // بدل الاعتماد على opacity/pointer-events فقط.
   const [doorRemoved, setDoorRemoved] = useState(false)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
+  // بوضع "التصميم المباشر" تنشال طبقة الباب تلقائياً (شوف useEffect تحت)،
+  // فيصير المربع مو ظاهر أبداً حتى يقدر المصمم يعدّل نصوصه. هذا المتغيّر
+  // يسمح للمصمم يظهره يدوياً وقت التعديل بدون ما يأثر على سلوك الزوّار.
+  const [showDoorCardEditor, setShowDoorCardEditor] = useState(false)
+  const doorCardVisible = editable ? showDoorCardEditor : !doorRemoved
 
   const generateGoldenParticles = () => {
     const items: GoldenParticle[] = []
@@ -923,11 +928,11 @@ function WisalTemplateView({
           ملاحظة: ما نشيلها فوراً لمن isOpen تصير true، لأن هذا يقطع
           حركة التلاشي البصرية. بدل هيك نخليها opacity-0 لحد ما تخلص
           الحركة (١٠٠٠ملي ثانية) ثم doorRemoved يشيلها كلياً. */}
-      {!doorRemoved && inv.doorStyle === "card" && (
+      {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
-            isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+          className={`absolute inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-1000 ${
+            editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
         >
           <video
@@ -938,11 +943,10 @@ function WisalTemplateView({
             playsInline
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 pointer-events-none" />
 
-          {/* المربع الصغير في منتصف الشاشة */}
+          {/* المربع الصغير أسفل الشاشة، بدون أي تظليل على الخلفية */}
           <div
             className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl"
             style={{ backgroundColor: "rgba(38, 30, 22, 0.78)", backdropFilter: "blur(3px)" }}
@@ -1017,6 +1021,32 @@ function WisalTemplateView({
           },
         ]}
       />
+    )}
+    {editable && inv.doorStyle === "card" && (
+      // زر إظهار/إخفاء مربع "اضغط لفتح الباب" وقت التصميم — هذا المربع
+      // مخفي تلقائياً بوضع التعديل (لأن isOpen يصير true فوراً)، فبدون
+      // هذا الزر ما فيه طريقة توصل لنصوصه لتعديلها.
+      <button
+        onClick={() => setShowDoorCardEditor((v) => !v)}
+        style={{
+          position: "fixed",
+          bottom: 16,
+          insetInlineStart: 290,
+          zIndex: 530,
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.2)",
+          background: showDoorCardEditor ? "rgba(184,134,47,.85)" : "rgba(0,0,0,.65)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        }}
+      >
+        ✏️ {showDoorCardEditor ? "إخفاء مربع الفتح" : "تعديل مربع الفتح"}
+      </button>
     )}
     </EditModeProvider>
   )
