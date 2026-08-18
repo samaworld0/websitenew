@@ -622,15 +622,54 @@ function WisalTemplateView({
 
               <div className="w-28 h-[1px] bg-[#D4AF37]/30 mb-20" />
 
+              {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
+                  (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
+                  ولونه من التصميم المباشر لكل دعوة على حدة) */}
               <Reveal className="text-center max-w-lg mb-20">
-                <h3 className="text-3xl md:text-4xl font-bold text-[#4A3B2C] mb-7 custom-font-amiri">
-                  <EditableText id="card-title">بطاقة دعوة</EditableText>
+                <p className="text-base text-[#8C7A6B] mb-6 custom-font-amiri">
+                  <EditableText id="invite-line-1">
+                    اللهم بارك لهما وبارك عليهما واجمع بينهما في خير
+                  </EditableText>
+                </p>
+
+                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-1">
+                  <EditableText id="invite-line-2">في ليلة جميلة</EditableText>
+                </p>
+                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-6">
+                  <EditableText id="invite-line-3">يضوي الفرح بعالي سماها</EditableText>
+                </p>
+
+                <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-6 custom-font-amiri">
+                  <EditableText id="invite-line-4">تتشرف</EditableText>
                 </h3>
-                <p className="text-lg md:text-xl leading-relaxed text-[#5A4A3C] mb-12 custom-font-tajawal">
-                  <EditableText id="card-body">
-                    بقلوب مفعمة بالفرح والسرور، نفتح لكم باب فرحتنا وندعوكم
-                    لمشاركتنا أجمل لحظات حياتنا في حفل زفافنا. حضوركم شرف لنا
-                    وبهجة تكتمل بها فرحتنا.
+
+                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
+                  <EditableText id="invite-line-5">
+                    {inv.groomFamily || "عائلة العريس"} و {inv.brideFamily || "عائلة العروس"}
+                  </EditableText>
+                </p>
+
+                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-8">
+                  <EditableText id="invite-line-6">
+                    بدعوتكم لحضور حفل زفاف نجلهم وابنتهم
+                  </EditableText>
+                </p>
+
+                <h2 className="text-4xl md:text-5xl font-bold text-[#4A3B2C] mb-8 custom-font-amiri">
+                  <EditableText id="invite-line-7">
+                    {inv.groom} &amp; {inv.bride}
+                  </EditableText>
+                </h2>
+
+                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
+                  <EditableText id="invite-line-8">
+                    وذلك بمشيئة الله تعالى {inv.date}
+                  </EditableText>
+                </p>
+
+                <p className="text-base text-[#8C7A6B] custom-font-amiri">
+                  <EditableText id="invite-line-9">
+                    ويسعدنا حضوركم فهو زينة الفرح والسرور
                   </EditableText>
                 </p>
               </Reveal>
