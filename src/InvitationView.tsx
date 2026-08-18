@@ -738,7 +738,7 @@ function WisalTemplateView({
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
                   style={{ backgroundColor: "#B8862F" }}
                 >
-                  📍 <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
+                  <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
                 </EditableLinkBackground>
               </Reveal>
             </EditableBackground>
