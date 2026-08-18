@@ -41,43 +41,67 @@ export default function Footer({
     "السلام عليكم، أود الاستفسار عن الدعوات الإلكترونية",
   )
 
+  // كل القيم تحت اختيارية بالإعدادات — لو المشرف ما خصّص شي، ترجع تلقائياً
+  // لنفس التصميم الافتراضي الأصلي (شوف defaultSiteSettings بـ data.ts).
+  const bgColor = siteSettings.footerBgColor || "#FBF7EF"
+  const textColor = siteSettings.footerTextColor || "#4A3B2C"
+  const linkColor = siteSettings.footerLinkColor || textColor
+  const logoText = siteSettings.footerLogoText || siteSettings.siteName
+  const logoBg1 = siteSettings.footerLogoBgColor1 || "#e8487a"
+  const logoBg2 = siteSettings.footerLogoBgColor2 || "#ff94b0"
+  const logoTextColor = siteSettings.footerLogoTextColor || "#ffffff"
+  const link1Text = siteSettings.footerLink1Text || "جهّز دعوتك"
+  const link2Text = siteSettings.footerLink2Text || "السعر"
+  const paymentText =
+    siteSettings.footerPaymentText || "ادفع بأمان من أي مكان في العالم"
+  const whatsappText = siteSettings.footerWhatsappText || "واتساب مباشر"
+
   return (
-    <footer className="border-t border-border bg-cream-50 mt-8">
+    <footer
+      className="border-t border-border mt-8"
+      style={{ backgroundColor: bgColor }}
+    >
       <div className="max-w-4xl mx-auto px-6 py-14 flex flex-col items-center text-center gap-8">
         {/* الشعار */}
         <div
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-lg"
           style={{
-            background: "linear-gradient(135deg, #e8487a 0%, #ff94b0 100%)",
-            color: "#fff",
+            background: `linear-gradient(135deg, ${logoBg1} 0%, ${logoBg2} 100%)`,
+            color: logoTextColor,
             fontFamily: "Amiri, serif",
           }}
         >
-          {siteSettings.siteName}
+          {logoText}
         </div>
 
         {/* روابط سريعة */}
-        <nav className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-bold text-warm-700">
+        <nav
+          className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-bold"
+          style={{ color: linkColor }}
+        >
           <button
             type="button"
             onClick={onShowTemplates}
             className="hover:text-gold-600 transition"
           >
-            جهّز دعوتك
+            {link1Text}
           </button>
           <button
             type="button"
             onClick={onShowTemplates}
             className="hover:text-gold-600 transition"
           >
-            السعر
+            {link2Text}
           </button>
         </nav>
 
         {/* التواصل الاجتماعي */}
         <div className="flex flex-wrap items-center justify-center gap-4">
           {siteSettings.footerSocialHandle && (
-            <span className="text-sm font-bold text-warm-800">
+            <span
+              className="text-sm font-bold"
+              style={{ color: textColor }}
+            >
               {siteSettings.footerSocialHandle}
             </span>
           )}
@@ -110,14 +134,14 @@ export default function Footer({
             className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-[#25D366] text-white"
           >
             <WhatsAppIcon size={15} />
-            <span>واتساب مباشر</span>
+            <span>{whatsappText}</span>
           </a>
         </div>
 
         {/* طرق الدفع */}
         <div className="flex flex-col items-center gap-3">
-          <p className="text-xs text-muted-foreground">
-            ادفع بأمان من أي مكان في العالم
+          <p className="text-xs" style={{ color: textColor, opacity: 0.75 }}>
+            {paymentText}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <PaymentBadge>
@@ -125,7 +149,7 @@ export default function Footer({
                 <span className="w-4 h-4 rounded-full bg-[#EB001B]" />
                 <span className="w-4 h-4 rounded-full bg-[#F79E1B] opacity-90" />
               </span>
-              <span className="text-xs font-bold text-warm-800">
+              <span className="text-xs font-bold" style={{ color: textColor }}>
                 mastercard
               </span>
             </PaymentBadge>
@@ -139,7 +163,7 @@ export default function Footer({
             </PaymentBadge>
             <PaymentBadge>
               <CardIcon size={16} />
-              <span className="text-xs font-bold text-warm-800">
+              <span className="text-xs font-bold" style={{ color: textColor }}>
                 بطاقة دفع
               </span>
             </PaymentBadge>
