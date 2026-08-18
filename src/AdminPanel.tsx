@@ -57,6 +57,7 @@ function emptyInvitation(nextId: number): Invitation {
     introVideo: "",
     introPoster: "",
     musicUrl: "",
+    doorStyle: "video",
     sheetId: "",
     sheetUrl: "",
     isPrivate: false,
@@ -1294,6 +1295,58 @@ function InvitationForm({
           onChangeHeroBg={(url) => set("heroBg", url)}
           onChangeDoorBgVideo={(url) => set("doorBgVideo", url)}
         />
+
+        <div className="sm:col-span-2 flex flex-col gap-1.5 text-sm">
+          <span className="font-bold text-[#2C1810]">
+            شكل شاشة "اضغط لفتح الدعوة"
+          </span>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <label
+              className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
+                (inv.doorStyle || "video") === "video"
+                  ? "border-[#D4AF37] bg-[#fdf8ee]"
+                  : "border-[#e5d9c3]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="doorStyle"
+                className="mt-1 h-4 w-4 accent-[#D4AF37]"
+                checked={(inv.doorStyle || "video") === "video"}
+                onChange={() => set("doorStyle", "video")}
+              />
+              <span className="text-sm">
+                <span className="font-bold block">فيديو (افتراضي)</span>
+                <span className="text-[#8a7561]">
+                  خلفية فيديو/صورة مع نص خافت "اضغط لفتح الدعوة" أسفل
+                  الشاشة
+                </span>
+              </span>
+            </label>
+            <label
+              className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
+                inv.doorStyle === "card"
+                  ? "border-[#D4AF37] bg-[#fdf8ee]"
+                  : "border-[#e5d9c3]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="doorStyle"
+                className="mt-1 h-4 w-4 accent-[#D4AF37]"
+                checked={inv.doorStyle === "card"}
+                onChange={() => set("doorStyle", "card")}
+              />
+              <span className="text-sm">
+                <span className="font-bold block">بطاقة</span>
+                <span className="text-[#8a7561]">
+                  بطاقة بإطار ذهبي بالنص "دعوة زفاف" واسم العروسين، فوق نفس
+                  الخلفية
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
 
         <MediaUploadField
           label="المقطع الموسيقى (musicUrl)"
