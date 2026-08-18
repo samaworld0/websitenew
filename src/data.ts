@@ -20,6 +20,9 @@ export const defaultSiteSettings: SiteSettings = {
   heroCard1Image: "",
   heroCard2Image: "",
   heroCard3Image: "",
+  footerSocialHandle: "@sama",
+  footerInstagramUrl: "",
+  footerTiktokUrl: "",
   customFonts: [],
 }
 
