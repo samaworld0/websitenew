@@ -923,7 +923,45 @@ function WisalTemplateView({
           ملاحظة: ما نشيلها فوراً لمن isOpen تصير true، لأن هذا يقطع
           حركة التلاشي البصرية. بدل هيك نخليها opacity-0 لحد ما تخلص
           الحركة (١٠٠٠ملي ثانية) ثم doorRemoved يشيلها كلياً. */}
-      {!doorRemoved && (
+      {!doorRemoved && inv.doorStyle === "card" && (
+        <div
+          onClick={handleDoorTap}
+          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
+            isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
+        >
+          <video
+            key={inv.introVideo || "default-intro-video"}
+            ref={videoRef}
+            src={inv.introVideo || "/videos/intro.mp4"}
+            muted
+            playsInline
+            poster={inv.introPoster || "/videos/intro-poster.jpg"}
+            onEnded={completeOpening}
+            className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 pointer-events-none" />
+
+          {/* إطار زخرفي رفيع بزوايا مدورة، مقتبس داخل الشاشة */}
+          <div className="absolute inset-5 md:inset-10 rounded-[1.75rem] border border-[#D4AF37]/50 pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col items-center text-center px-8">
+            <p className="text-sm md:text-base tracking-[0.3em] text-[#E8DCC4] mb-4 custom-font-amiri">
+              <EditableText id="door-card-title">دعوة زفاف</EditableText>
+            </p>
+            <p className="text-3xl md:text-5xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg mb-6">
+              <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
+            </p>
+            <p className="text-lg md:text-xl text-[#E8DCC4] custom-font-amiri">
+              <EditableText id="door-card-names">
+                {`${inv.groom} & ${inv.bride}`}
+              </EditableText>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
           className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
