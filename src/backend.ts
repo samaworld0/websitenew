@@ -259,6 +259,27 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
         data.footerInstagramUrl ?? defaultSiteSettings.footerInstagramUrl,
       footerTiktokUrl:
         data.footerTiktokUrl ?? defaultSiteSettings.footerTiktokUrl,
+      footerBgColor: data.footerBgColor ?? defaultSiteSettings.footerBgColor,
+      footerTextColor:
+        data.footerTextColor ?? defaultSiteSettings.footerTextColor,
+      footerLinkColor:
+        data.footerLinkColor ?? defaultSiteSettings.footerLinkColor,
+      footerLogoText:
+        data.footerLogoText ?? defaultSiteSettings.footerLogoText,
+      footerLogoBgColor1:
+        data.footerLogoBgColor1 ?? defaultSiteSettings.footerLogoBgColor1,
+      footerLogoBgColor2:
+        data.footerLogoBgColor2 ?? defaultSiteSettings.footerLogoBgColor2,
+      footerLogoTextColor:
+        data.footerLogoTextColor ?? defaultSiteSettings.footerLogoTextColor,
+      footerLink1Text:
+        data.footerLink1Text ?? defaultSiteSettings.footerLink1Text,
+      footerLink2Text:
+        data.footerLink2Text ?? defaultSiteSettings.footerLink2Text,
+      footerPaymentText:
+        data.footerPaymentText ?? defaultSiteSettings.footerPaymentText,
+      footerWhatsappText:
+        data.footerWhatsappText ?? defaultSiteSettings.footerWhatsappText,
       customFonts: data.customFonts ?? defaultSiteSettings.customFonts,
     }
   } catch (err) {
