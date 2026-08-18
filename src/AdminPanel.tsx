@@ -89,6 +89,34 @@ function Field({
 const inputClass =
   "w-full rounded-lg border border-[#e5d9c3] bg-white px-3 py-2 text-sm text-[#2C1810] outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition"
 
+// حقل لون بسيط: منتقي لون (color picker) + مربع نص جنبه يعرض قيمة الهيكس،
+// نفس النمط المستخدم بتصميم كرت الدعوة (accentColor) — يُستخدم هنا لتخصيص
+// ألوان الفوتر.
+function ColorField({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="color"
+        value={value || "#000000"}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 w-12 rounded border border-[#e5d9c3] shrink-0"
+      />
+      <input
+        className={inputClass}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        dir="ltr"
+      />
+    </div>
+  )
+}
+
 // حقل رفع ملف وسائط (صورة/فيديو/صوت) لـ Supabase Storage. يعرض معاينة
 // بسيطة للملف الحالي (لو موجود)، وزر رفع ملف جديد من جهاز المستخدم،
 // بدل ما يحتاج يختار من قائمة ملفات جاهزة بس.
@@ -1445,6 +1473,17 @@ function SiteSettingsForm({
   add column if not exists "footerSocialHandle" text,
   add column if not exists "footerInstagramUrl" text,
   add column if not exists "footerTiktokUrl" text,
+  add column if not exists "footerBgColor" text,
+  add column if not exists "footerTextColor" text,
+  add column if not exists "footerLinkColor" text,
+  add column if not exists "footerLogoText" text,
+  add column if not exists "footerLogoBgColor1" text,
+  add column if not exists "footerLogoBgColor2" text,
+  add column if not exists "footerLogoTextColor" text,
+  add column if not exists "footerLink1Text" text,
+  add column if not exists "footerLink2Text" text,
+  add column if not exists "footerPaymentText" text,
+  add column if not exists "footerWhatsappText" text,
   add column if not exists "customFonts" jsonb;`
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1742,6 +1781,100 @@ function SiteSettingsForm({
             onChange={(e) => set("footerTiktokUrl", e.target.value)}
             dir="ltr"
             placeholder="https://tiktok.com/@..."
+          />
+        </Field>
+      </fieldset>
+
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          الفوتر — الشعار العلوي (اللوقو)
+        </legend>
+        <p className="col-span-full text-xs text-[#8a7561] -mt-2 mb-1">
+          البادج المستدير اللي يظهر أول شي أعلى الفوتر. لو تركت النص فاضي،
+          يظهر اسم الموقع تلقائياً بدالة.
+        </p>
+        <Field label="نص الشعار" hint="اختياري — افتراضياً اسم الموقع">
+          <input
+            className={inputClass}
+            value={settings.footerLogoText || ""}
+            onChange={(e) => set("footerLogoText", e.target.value)}
+            placeholder={settings.siteName}
+          />
+        </Field>
+        <div />
+        <Field label="لون خلفية الشعار (البداية)">
+          <ColorField
+            value={settings.footerLogoBgColor1 || "#e8487a"}
+            onChange={(v) => set("footerLogoBgColor1", v)}
+          />
+        </Field>
+        <Field label="لون خلفية الشعار (النهاية)">
+          <ColorField
+            value={settings.footerLogoBgColor2 || "#ff94b0"}
+            onChange={(v) => set("footerLogoBgColor2", v)}
+          />
+        </Field>
+        <Field label="لون نص الشعار">
+          <ColorField
+            value={settings.footerLogoTextColor || "#ffffff"}
+            onChange={(v) => set("footerLogoTextColor", v)}
+          />
+        </Field>
+      </fieldset>
+
+      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
+          الفوتر — الألوان والنصوص
+        </legend>
+        <Field label="لون خلفية الفوتر">
+          <ColorField
+            value={settings.footerBgColor || "#FBF7EF"}
+            onChange={(v) => set("footerBgColor", v)}
+          />
+        </Field>
+        <Field label="لون نصوص الفوتر">
+          <ColorField
+            value={settings.footerTextColor || "#4A3B2C"}
+            onChange={(v) => set("footerTextColor", v)}
+          />
+        </Field>
+        <Field label="لون الروابط السريعة" hint="جهّز دعوتك / السعر">
+          <ColorField
+            value={settings.footerLinkColor || settings.footerTextColor || "#4A3B2C"}
+            onChange={(v) => set("footerLinkColor", v)}
+          />
+        </Field>
+        <div />
+        <Field label="نص الرابط الأول">
+          <input
+            className={inputClass}
+            value={settings.footerLink1Text || ""}
+            onChange={(e) => set("footerLink1Text", e.target.value)}
+            placeholder="جهّز دعوتك"
+          />
+        </Field>
+        <Field label="نص الرابط الثاني">
+          <input
+            className={inputClass}
+            value={settings.footerLink2Text || ""}
+            onChange={(e) => set("footerLink2Text", e.target.value)}
+            placeholder="السعر"
+          />
+        </Field>
+        <Field label="نص زر واتساب">
+          <input
+            className={inputClass}
+            value={settings.footerWhatsappText || ""}
+            onChange={(e) => set("footerWhatsappText", e.target.value)}
+            placeholder="واتساب مباشر"
+          />
+        </Field>
+        <Field label="نص طرق الدفع" hint="يظهر فوق شعارات الدفع">
+          <input
+            className={inputClass}
+            value={settings.footerPaymentText || ""}
+            onChange={(e) => set("footerPaymentText", e.target.value)}
+            placeholder="ادفع بأمان من أي مكان في العالم"
           />
         </Field>
       </fieldset>
