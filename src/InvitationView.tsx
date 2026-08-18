@@ -938,28 +938,21 @@ function WisalTemplateView({
             playsInline
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-contain opacity-40 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover opacity-40 pointer-events-none"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 pointer-events-none" />
 
           {/* إطار زخرفي رفيع بزوايا مدورة، مقتبس داخل الشاشة */}
           <div className="absolute inset-5 md:inset-10 rounded-[1.75rem] border border-[#D4AF37]/50 pointer-events-none" />
 
-          <div
-            className="relative z-10 flex flex-col items-center text-center px-8 py-7 mx-6 rounded-[1.75rem] border border-[#D4AF37]/40"
-            style={{
-              backgroundColor: "rgba(35,26,18,0.55)",
-              backdropFilter: "blur(2px)",
-              width: "min(90vw, 320px)",
-            }}
-          >
-            <p className="text-xs md:text-sm tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
+          <div className="relative z-10 flex flex-col items-center text-center px-8">
+            <p className="text-sm md:text-base tracking-[0.3em] text-[#E8DCC4] mb-4 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
             </p>
-            <p className="text-xl md:text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg mb-3">
+            <p className="text-3xl md:text-5xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg mb-6">
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
-            <p className="text-sm md:text-base text-[#E8DCC4] custom-font-amiri">
+            <p className="text-lg md:text-xl text-[#E8DCC4] custom-font-amiri">
               <EditableText id="door-card-names">
                 {`${inv.groom} & ${inv.bride}`}
               </EditableText>
