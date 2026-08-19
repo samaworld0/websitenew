@@ -809,9 +809,12 @@ function InvitationForm({
 
   // تحديث نص عنصر واحد من عناصر "التصميم المباشر" (نفس نظام EditableText
   // بملف LiveEditor.tsx) من نموذج الإعدادات مباشرة، بدون الحاجة نفتح
-  // معاينة الدعوة ونضغط على النص. لو تركت الحقل فاضي يرجع النص الأصلي
-  // الافتراضي (نمسح مفتاح text من التخزين).
-  const setTextStyleText = (elementId: string, text: string) =>
+  // معاينة الدعوة ونضغط على النص.
+  // افتراضياً: لو تركت الحقل فاضي يرجع النص الأصلي الافتراضي (نمسح مفتاح
+  // text من التخزين). لو تحتاجين الحقل يضل فاضي فعلاً بالبطاقة (بدون
+  // رجوع للنص الافتراضي)، مرري allowEmpty=true — عندها نص فاضي يترحفظ
+  // كما هو (مو يتحول undefined).
+  const setTextStyleText = (elementId: string, text: string, allowEmpty = false) =>
     setInv((prev) => {
       const prevStyles = prev.textStyles || {}
       const prevEntry = prevStyles[elementId] || {}
@@ -819,7 +822,10 @@ function InvitationForm({
         ...prev,
         textStyles: {
           ...prevStyles,
-          [elementId]: { ...prevEntry, text: text === "" ? undefined : text },
+          [elementId]: {
+            ...prevEntry,
+            text: text === "" && !allowEmpty ? undefined : text,
+          },
         },
       }
     })
@@ -1440,7 +1446,7 @@ function InvitationForm({
                   className="rounded-lg border border-[#e5d9c3] px-3 py-2 text-sm"
                   placeholder="دعوة زفاف"
                   value={inv.textStyles?.["door-card-title"]?.text ?? ""}
-                  onChange={(e) => setTextStyleText("door-card-title", e.target.value)}
+                  onChange={(e) => setTextStyleText("door-card-title", e.target.value, true)}
                 />
               </label>
               <label className="flex-1 flex flex-col gap-1.5 text-sm">
