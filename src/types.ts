@@ -39,7 +39,7 @@ export interface Invitation {
   // فوق الصورة بكرت الدعوة، وتظهر الصورة نظيفة بدونها.
   hideCoverOverlay?: boolean
   // حقول اختيارية خاصة بقالب "وصال" (باب متحرك) — لو الدعوة تستخدمه
-  templateType?: "wisal"
+  templateType?: "wisal" | "wisal2"
   heroBg?: string
   doorBgVideo?: string
   introVideo?: string
