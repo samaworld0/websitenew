@@ -912,7 +912,11 @@ function InvitationForm({
     const cleanInv: Invitation = {
       ...inv,
       mapUrl: normalizeMapUrl(inv.mapUrl || ""),
-      templateType: inv.heroBg || inv.introVideo ? "wisal" : undefined,
+      templateType: inv.templateType === "wisal2"
+        ? "wisal2"
+        : inv.heroBg || inv.introVideo
+        ? "wisal"
+        : undefined,
       // نشيل عناصر برنامج الحفل الفاضية كلياً (بدون نص وبدون وقت) قبل
       // الحفظ، حتى ما تظهر نقاط فاضية بخط الجدول الزمني بصفحة الدعوة.
       schedule: (inv.schedule ?? []).filter(
@@ -1283,6 +1287,55 @@ function InvitationForm({
         <legend className="col-span-full text-sm font-bold text-[#D4AF37] mb-1">
           قالب "وصال" والوسائط (اختياري)
         </legend>
+
+        <div className="sm:col-span-2 flex flex-col gap-1.5 text-sm">
+          <span className="font-bold text-[#2C1810]">نسخة القالب</span>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <label
+              className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
+                inv.templateType !== "wisal2"
+                  ? "border-[#D4AF37] bg-[#fdf8ee]"
+                  : "border-[#e5d9c3]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="templateVersion"
+                className="mt-1 h-4 w-4 accent-[#D4AF37]"
+                checked={inv.templateType !== "wisal2"}
+                onChange={() => set("templateType", undefined)}
+              />
+              <span className="text-sm">
+                <span className="font-bold block">القالب 1 (الأصلي)</span>
+                <span className="text-[#8a7561]">
+                  نفس تصميم "وصال" الحالي بكل تعديلاته
+                </span>
+              </span>
+            </label>
+            <label
+              className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
+                inv.templateType === "wisal2"
+                  ? "border-[#D4AF37] bg-[#fdf8ee]"
+                  : "border-[#e5d9c3]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="templateVersion"
+                className="mt-1 h-4 w-4 accent-[#D4AF37]"
+                checked={inv.templateType === "wisal2"}
+                onChange={() => set("templateType", "wisal2")}
+              />
+              <span className="text-sm">
+                <span className="font-bold block">القالب 2 (نسخة جديدة)</span>
+                <span className="text-[#8a7561]">
+                  نسخة مستقلة بنفس الشكل حالياً — تقدرين تطلبين تعديلات
+                  عليها لحالها بدون ما تأثر على القالب 1
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
 
         <MediaUploadField
           label="صورة بداية الدعوة (introPoster)"
