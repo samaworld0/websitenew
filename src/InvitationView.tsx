@@ -1070,6 +1070,43 @@ function WisalTemplateTwoView({
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
   const [knockCount, setKnockCount] = useState(0)
+  // دوائر "الدق" اللي تطلع بمكان الضغطة بالضبط وتختفي بعد لحظات
+  const [knockRipples, setKnockRipples] = useState<
+    { id: number; x: number; y: number }[]
+  >([])
+  const knockRippleIdRef = useRef(0)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+
+  // صوت دقّة باب مُصنَّع بالمتصفح مباشرة (بدون ملف صوتي خارجي) — نغمتين
+  // خشبيتين قصيرتين متتاليتين تحاكي صوت "طق طق" بسيط.
+  const playKnockSound = () => {
+    try {
+      const AudioCtx =
+        window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioCtx) return
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx()
+      const ctx = audioCtxRef.current
+      if (ctx.state === "suspended") ctx.resume()
+
+      const now = ctx.currentTime
+      ;[0, 0.09].forEach((delay) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = "triangle"
+        osc.frequency.setValueAtTime(140, now + delay)
+        osc.frequency.exponentialRampToValueAtTime(70, now + delay + 0.08)
+        gain.gain.setValueAtTime(0.0001, now + delay)
+        gain.gain.exponentialRampToValueAtTime(0.5, now + delay + 0.01)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.12)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(now + delay)
+        osc.stop(now + delay + 0.14)
+      })
+    } catch {
+      // متصفحات ما تدعم Web Audio API — نتجاهل الصوت بصمت بدون كسر الضغطة
+    }
+  }
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -1178,13 +1215,27 @@ function WisalTemplateTwoView({
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
   }
 
-  const handleDoorTap = () => {
+  const handleDoorTap = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isOpen) return
     if (isPlaying) {
       videoRef.current?.pause()
       completeOpening()
       return
     }
+
+    // دائرة الدق تطلع بمكان الضغطة بالضبط (إحداثيات نسبية لحاوية الطبقة)
+    // وتختفي تلقائياً بعد ما تخلص حركة التكبير/التلاشي (٦٠٠ملي ثانية).
+    const rect = e.currentTarget.getBoundingClientRect()
+    const rippleId = ++knockRippleIdRef.current
+    setKnockRipples((prev) => [
+      ...prev,
+      { id: rippleId, x: e.clientX - rect.left, y: e.clientY - rect.top },
+    ])
+    setTimeout(() => {
+      setKnockRipples((prev) => prev.filter((r) => r.id !== rippleId))
+    }, 600)
+    playKnockSound()
+
     // القالب 2: أول دقتين بس نعدّهم ونعرض النقاط تتعبى، وبالدقة الثالثة
     // نبدأ فعلياً حركة فتح الباب (نفس منطق القالب الأصلي).
     const nextKnock = knockCount + 1
@@ -1263,6 +1314,10 @@ function WisalTemplateTwoView({
           0% { opacity: 0; }
           20% { opacity: 1; }
           100% { opacity: 0; }
+        }
+        @keyframes knockRipple {
+          0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.65; }
+          100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
         }
         .royal-scroll::-webkit-scrollbar { display: none; }
         .royal-scroll {
@@ -1722,6 +1777,21 @@ function WisalTemplateTwoView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
+
+          {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
+          {knockRipples.map((r) => (
+            <span
+              key={r.id}
+              className="pointer-events-none absolute rounded-full border-2 border-[#F1D989]"
+              style={{
+                left: r.x,
+                top: r.y,
+                width: 70,
+                height: 70,
+                animation: "knockRipple 600ms ease-out forwards",
+              }}
+            />
+          ))}
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
           <div
