@@ -946,11 +946,14 @@ function WisalTemplateView({
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
 
-          {/* المربع الصغير أسفل الشاشة، بدون أي تظليل على الخلفية */}
+          {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
           <div
             className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl"
-            style={{ backgroundColor: "rgba(38, 30, 22, 0.78)", backdropFilter: "blur(3px)" }}
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
+            {/* الحد الداخلي الرفيع */}
+            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[#D4AF37]/30" />
+
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
             </p>
