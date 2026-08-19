@@ -282,6 +282,7 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
       footerWhatsappText:
         data.footerWhatsappText ?? defaultSiteSettings.footerWhatsappText,
       customFonts: data.customFonts ?? defaultSiteSettings.customFonts,
+      homeTextStyles: data.homeTextStyles ?? defaultSiteSettings.homeTextStyles,
     }
   } catch (err) {
     console.error("Supabase loadSiteSettings error:", err)
@@ -293,28 +294,47 @@ export async function loadSiteSettings(): Promise<SiteSettings> {
 // لو جدول site_settings غير موجود بعد نرجّع tableMissing:true، ولو الجدول
 // موجود بس ناقصه عمود (أو أكثر) نرجّع columnMissing:true — حتى نعرض
 // تنبيه واضح بلوحة التحكم يشرح للمشرف بالضبط شنو يسوّي.
+// عمود "homeTextStyles" (تعديلات التصميم المباشر للواجهة الرئيسية) خاص
+// نتعامل معه لحاله: لو ناقص بالقاعدة نشيله من صف الحفظ ونعيد المحاولة
+// (بدل ما يفشل حفظ كل باقي الإعدادات بسببه)، ونرجّع savedHomeTextStyles
+// حتى HomePageDesignPanel يعرف يعرض تنبيه SQL المناسب.
 export async function saveSiteSettings(settings: SiteSettings): Promise<{
   success: boolean
   tableMissing?: boolean
   columnMissing?: boolean
+  savedHomeTextStyles?: boolean
   error?: string
 }> {
   try {
-    const { error } = await supabase
-      .from("site_settings")
-      .upsert({ id: SITE_SETTINGS_ROW_ID, ...settings }, { onConflict: "id" })
+    const row: Record<string, any> = { id: SITE_SETTINGS_ROW_ID, ...settings }
+    let droppedHomeTextStyles = false
 
-    if (error) {
+    for (let i = 0; i < 2; i++) {
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert(row, { onConflict: "id" })
+
+      if (!error) {
+        return { success: true, savedHomeTextStyles: !droppedHomeTextStyles }
+      }
+
       if (isMissingTableError(error)) {
         return { success: false, tableMissing: true, error: error.message }
       }
       if (isMissingColumnError(error)) {
+        const badColumn = extractMissingColumnName(error)
+        if (badColumn === "homeTextStyles" && !droppedHomeTextStyles) {
+          delete row.homeTextStyles
+          droppedHomeTextStyles = true
+          continue
+        }
         return { success: false, columnMissing: true, error: error.message }
       }
       console.error("Supabase saveSiteSettings error:", error)
       return { success: false, error: error.message }
     }
-    return { success: true }
+
+    return { success: false, columnMissing: true }
   } catch (err: any) {
     console.error("Supabase saveSiteSettings exception:", err)
     return { success: false, error: err?.message ?? "خطأ غير متوقع" }
