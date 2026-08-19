@@ -1076,10 +1076,28 @@ function WisalTemplateTwoView({
   >([])
   const knockRippleIdRef = useRef(0)
   const audioCtxRef = useRef<AudioContext | null>(null)
+  const knockAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  // صوت دقّة باب مُصنَّع بالمتصفح مباشرة (بدون ملف صوتي خارجي) — نغمتين
+  // صوت دقّة الباب: لو المشرف رفع صوت مخصص (knockSoundUrl) نشغّله هو —
+  // وإلا نرجع لصوت مُصنَّع بالمتصفح مباشرة (بدون ملف صوتي خارجي)، نغمتين
   // خشبيتين قصيرتين متتاليتين تحاكي صوت "طق طق" بسيط.
   const playKnockSound = () => {
+    if (inv.knockSoundUrl) {
+      try {
+        if (
+          !knockAudioRef.current ||
+          knockAudioRef.current.src !== inv.knockSoundUrl
+        ) {
+          knockAudioRef.current = new Audio(inv.knockSoundUrl)
+        }
+        const audio = knockAudioRef.current
+        audio.currentTime = 0
+        audio.play().catch(() => {})
+        return
+      } catch {
+        // نكمل لصوت المتصفح الافتراضي لو الصوت المرفوع ما اشتغل
+      }
+    }
     try {
       const AudioCtx =
         window.AudioContext || (window as any).webkitAudioContext
@@ -1215,35 +1233,12 @@ function WisalTemplateTwoView({
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
   }
 
-  const handleDoorTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isOpen) return
-    if (isPlaying) {
-      videoRef.current?.pause()
-      completeOpening()
-      return
-    }
+  // مدة حركة دائرة الدق (لازم تطابق KNOCK_RIPPLE_MS بمدة @keyframes
+  // knockRipple بالـ<style> تحت — نستخدمها هنا كمان لتأخير بداية فيديو
+  // الفتح بالدقة الثالثة حتى تختفي الدائرة أول.
+  const KNOCK_RIPPLE_MS = 600
 
-    // دائرة الدق تطلع بمكان الضغطة بالضبط (إحداثيات نسبية لحاوية الطبقة)
-    // وتختفي تلقائياً بعد ما تخلص حركة التكبير/التلاشي (٦٠٠ملي ثانية).
-    const rect = e.currentTarget.getBoundingClientRect()
-    const rippleId = ++knockRippleIdRef.current
-    setKnockRipples((prev) => [
-      ...prev,
-      { id: rippleId, x: e.clientX - rect.left, y: e.clientY - rect.top },
-    ])
-    setTimeout(() => {
-      setKnockRipples((prev) => prev.filter((r) => r.id !== rippleId))
-    }, 600)
-    playKnockSound()
-
-    // القالب 2: أول دقتين بس نعدّهم ونعرض النقاط تتعبى، وبالدقة الثالثة
-    // نبدأ فعلياً حركة فتح الباب (نفس منطق القالب الأصلي).
-    const nextKnock = knockCount + 1
-    if (nextKnock < 3) {
-      setKnockCount(nextKnock)
-      return
-    }
-    setKnockCount(nextKnock)
+  const startDoorOpenSequence = () => {
     setIsPlaying(true)
     audioRef.current?.play().catch(() => {})
     if (videoRef.current) {
@@ -1255,6 +1250,39 @@ function WisalTemplateTwoView({
     } else {
       completeOpening()
     }
+  }
+
+  const handleDoorTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isOpen) return
+    if (isPlaying) {
+      videoRef.current?.pause()
+      completeOpening()
+      return
+    }
+
+    // دائرة الدق تطلع بمكان الضغطة بالضبط (إحداثيات نسبية لحاوية الطبقة)
+    // وتختفي تلقائياً بعد ما تخلص حركة التكبير/التلاشي.
+    const rect = e.currentTarget.getBoundingClientRect()
+    const rippleId = ++knockRippleIdRef.current
+    setKnockRipples((prev) => [
+      ...prev,
+      { id: rippleId, x: e.clientX - rect.left, y: e.clientY - rect.top },
+    ])
+    setTimeout(() => {
+      setKnockRipples((prev) => prev.filter((r) => r.id !== rippleId))
+    }, KNOCK_RIPPLE_MS)
+    playKnockSound()
+
+    // القالب 2: أول دقتين بس نعدّهم ونعرض النقاط تتعبى، وبالدقة الثالثة
+    // نبدأ فعلياً حركة فتح الباب — بس نستنى لحد ما دائرة الدق تختفي أول
+    // (نفس مدة KNOCK_RIPPLE_MS) قبل ما نشغّل فيديو الفتح.
+    const nextKnock = knockCount + 1
+    if (nextKnock < 3) {
+      setKnockCount(nextKnock)
+      return
+    }
+    setKnockCount(nextKnock)
+    setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
   }
 
   const handleRSVP = async (e: React.FormEvent) => {
