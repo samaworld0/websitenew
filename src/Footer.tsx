@@ -1,5 +1,6 @@
 import { SiteSettings } from "./types"
 import { WhatsAppIcon, InstagramIcon, TikTokIcon } from "./icons"
+import { EditableText, EditableBackground } from "./LiveEditor"
 
 // أيقونة بطاقة دفع عامة (تُستخدم لبادج "بطاقة دفع" — دفع بأي بطاقة بشكل عام)
 function CardIcon({ size = 18 }: { size?: number }) {
@@ -57,13 +58,12 @@ export default function Footer({
   const whatsappText = siteSettings.footerWhatsappText || "واتساب مباشر"
 
   return (
-    <footer
-      className="border-t border-border mt-8"
-      style={{ backgroundColor: bgColor }}
-    >
+    <EditableBackground id="bg-footer" className="border-t border-border mt-8" style={{ backgroundColor: bgColor }}>
       <div className="max-w-4xl mx-auto px-6 py-14 flex flex-col items-center text-center gap-8">
         {/* الشعار */}
-        <div
+        <EditableText
+          id="footer-logo-text"
+          as="div"
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold text-lg"
           style={{
             background: `linear-gradient(135deg, ${logoBg1} 0%, ${logoBg2} 100%)`,
@@ -72,7 +72,7 @@ export default function Footer({
           }}
         >
           {logoText}
-        </div>
+        </EditableText>
 
         {/* روابط سريعة */}
         <nav
@@ -84,14 +84,18 @@ export default function Footer({
             onClick={onShowTemplates}
             className="hover:text-gold-600 transition"
           >
-            {link1Text}
+            <EditableText id="footer-link1-text" as="span">
+              {link1Text}
+            </EditableText>
           </button>
           <button
             type="button"
             onClick={onShowTemplates}
             className="hover:text-gold-600 transition"
           >
-            {link2Text}
+            <EditableText id="footer-link2-text" as="span">
+              {link2Text}
+            </EditableText>
           </button>
         </nav>
 
@@ -134,15 +138,22 @@ export default function Footer({
             className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-[#25D366] text-white"
           >
             <WhatsAppIcon size={15} />
-            <span>{whatsappText}</span>
+            <EditableText id="footer-whatsapp-text" as="span">
+              {whatsappText}
+            </EditableText>
           </a>
         </div>
 
         {/* طرق الدفع */}
         <div className="flex flex-col items-center gap-3">
-          <p className="text-xs" style={{ color: textColor, opacity: 0.75 }}>
+          <EditableText
+            id="footer-payment-text"
+            as="p"
+            className="text-xs"
+            style={{ color: textColor, opacity: 0.75 }}
+          >
             {paymentText}
-          </p>
+          </EditableText>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <PaymentBadge>
               <span className="flex -space-x-2" aria-hidden>
@@ -170,6 +181,6 @@ export default function Footer({
           </div>
         </div>
       </div>
-    </footer>
+    </EditableBackground>
   )
 }
