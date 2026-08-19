@@ -1,8 +1,18 @@
 import { useState } from "react"
-import { Invitation, SiteSettings } from "./types"
+import { Invitation, SiteSettings, CustomFont } from "./types"
 import { WhatsAppIcon } from "./icons"
 import Reveal from "./Reveal"
 import Footer from "./Footer"
+import {
+  EditModeProvider,
+  DeselectSurface,
+  EditableText,
+  EditableBackground,
+  EditableButton,
+  EditPanel,
+  BackgroundsMenu,
+  TextStyle,
+} from "./LiveEditor"
 
 const categories = [
   { id: "all", label: "الكل" },
@@ -191,38 +201,53 @@ function TopHero({
 
       <div className="max-w-4xl mx-auto px-6 text-center">
         <Reveal duration={600}>
-          <span className="inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5 text-xs sm:text-sm font-bold text-gold-700">
+          <EditableText
+            id="top-hero-badge"
+            as="span"
+            className="inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-4 py-1.5 text-xs sm:text-sm font-bold text-gold-700"
+          >
             {siteSettings.topHeroBadge}
-          </span>
+          </EditableText>
         </Reveal>
 
         <Reveal duration={700} delay={100}>
-          <h1
-            className="mt-6 font-display font-bold leading-[1.3] text-3xl sm:text-5xl text-warm-900"
-          >
-            {siteSettings.topHeroTitleBefore}{" "}
-            <span className="shimmer-text">
+          <h1 className="mt-6 font-display font-bold leading-[1.3] text-3xl sm:text-5xl text-warm-900">
+            <EditableText id="top-hero-title-before" as="span">
+              {siteSettings.topHeroTitleBefore}
+            </EditableText>{" "}
+            <EditableText
+              id="top-hero-title-accent"
+              as="span"
+              className="shimmer-text"
+            >
               {siteSettings.topHeroTitleAccent}
-            </span>
+            </EditableText>
             <br />
-            {siteSettings.topHeroTitleAfter}
+            <EditableText id="top-hero-title-after" as="span">
+              {siteSettings.topHeroTitleAfter}
+            </EditableText>
           </h1>
         </Reveal>
 
         <Reveal duration={700} delay={200}>
-          <p className="mt-6 max-w-xl mx-auto text-base sm:text-lg text-warm-700 leading-relaxed">
+          <EditableText
+            id="top-hero-subtitle"
+            as="p"
+            className="mt-6 max-w-xl mx-auto text-base sm:text-lg text-warm-700 leading-relaxed"
+          >
             {siteSettings.topHeroSubtitle}
-          </p>
+          </EditableText>
         </Reveal>
 
         <Reveal duration={700} delay={300}>
-          <button
+          <EditableButton
+            id="top-hero-button"
             onClick={onShowTemplates}
             className="mt-8 inline-flex items-center gap-2 btn-gold text-white font-bold px-7 py-3.5 rounded-full text-sm sm:text-base"
           >
             <span aria-hidden>🎨</span>
             {siteSettings.topHeroButtonText}
-          </button>
+          </EditableButton>
         </Reveal>
 
         <Reveal duration={800} delay={400} className="mt-16">
@@ -324,14 +349,26 @@ function TopHero({
 
 // الواجهة الرئيسية للموقع: الشريط العلوي + شبكة عرض الدعوات مع الفلترة
 // حسب التصنيف. هذا الملف مستقل تماماً ويستقبل بياناته عبر props من App.tsx
+//
+// وضع "التصميم المباشر" (editable=true) — نفس فكرة DesignPanel الخاصة
+// بالدعوات بالضبط، بس هذي المرة لعناصر الواجهة الرئيسية نفسها (الشريط
+// العلوي والقسم الرئيسي). يُفعّل من HomePageDesignPanel.tsx فقط؛ بالعرض
+// العادي للزوّار editable=false دايماً والتخصيصات المحفوظة (homeTextStyles)
+// تنعرض تلقائياً بدون أي تحكم إضافي.
 export default function HomePage({
   invitations,
   siteSettings,
   onPreview,
+  editable = false,
+  onStylesChange,
+  customFonts = [],
 }: {
   invitations: Invitation[]
   siteSettings: SiteSettings
   onPreview: (inv: Invitation) => void
+  editable?: boolean
+  onStylesChange?: (styles: Record<string, TextStyle>) => void
+  customFonts?: CustomFont[]
 }) {
   const [activeCategory, setActiveCategory] = useState("all")
 
@@ -357,81 +394,126 @@ export default function HomePage({
   }
 
   return (
-    <div
-      className="min-h-screen bg-background"
-      dir="rtl"
-      style={{ fontFamily: "Tajawal, sans-serif" }}
+    <EditModeProvider
+      editable={editable}
+      initialStyles={siteSettings.homeTextStyles || {}}
+      onStylesChange={onStylesChange}
+      customFonts={customFonts}
     >
-      <nav className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Reveal className="flex items-center gap-3" duration={600}>
-            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810] overflow-hidden shrink-0">
-              {siteSettings.logoImageUrl ? (
-                <img
-                  src={siteSettings.logoImageUrl}
-                  alt={siteSettings.siteName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                siteSettings.logoIcon
-              )}
-            </div>
-            <div>
-              <h1
-                className="text-lg font-bold leading-none"
-                style={{ fontFamily: "Amiri, serif" }}
+      <DeselectSurface>
+        <div
+          className="min-h-screen bg-background"
+          dir="rtl"
+          style={{ fontFamily: "Tajawal, sans-serif" }}
+        >
+          <EditableBackground
+            id="bg-nav"
+            className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md"
+          >
+            <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+              <Reveal className="flex items-center gap-3" duration={600}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-[#2C1810] overflow-hidden shrink-0">
+                  {siteSettings.logoImageUrl ? (
+                    <img
+                      src={siteSettings.logoImageUrl}
+                      alt={siteSettings.siteName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    siteSettings.logoIcon
+                  )}
+                </div>
+                <div>
+                  <EditableText
+                    id="site-name"
+                    as="h1"
+                    className="text-lg font-bold leading-none"
+                    style={{ fontFamily: "Amiri, serif" }}
+                  >
+                    {siteSettings.siteName}
+                  </EditableText>
+                  <EditableText
+                    id="site-name-en"
+                    as="p"
+                    className="text-[10px] text-muted-foreground"
+                  >
+                    {siteSettings.siteNameEn}
+                  </EditableText>
+                </div>
+              </Reveal>
+              <Reveal
+                className="flex items-center gap-2"
+                duration={600}
+                delay={100}
               >
-                {siteSettings.siteName}
-              </h1>
-              <p className="text-[10px] text-muted-foreground">
-                {siteSettings.siteNameEn}
-              </p>
+                {!editable && (
+                  <a
+                    href="?admin=1"
+                    title="لوحة التحكم"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border border-border text-[#2C1810] hover:bg-accent/10 transition"
+                  >
+                    <span aria-hidden>⚙️</span>
+                    <span className="hidden sm:inline">لوحة التحكم</span>
+                  </a>
+                )}
+                <WhatsAppContactButton
+                  numberIraq={siteSettings.whatsappNumberIraq}
+                  numberSaudi={siteSettings.whatsappNumberSaudi}
+                  message={generalMsg}
+                />
+              </Reveal>
             </div>
-          </Reveal>
-          <Reveal
-            className="flex items-center gap-2"
-            duration={600}
-            delay={100}
-          >
-            <a
-              href="?admin=1"
-              title="لوحة التحكم"
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold border border-border text-[#2C1810] hover:bg-accent/10 transition"
-            >
-              <span aria-hidden>⚙️</span>
-              <span className="hidden sm:inline">لوحة التحكم</span>
-            </a>
-            <WhatsAppContactButton
-              numberIraq={siteSettings.whatsappNumberIraq}
-              numberSaudi={siteSettings.whatsappNumberSaudi}
-              message={generalMsg}
+          </EditableBackground>
+
+          <EditableBackground id="bg-hero-section">
+            <TopHero
+              siteSettings={siteSettings}
+              onShowTemplates={scrollToTemplates}
             />
-          </Reveal>
-        </div>
-      </nav>
+          </EditableBackground>
 
-      <TopHero siteSettings={siteSettings} onShowTemplates={scrollToTemplates} />
-
-      <section id="templates-grid" className="max-w-7xl mx-auto px-6 py-24">
-        <Reveal className="text-center mb-16" as="div">
-          <h2
-            className="text-3xl md:text-4xl font-bold mb-3"
-            style={{ fontFamily: "Amiri, serif" }}
+          <EditableBackground
+            id="bg-templates-section"
+            className="block"
           >
-            {siteSettings.heroTitle}
-          </h2>
-        </Reveal>
+            <section id="templates-grid" className="max-w-7xl mx-auto px-6 py-24">
+              <Reveal className="text-center mb-16" as="div">
+                <EditableText
+                  id="templates-heading"
+                  as="h2"
+                  className="text-3xl md:text-4xl font-bold mb-3"
+                  style={{ fontFamily: "Amiri, serif" }}
+                >
+                  {siteSettings.heroTitle}
+                </EditableText>
+              </Reveal>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
-          {filtered.map((inv, index) => (
-            <Reveal key={inv.id} delay={(index % 4) * 90}>
-              <InvitationCard inv={inv} onPreview={onPreview} />
-            </Reveal>
-          ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+                {filtered.map((inv, index) => (
+                  <Reveal key={inv.id} delay={(index % 4) * 90}>
+                    <InvitationCard
+                      inv={inv}
+                      onPreview={editable ? () => {} : onPreview}
+                    />
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+          </EditableBackground>
+
+          <Footer siteSettings={siteSettings} onShowTemplates={scrollToTemplates} />
         </div>
-      </section>
-
-      <Footer siteSettings={siteSettings} onShowTemplates={scrollToTemplates} />
-    </div>
+      </DeselectSurface>
+      {editable && <EditPanel />}
+      {editable && (
+        <BackgroundsMenu
+          sections={[
+            { id: "bg-nav", label: "خلفية الشريط العلوي" },
+            { id: "bg-hero-section", label: "خلفية القسم الرئيسي (Hero)" },
+            { id: "bg-templates-section", label: "خلفية قسم عرض التصاميم" },
+          ]}
+        />
+      )}
+    </EditModeProvider>
   )
 }
