@@ -1067,6 +1067,9 @@ function WisalTemplateTwoView({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
+  // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
+  const [knockCount, setKnockCount] = useState(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -1182,6 +1185,14 @@ function WisalTemplateTwoView({
       completeOpening()
       return
     }
+    // القالب 2: أول دقتين بس نعدّهم ونعرض النقاط تتعبى، وبالدقة الثالثة
+    // نبدأ فعلياً حركة فتح الباب (نفس منطق القالب الأصلي).
+    const nextKnock = knockCount + 1
+    if (nextKnock < 3) {
+      setKnockCount(nextKnock)
+      return
+    }
+    setKnockCount(nextKnock)
     setIsPlaying(true)
     audioRef.current?.play().catch(() => {})
     if (videoRef.current) {
@@ -1697,7 +1708,7 @@ function WisalTemplateTwoView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-1000 ${
+          className={`absolute inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-1000 ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
         >
@@ -1726,6 +1737,27 @@ function WisalTemplateTwoView({
             <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
+          </div>
+
+          {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً */}
+          <div className="relative z-10 flex flex-col items-center text-center mt-4">
+            <p className="text-sm font-bold text-[#F1D989] custom-font-amiri drop-shadow-lg mb-2">
+              دُقّوا على الباب ثلاث دقّات ليُفتح
+            </p>
+            <div className="flex items-center justify-center gap-2.5">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="rounded-full transition-colors duration-300"
+                  style={{
+                    width: 9,
+                    height: 9,
+                    border: "1.5px solid #F1D989",
+                    backgroundColor: i < knockCount ? "#F1D989" : "transparent",
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
