@@ -1033,8 +1033,8 @@ function WisalTemplateView({
         onClick={() => setShowDoorCardEditor((v) => !v)}
         style={{
           position: "fixed",
-          bottom: 16,
-          insetInlineStart: 290,
+          bottom: 70,
+          insetInlineStart: 16,
           zIndex: 530,
           padding: "9px 16px",
           borderRadius: 999,
