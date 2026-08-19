@@ -807,6 +807,23 @@ function InvitationForm({
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
     setInv((prev) => ({ ...prev, [key]: value }))
 
+  // تحديث نص عنصر واحد من عناصر "التصميم المباشر" (نفس نظام EditableText
+  // بملف LiveEditor.tsx) من نموذج الإعدادات مباشرة، بدون الحاجة نفتح
+  // معاينة الدعوة ونضغط على النص. لو تركت الحقل فاضي يرجع النص الأصلي
+  // الافتراضي (نمسح مفتاح text من التخزين).
+  const setTextStyleText = (elementId: string, text: string) =>
+    setInv((prev) => {
+      const prevStyles = prev.textStyles || {}
+      const prevEntry = prevStyles[elementId] || {}
+      return {
+        ...prev,
+        textStyles: {
+          ...prevStyles,
+          [elementId]: { ...prevEntry, text: text === "" ? undefined : text },
+        },
+      }
+    })
+
   // نفس فكرة normalizeExternalUrl بصفحة الدعوة: لو المشرف لصق رابط بدون
   // بروتوكول (مثلاً "maps.google.com/..." بدون https:// بالأول)، نضيفه
   // هنا وقت الحفظ حتى الرابط المخزّن بالقاعدة يكون صحيح دايماً وما نعتمد
@@ -1346,6 +1363,35 @@ function InvitationForm({
               </span>
             </label>
           </div>
+
+          {inv.doorStyle === "card" && (
+            <div className="mt-2 flex flex-col sm:flex-row gap-3">
+              <label className="flex-1 flex flex-col gap-1.5 text-sm">
+                <span className="font-bold text-[#2C1810]">
+                  نص عنوان البطاقة
+                </span>
+                <input
+                  type="text"
+                  className="rounded-lg border border-[#e5d9c3] px-3 py-2 text-sm"
+                  placeholder="دعوة زفاف"
+                  value={inv.textStyles?.["door-card-title"]?.text ?? ""}
+                  onChange={(e) => setTextStyleText("door-card-title", e.target.value)}
+                />
+              </label>
+              <label className="flex-1 flex flex-col gap-1.5 text-sm">
+                <span className="font-bold text-[#2C1810]">
+                  نص زر الفتح
+                </span>
+                <input
+                  type="text"
+                  className="rounded-lg border border-[#e5d9c3] px-3 py-2 text-sm"
+                  placeholder="اضغط لفتح الباب"
+                  value={inv.textStyles?.["door-card-tap-hint"]?.text ?? ""}
+                  onChange={(e) => setTextStyleText("door-card-tap-hint", e.target.value)}
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         <MediaUploadField
