@@ -1335,6 +1335,18 @@ function InvitationForm({
               </span>
             </label>
           </div>
+
+          {inv.templateType === "wisal2" && (
+            <MediaUploadField
+              label="صوت دقّة الباب (knockSoundUrl)"
+              hint='خاص بالقالب 2 — يشتغل مع كل ضغطة من الثلاث ضغطات لفتح الباب. لو تركتيه فاضي، يستخدم صوت "طق" افتراضي تلقائي بدون ما ترفعين شي'
+              accept="audio/*"
+              kind="audio"
+              value={inv.knockSoundUrl || ""}
+              folder="knock-sound"
+              onChange={(url) => set("knockSoundUrl", url)}
+            />
+          )}
         </div>
 
         <MediaUploadField
