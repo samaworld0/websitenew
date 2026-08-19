@@ -931,9 +931,10 @@ function WisalTemplateView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-1000 ${
+          className={`fixed inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-1000 ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
+          style={{ height: "100dvh" }}
         >
           <video
             key={inv.introVideo || "default-intro-video"}
@@ -967,9 +968,10 @@ function WisalTemplateView({
       {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
+          style={{ height: "100dvh" }}
         >
           <video
             key={inv.introVideo || "default-intro-video"}
@@ -1795,9 +1797,10 @@ function WisalTemplateTwoView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-1000 ${
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-1000 ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
+          style={{ height: "100dvh" }}
         >
           <video
             key={inv.introVideo || "default-intro-video"}
@@ -1875,9 +1878,10 @@ function WisalTemplateTwoView({
       {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
-          className={`absolute inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
+          style={{ height: "100dvh" }}
         >
           <video
             key={inv.introVideo || "default-intro-video"}
