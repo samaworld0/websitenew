@@ -338,7 +338,7 @@ function WisalTemplateView({
   // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
   // التمرير باللمس حتى لو صارت شفافة تماماً — كإنها تفضل "عالقة" بمنطقة
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
-  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-1000)،
+  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
   const [doorRemoved, setDoorRemoved] = useState(false)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
@@ -398,10 +398,10 @@ function WisalTemplateView({
       if (!prev) {
         generateGoldenParticles()
         setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 900)
-        // نفس مدة "transition-opacity duration-1000" لطبقة الباب، حتى
-        // ننتظر التلاشي يخلص بصرياً قبل ما نشيلها فعلياً من الصفحة.
-        setTimeout(() => setDoorRemoved(true), 1050)
+        setTimeout(() => setShowFlash(false), 1300)
+        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
+        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
+        setTimeout(() => setDoorRemoved(true), 1450)
       }
       return true
     })
@@ -484,7 +484,7 @@ function WisalTemplateView({
         }
         @keyframes goldFlash {
           0% { opacity: 0; }
-          20% { opacity: 1; }
+          45% { opacity: 0.85; }
           100% { opacity: 0; }
         }
         .royal-scroll::-webkit-scrollbar { display: none; }
@@ -510,8 +510,8 @@ function WisalTemplateView({
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.95) 0%, rgba(212,175,55,0.55) 35%, transparent 70%)",
-            animation: "goldFlash 900ms ease-out forwards",
+              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
       )}
@@ -931,7 +931,7 @@ function WisalTemplateView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-1000 ${
+          className={`fixed inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
           style={{ height: "100dvh" }}
@@ -968,7 +968,7 @@ function WisalTemplateView({
       {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
           style={{ height: "100dvh" }}
@@ -1167,7 +1167,7 @@ function WisalTemplateTwoView({
   // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
   // التمرير باللمس حتى لو صارت شفافة تماماً — كإنها تفضل "عالقة" بمنطقة
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
-  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-1000)،
+  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
   const [doorRemoved, setDoorRemoved] = useState(false)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
@@ -1227,10 +1227,10 @@ function WisalTemplateTwoView({
       if (!prev) {
         generateGoldenParticles()
         setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 900)
-        // نفس مدة "transition-opacity duration-1000" لطبقة الباب، حتى
-        // ننتظر التلاشي يخلص بصرياً قبل ما نشيلها فعلياً من الصفحة.
-        setTimeout(() => setDoorRemoved(true), 1050)
+        setTimeout(() => setShowFlash(false), 1300)
+        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
+        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
+        setTimeout(() => setDoorRemoved(true), 1450)
       }
       return true
     })
@@ -1346,7 +1346,7 @@ function WisalTemplateTwoView({
         }
         @keyframes goldFlash {
           0% { opacity: 0; }
-          20% { opacity: 1; }
+          45% { opacity: 0.85; }
           100% { opacity: 0; }
         }
         @keyframes knockRipple {
@@ -1376,8 +1376,8 @@ function WisalTemplateTwoView({
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
             background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.95) 0%, rgba(212,175,55,0.55) 35%, transparent 70%)",
-            animation: "goldFlash 900ms ease-out forwards",
+              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
       )}
@@ -1797,7 +1797,7 @@ function WisalTemplateTwoView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-1000 ${
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
           style={{ height: "100dvh" }}
@@ -1878,7 +1878,7 @@ function WisalTemplateTwoView({
       {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-1000 bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
           style={{ height: "100dvh" }}
