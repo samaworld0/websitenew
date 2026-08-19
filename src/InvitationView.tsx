@@ -942,6 +942,7 @@ function WisalTemplateView({
             src={inv.introVideo || "/videos/intro.mp4"}
             muted
             playsInline
+            preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
@@ -979,6 +980,7 @@ function WisalTemplateView({
             src={inv.introVideo || "/videos/intro.mp4"}
             muted
             playsInline
+            preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
@@ -1808,6 +1810,7 @@ function WisalTemplateTwoView({
             src={inv.introVideo || "/videos/intro.mp4"}
             muted
             playsInline
+            preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
@@ -1889,6 +1892,7 @@ function WisalTemplateTwoView({
             src={inv.introVideo || "/videos/intro.mp4"}
             muted
             playsInline
+            preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
