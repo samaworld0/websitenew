@@ -11,6 +11,7 @@ import {
   uploadMedia,
 } from "./backend"
 import DesignPanel from "./DesignPanel"
+import HomePageDesignPanel from "./HomePageDesignPanel"
 import { DEFAULT_SCHEDULE } from "./InvitationView"
 
 const categories = [
@@ -1654,7 +1655,8 @@ function SiteSettingsForm({
   add column if not exists "footerLink2Text" text,
   add column if not exists "footerPaymentText" text,
   add column if not exists "footerWhatsappText" text,
-  add column if not exists "customFonts" jsonb;`
+  add column if not exists "customFonts" jsonb,
+  add column if not exists "homeTextStyles" jsonb;`
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -2287,6 +2289,9 @@ export default function AdminPanel({
   const [designEditingInv, setDesignEditingInv] = useState<Invitation | null>(
     null,
   )
+  // وضع "تصميم الواجهة مباشر" — نفس فكرة designEditingInv بس للواجهة
+  // الرئيسية نفسها (مو دعوة معينة). شوف HomePageDesignPanel.tsx.
+  const [designEditingHome, setDesignEditingHome] = useState(false)
 
   useEffect(() => {
     getCurrentSession().then((session) => {
@@ -2439,10 +2444,29 @@ export default function AdminPanel({
 
       <div className="max-w-5xl mx-auto px-5 py-8 space-y-6">
         {activeTab === "settings" && (
-          <SiteSettingsForm
-            initial={siteSettings}
-            onSaved={onSiteSettingsRefresh}
-          />
+          <>
+            <div className="flex items-center justify-between rounded-2xl border border-[#e5d9c3] bg-white p-5 sm:p-7">
+              <div>
+                <h3 className="text-lg font-bold" style={{ fontFamily: "Amiri, serif" }}>
+                  تصميم الواجهة مباشر
+                </h3>
+                <p className="text-sm text-[#8a7561] mt-1">
+                  عدّل نصوص وألوان الصفحة الرئيسية بالسحب والتلوين المباشر —
+                  بنفس أسلوب "تعديل التصميم مباشر" الخاص بالدعوات.
+                </p>
+              </div>
+              <button
+                onClick={() => setDesignEditingHome(true)}
+                className="px-4 py-2.5 rounded-full text-sm font-bold bg-[#B8862F] text-white shadow-sm shrink-0"
+              >
+                🎨 فتح المحرر المباشر
+              </button>
+            </div>
+            <SiteSettingsForm
+              initial={siteSettings}
+              onSaved={onSiteSettingsRefresh}
+            />
+          </>
         )}
 
         {activeTab === "invitations" && !editing && !creating && (
@@ -2563,6 +2587,15 @@ export default function AdminPanel({
           onClose={() => setDesignEditingInv(null)}
           onSaved={onRefresh}
           customFonts={siteSettings.customFonts || []}
+        />
+      )}
+
+      {designEditingHome && (
+        <HomePageDesignPanel
+          invitations={invitations}
+          siteSettings={siteSettings}
+          onClose={() => setDesignEditingHome(false)}
+          onSaved={onSiteSettingsRefresh}
         />
       )}
     </div>
