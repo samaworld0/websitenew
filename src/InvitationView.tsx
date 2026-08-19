@@ -957,13 +957,8 @@ function WisalTemplateView({
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
             </p>
-            <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg mb-3">
+            <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
-            </p>
-            <p className="text-base text-[#E8DCC4] custom-font-amiri">
-              <EditableText id="door-card-names">
-                {`${inv.groom} & ${inv.bride}`}
-              </EditableText>
             </p>
           </div>
         </div>
