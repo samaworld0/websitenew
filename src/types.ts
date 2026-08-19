@@ -118,6 +118,12 @@ export interface SiteSettings {
   // تنحفظ مرة وحدة هنا وتظهر تلقائياً بقائمة اختيار الخط بكل الدعوات
   // (شوف LiveEditor.tsx -> EditModeProvider customFonts + EditPanel).
   customFonts?: CustomFont[]
+  // تعديلات "التصميم المباشر" الخاصة بالواجهة الرئيسية نفسها (الصفحة
+  // الرئيسية + الفوتر) — نفس فكرة Invitation.textStyles بالضبط، بس هذا
+  // المرة يتحكم بعناصر HomePage.tsx / Footer.tsx بدل عناصر دعوة معينة.
+  // تفتح من لوحة التحكم بزر "🎨 تصميم الواجهة مباشر" جنب "إعدادات الواجهة"
+  // (شوف HomePageDesignPanel.tsx).
+  homeTextStyles?: Record<string, TextStyle>
 }
 
 // خط مخصص واحد أضافه المشرف: اسم يظهر بقائمة الاختيار + رابط ملف
