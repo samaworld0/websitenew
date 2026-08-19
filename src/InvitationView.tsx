@@ -1070,6 +1070,9 @@ function WisalTemplateTwoView({
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
   const [knockCount, setKnockCount] = useState(0)
+  // المربع (والتعليمة تحته) يختفي أول بمجرد ما تكتمل الدقة الثالثة،
+  // وبعدها بلحظة يبدأ فيديو الفتح — حتى ما يضلوا فوق بعض بنفس الوقت.
+  const [boxHidden, setBoxHidden] = useState(false)
   // دوائر "الدق" اللي تطلع بمكان الضغطة بالضبط وتختفي بعد لحظات
   const [knockRipples, setKnockRipples] = useState<
     { id: number; x: number; y: number }[]
@@ -1282,6 +1285,7 @@ function WisalTemplateTwoView({
       return
     }
     setKnockCount(nextKnock)
+    setBoxHidden(true)
     setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
   }
 
@@ -1821,9 +1825,12 @@ function WisalTemplateTwoView({
             />
           ))}
 
-          {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
+          {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
+              يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
           <div
-            className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl"
+            className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl transition-opacity duration-500 ${
+              boxHidden ? "opacity-0" : "opacity-100"
+            }`}
             style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* الحد الداخلي الرفيع */}
@@ -1837,8 +1844,13 @@ function WisalTemplateTwoView({
             </p>
           </div>
 
-          {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً */}
-          <div className="relative z-10 flex flex-col items-center text-center mt-4">
+          {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً.
+              نفس فكرة الاختفاء قبل الفيديو. */}
+          <div
+            className={`relative z-10 flex flex-col items-center text-center mt-4 transition-opacity duration-500 ${
+              boxHidden ? "opacity-0" : "opacity-100"
+            }`}
+          >
             <p className="text-sm font-bold text-[#F1D989] custom-font-amiri drop-shadow-lg mb-2">
               دُقّوا على الباب ثلاث دقّات ليُفتح
             </p>
