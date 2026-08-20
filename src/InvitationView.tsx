@@ -293,13 +293,15 @@ function WisalTemplateView({
   editable = false,
   onStylesChange,
   customFonts = [],
+  skipIntro = false,
 }: {
   inv: Invitation
   editable?: boolean
   onStylesChange?: (styles: Record<string, TextStyle>) => void
   customFonts?: CustomFont[]
+  skipIntro?: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -340,7 +342,7 @@ function WisalTemplateView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(false)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -375,6 +377,14 @@ function WisalTemplateView({
   // الخطوات الثلاث كلها (الباب، حركة الفتح/الدق، ثم المحتوى) لا بس
   // الخطوة الأخيرة. زر "🔄 ابدأ من شاشة الباب" تحت يرجّعه لأول خطوة
   // بأي وقت أثناء التصميم.
+
+  // معاينة بدون فيديو الفتح (skipIntro) — بما إن isOpen/doorRemoved
+  // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
+  // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
+  useEffect(() => {
+    if (skipIntro) generateGoldenParticles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -1097,13 +1107,15 @@ function WisalTemplateTwoView({
   editable = false,
   onStylesChange,
   customFonts = [],
+  skipIntro = false,
 }: {
   inv: Invitation
   editable?: boolean
   onStylesChange?: (styles: Record<string, TextStyle>) => void
   customFonts?: CustomFont[]
+  skipIntro?: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
@@ -1205,7 +1217,7 @@ function WisalTemplateTwoView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(false)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -1240,6 +1252,14 @@ function WisalTemplateTwoView({
   // الخطوات الثلاث كلها (الباب، حركة الفتح/الدق، ثم المحتوى) لا بس
   // الخطوة الأخيرة. زر "🔄 ابدأ من شاشة الباب" تحت يرجّعه لأول خطوة
   // بأي وقت أثناء التصميم.
+
+  // معاينة بدون فيديو الفتح (skipIntro) — بما إن isOpen/doorRemoved
+  // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
+  // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
+  useEffect(() => {
+    if (skipIntro) generateGoldenParticles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -2046,13 +2066,15 @@ function WisalTemplateThreeView({
   editable = false,
   onStylesChange,
   customFonts = [],
+  skipIntro = false,
 }: {
   inv: Invitation
   editable?: boolean
   onStylesChange?: (styles: Record<string, TextStyle>) => void
   customFonts?: CustomFont[]
+  skipIntro?: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
@@ -2154,7 +2176,7 @@ function WisalTemplateThreeView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(false)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -2189,6 +2211,14 @@ function WisalTemplateThreeView({
   // الخطوات الثلاث كلها (الباب، حركة الفتح/الدق، ثم المحتوى) لا بس
   // الخطوة الأخيرة. زر "🔄 ابدأ من شاشة الباب" تحت يرجّعه لأول خطوة
   // بأي وقت أثناء التصميم.
+
+  // معاينة بدون فيديو الفتح (skipIntro) — بما إن isOpen/doorRemoved
+  // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
+  // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
+  useEffect(() => {
+    if (skipIntro) generateGoldenParticles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -2992,6 +3022,7 @@ export default function InvitationFullView({
   editable = false,
   onStylesChange,
   customFonts = [],
+  skipIntro = false,
 }: {
   inv: Invitation
   onClose: () => void
@@ -3000,6 +3031,10 @@ export default function InvitationFullView({
   // خطوط مخصصة (من SiteSettings.customFonts) — تمرّ لكل القوالب حتى
   // تظهر بقائمة اختيار الخط بوضع "تعديل التصميم مباشر".
   customFonts?: CustomFont[]
+  // معاينة بدون مقطع فيديو/حركة فتح الباب — تفتح الدعوة مباشرة على
+  // محتواها النهائي بدون ما تحتاجين تضغطين الباب أو تنتظرين الفيديو.
+  // تُستخدم من رابط المعاينة بلوحة التحكم (?preview=ID&skipIntro=1).
+  skipIntro?: boolean
 }) {
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -3017,6 +3052,7 @@ export default function InvitationFullView({
           editable={editable}
           onStylesChange={onStylesChange}
           customFonts={customFonts}
+          skipIntro={skipIntro}
         />
       ) : inv.templateType === "wisal2" ? (
         <WisalTemplateTwoView
@@ -3024,6 +3060,7 @@ export default function InvitationFullView({
           editable={editable}
           onStylesChange={onStylesChange}
           customFonts={customFonts}
+          skipIntro={skipIntro}
         />
       ) : inv.templateType === "wisal3" ? (
         <WisalTemplateThreeView
@@ -3031,6 +3068,7 @@ export default function InvitationFullView({
           editable={editable}
           onStylesChange={onStylesChange}
           customFonts={customFonts}
+          skipIntro={skipIntro}
         />
       ) : (
         <EditModeProvider
