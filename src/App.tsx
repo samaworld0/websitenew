@@ -55,6 +55,7 @@ export default function App() {
   const previewInv = allInvitations?.find(
     (inv) => inv.id.toString() === previewId,
   )
+  const skipIntro = urlParams.get("skipIntro") === "1"
   const isAdmin = urlParams.get("admin") === "1"
 
   const handlePreview = (inv: Invitation) => {
@@ -100,6 +101,7 @@ export default function App() {
           window.location.href = window.location.pathname
         }}
         customFonts={siteSettings.customFonts}
+        skipIntro={skipIntro}
       />
     )
   }
