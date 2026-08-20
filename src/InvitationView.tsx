@@ -1055,6 +1055,35 @@ function WisalTemplateView({
         🔄 ابدأ من شاشة الباب
       </button>
     )}
+    {editable && isPlaying && (
+      // زر تخطي فيديو الفتح وقت التصميم بس — يقفل الفيديو فوراً وينهي
+      // حركة الفتح زي ما لو خلصت لحالها، حتى ما تنتظرين مدتها كل مرة
+      // تجربين تصميم خطوة المحتوى النهائي وأنتِ بنص خطوة الفتح.
+      <button
+        onClick={() => {
+          videoRef.current?.pause()
+          completeOpening()
+        }}
+        style={{
+          position: "fixed",
+          bottom: 114,
+          insetInlineStart: 16,
+          zIndex: 530,
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.2)",
+          background: "rgba(184,134,47,.85)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        }}
+      >
+        ⏭️ تخطي فيديو الفتح
+      </button>
+    )}
     </EditModeProvider>
   )
 }
@@ -1975,6 +2004,35 @@ function WisalTemplateTwoView({
         🔄 ابدأ من شاشة الباب
       </button>
     )}
+    {editable && isPlaying && (
+      // زر تخطي فيديو الفتح وقت التصميم بس — يقفل الفيديو فوراً وينهي
+      // حركة الفتح زي ما لو خلصت لحالها، حتى ما تنتظرين مدتها كل مرة
+      // تجربين تصميم خطوة المحتوى النهائي وأنتِ بنص خطوة الفتح.
+      <button
+        onClick={() => {
+          videoRef.current?.pause()
+          completeOpening()
+        }}
+        style={{
+          position: "fixed",
+          bottom: 114,
+          insetInlineStart: 16,
+          zIndex: 530,
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.2)",
+          background: "rgba(184,134,47,.85)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        }}
+      >
+        ⏭️ تخطي فيديو الفتح
+      </button>
+    )}
     </EditModeProvider>
   )
 }
@@ -2893,6 +2951,35 @@ function WisalTemplateThreeView({
         }}
       >
         🔄 ابدأ من شاشة الباب
+      </button>
+    )}
+    {editable && isPlaying && (
+      // زر تخطي فيديو الفتح وقت التصميم بس — يقفل الفيديو فوراً وينهي
+      // حركة الفتح زي ما لو خلصت لحالها، حتى ما تنتظرين مدتها كل مرة
+      // تجربين تصميم خطوة المحتوى النهائي وأنتِ بنص خطوة الفتح.
+      <button
+        onClick={() => {
+          videoRef.current?.pause()
+          completeOpening()
+        }}
+        style={{
+          position: "fixed",
+          bottom: 114,
+          insetInlineStart: 16,
+          zIndex: 530,
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.2)",
+          background: "rgba(184,134,47,.85)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        }}
+      >
+        ⏭️ تخطي فيديو الفتح
       </button>
     )}
     </EditModeProvider>
