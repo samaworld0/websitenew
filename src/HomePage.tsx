@@ -75,8 +75,8 @@ function InvitationCard({
         </div>
       </div>
 
-      <div className="mt-4 text-right" dir="rtl">
-        <h4 className="text-base font-bold text-foreground">
+      <div className="mt-2 sm:mt-4 text-right" dir="rtl">
+        <h4 className="text-sm sm:text-base font-bold text-foreground line-clamp-1">
           {inv.title.split("—")[0]?.trim()}
         </h4>
         <button
@@ -84,7 +84,7 @@ function InvitationCard({
             e.stopPropagation()
             onPreview(inv)
           }}
-          className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold border border-border"
+          className="w-full mt-2 sm:mt-3 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold border border-border"
         >
           👁 معاينة الدعوة
         </button>
@@ -476,19 +476,19 @@ export default function HomePage({
             id="bg-templates-section"
             className="block"
           >
-            <section id="templates-grid" className="max-w-7xl mx-auto px-6 py-24">
-              <Reveal className="text-center mb-16" as="div">
+            <section id="templates-grid" className="max-w-7xl mx-auto px-3 sm:px-6 py-10 sm:py-24">
+              <Reveal className="text-center mb-8 sm:mb-16" as="div">
                 <EditableText
                   id="templates-heading"
                   as="h2"
-                  className="text-3xl md:text-4xl font-bold mb-3"
+                  className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3"
                   style={{ fontFamily: "Amiri, serif" }}
                 >
                   {siteSettings.heroTitle}
                 </EditableText>
               </Reveal>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-6 sm:gap-x-8 sm:gap-y-12">
                 {filtered.map((inv, index) => (
                   <Reveal key={inv.id} delay={(index % 4) * 90}>
                     <InvitationCard
