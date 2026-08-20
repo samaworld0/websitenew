@@ -921,6 +921,8 @@ function InvitationForm({
       mapUrl: normalizeMapUrl(inv.mapUrl || ""),
       templateType: inv.templateType === "wisal2"
         ? "wisal2"
+        : inv.templateType === "wisal3"
+        ? "wisal3"
         : inv.heroBg || inv.introVideo
         ? "wisal"
         : undefined,
@@ -1300,7 +1302,7 @@ function InvitationForm({
           <div className="flex flex-col sm:flex-row gap-3">
             <label
               className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
-                inv.templateType !== "wisal2"
+                inv.templateType !== "wisal2" && inv.templateType !== "wisal3"
                   ? "border-[#D4AF37] bg-[#fdf8ee]"
                   : "border-[#e5d9c3]"
               }`}
@@ -1309,7 +1311,9 @@ function InvitationForm({
                 type="radio"
                 name="templateVersion"
                 className="mt-1 h-4 w-4 accent-[#D4AF37]"
-                checked={inv.templateType !== "wisal2"}
+                checked={
+                  inv.templateType !== "wisal2" && inv.templateType !== "wisal3"
+                }
                 onChange={() => set("templateType", undefined)}
               />
               <span className="text-sm">
@@ -1341,12 +1345,34 @@ function InvitationForm({
                 </span>
               </span>
             </label>
+            <label
+              className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
+                inv.templateType === "wisal3"
+                  ? "border-[#D4AF37] bg-[#fdf8ee]"
+                  : "border-[#e5d9c3]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="templateVersion"
+                className="mt-1 h-4 w-4 accent-[#D4AF37]"
+                checked={inv.templateType === "wisal3"}
+                onChange={() => set("templateType", "wisal3")}
+              />
+              <span className="text-sm">
+                <span className="font-bold block">القالب 3 (نسخة جديدة)</span>
+                <span className="text-[#8a7561]">
+                  نسخة مستقلة ثالثة بنفس الشكل حالياً — تقدرين تطلبين
+                  تعديلات عليها لحالها بدون ما تأثر على القالبين 1 و2
+                </span>
+              </span>
+            </label>
           </div>
 
-          {inv.templateType === "wisal2" && (
+          {(inv.templateType === "wisal2" || inv.templateType === "wisal3") && (
             <MediaUploadField
               label="صوت دقّة الباب (knockSoundUrl)"
-              hint='خاص بالقالب 2 — يشتغل مع كل ضغطة من الثلاث ضغطات لفتح الباب. لو تركتيه فاضي، يستخدم صوت "طق" افتراضي تلقائي بدون ما ترفعين شي'
+              hint='خاص بالقالب 2/3 — يشتغل مع كل ضغطة من الثلاث ضغطات لفتح الباب. لو تركتيه فاضي، يستخدم صوت "طق" افتراضي تلقائي بدون ما ترفعين شي'
               accept="audio/*"
               kind="audio"
               value={inv.knockSoundUrl || ""}
@@ -2131,6 +2157,15 @@ function InvitationRow({
           className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
         >
           معاينة
+        </a>
+        <a
+          href={`?preview=${inv.id}&skipIntro=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
+          title="تفتح الدعوة مباشرة على محتواها بدون شاشة الباب أو فيديو الفتح"
+        >
+          ⏩ معاينة بدون فيديو الفتح
         </a>
         {resolveSheetLink(inv) ? (
           <a
