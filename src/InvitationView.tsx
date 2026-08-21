@@ -420,6 +420,13 @@ function WisalTemplateView({
       completeOpening()
       return
     }
+    // "تخطي فيديو الفتح": نبقي شاشة "اضغط لفتح الدعوة" (الخطوة الأولى)
+    // زي ما هي، بس لما الضيف يضغط نفتح المحتوى فوراً بدون ما نشغّل
+    // فيديو/حركة الفتح.
+    if (inv.skipIntroVideo) {
+      completeOpening()
+      return
+    }
     setIsPlaying(true)
     audioRef.current?.play().catch(() => {})
     if (videoRef.current) {
@@ -1338,7 +1345,13 @@ function WisalTemplateTwoView({
     }
     setKnockCount(nextKnock)
     setBoxHidden(true)
-    setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
+    // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
+    if (inv.skipIntroVideo) {
+      setTimeout(completeOpening, KNOCK_RIPPLE_MS)
+    } else {
+      setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    }
   }
 
   const handleRSVP = async (e: React.FormEvent) => {
@@ -2297,7 +2310,13 @@ function WisalTemplateThreeView({
     }
     setKnockCount(nextKnock)
     setBoxHidden(true)
-    setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
+    // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
+    if (inv.skipIntroVideo) {
+      setTimeout(completeOpening, KNOCK_RIPPLE_MS)
+    } else {
+      setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    }
   }
 
   const handleRSVP = async (e: React.FormEvent) => {
