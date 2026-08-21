@@ -2181,15 +2181,6 @@ function InvitationRow({
         >
           معاينة
         </a>
-        <a
-          href={`?preview=${inv.id}&skipIntro=1`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-          title="تفتح الدعوة مباشرة على محتواها بدون شاشة الباب أو فيديو الفتح"
-        >
-          ⏩ معاينة بدون فيديو الفتح
-        </a>
         {resolveSheetLink(inv) ? (
           <a
             href={resolveSheetLink(inv)!}
