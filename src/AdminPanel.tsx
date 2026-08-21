@@ -1492,6 +1492,28 @@ function InvitationForm({
           )}
         </div>
 
+        <label
+          className={`sm:col-span-2 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
+            inv.skipIntroVideo
+              ? "border-[#D4AF37] bg-[#fdf8ee]"
+              : "border-[#e5d9c3]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[#D4AF37]"
+            checked={!!inv.skipIntroVideo}
+            onChange={(e) => set("skipIntroVideo", e.target.checked)}
+          />
+          <span className="text-sm">
+            <span className="font-bold block">تخطي فيديو الفتح</span>
+            <span className="text-[#8a7561]">
+              لو مفعّل، الضيف يوصل مباشرة لمحتوى الدعوة بدون شاشة "اضغط
+              لفتح الدعوة" ولا فيديو/حركة الفتح
+            </span>
+          </span>
+        </label>
+
         <MediaUploadField
           label="المقطع الموسيقى (musicUrl)"
           hint="يشتغل تلقائياً بالخلفية أثناء تصفح الضيف للدعوة"
