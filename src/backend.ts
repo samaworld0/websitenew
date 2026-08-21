@@ -117,6 +117,7 @@ function mergeWithLocalFields(row: any): Invitation {
     isPrivate: row.isPrivate ?? local?.isPrivate ?? false,
     coverImage: row.coverImage ?? local?.coverImage ?? "",
     hideCoverOverlay: row.hideCoverOverlay ?? local?.hideCoverOverlay ?? false,
+    skipIntroVideo: row.skipIntroVideo ?? local?.skipIntroVideo ?? false,
     schedule: row.schedule ?? local?.schedule ?? [],
   } as Invitation
 }
@@ -172,6 +173,7 @@ function toDatabaseInvitationAllFields(inv: Invitation): Record<string, any> {
     brideFamily: inv.brideFamily ?? null,
     coverImage: inv.coverImage ?? null,
     hideCoverOverlay: inv.hideCoverOverlay ?? false,
+    skipIntroVideo: inv.skipIntroVideo ?? false,
     schedule: inv.schedule && inv.schedule.length > 0 ? inv.schedule : null,
     textStyles:
       inv.textStyles && Object.keys(inv.textStyles).length > 0
