@@ -60,10 +60,7 @@ export default async function middleware(request: Request) {
       image: DEFAULT_IMAGE,
       pageUrl: url.toString(),
     })
-    return new Response(html, {
-      status: 200,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    })
+    return htmlResponse(html)
   }
 
   // روبوت + فيه ?preview=ID → نجيب بيانات هالدعوة بالذات من Supabase.
@@ -92,10 +89,7 @@ export default async function middleware(request: Request) {
         image: DEFAULT_IMAGE,
         pageUrl: url.toString(),
       })
-      return new Response(html, {
-        status: 200,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      })
+      return htmlResponse(html)
     }
 
     const title =
@@ -117,10 +111,7 @@ export default async function middleware(request: Request) {
       pageUrl: url.toString(),
     })
 
-    return new Response(html, {
-      status: 200,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    })
+    return htmlResponse(html)
   } catch (err) {
     // أي خطأ (شبكة، Supabase واقف...) → نرجّع معاينة عامة بدل ما تنكسر
     // الصفحة كلياً عند الروبوت.
@@ -130,10 +121,7 @@ export default async function middleware(request: Request) {
       image: DEFAULT_IMAGE,
       pageUrl: url.toString(),
     })
-    return new Response(html, {
-      status: 200,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    })
+    return htmlResponse(html)
   }
 }
 
@@ -154,9 +142,14 @@ function buildHtml(params: {
     <meta charset="UTF-8" />
     <title>${title}</title>
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="${SITE_NAME}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${image}" />
+    <meta property="og:image:secure_url" content="${image}" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:url" content="${pageUrl}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${title}" />
@@ -167,4 +160,20 @@ function buildHtml(params: {
     <p>${title}</p>
   </body>
 </html>`
+}
+
+// نبني الاستجابة بهيدر Content-Length صريح — كروالر واتساب (بعكس أداة
+// فحص فيسبوك) لا يتعامل بشكل موثوق مع الاستجابات المُرسلة بترميز
+// "chunked" (الافتراضي بـ Vercel Edge Functions)، فيفشل بصمت ويعرض
+// اسم الدومين فقط بدون صورة أو عنوان. تحديد الطول صراحة يحل المشكلة.
+function htmlResponse(html: string): Response {
+  const bytes = new TextEncoder().encode(html)
+  return new Response(bytes, {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "content-length": String(bytes.byteLength),
+      "cache-control": "public, max-age=300, s-maxage=300",
+    },
+  })
 }
