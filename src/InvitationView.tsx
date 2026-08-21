@@ -398,6 +398,7 @@ function WisalTemplateView({
   }
 
   const completeOpening = () => {
+    audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
       if (!prev) {
         generateGoldenParticles()
@@ -1280,6 +1281,7 @@ function WisalTemplateTwoView({
   }
 
   const completeOpening = () => {
+    audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
       if (!prev) {
         generateGoldenParticles()
@@ -2245,6 +2247,7 @@ function WisalTemplateThreeView({
   }
 
   const completeOpening = () => {
+    audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
       if (!prev) {
         generateGoldenParticles()
