@@ -101,7 +101,7 @@ export default function App() {
           window.location.href = window.location.pathname
         }}
         customFonts={siteSettings.customFonts}
-        skipIntro={skipIntro || !!previewInv.skipIntroVideo}
+        skipIntro={skipIntro}
       />
     )
   }
