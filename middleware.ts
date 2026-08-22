@@ -40,6 +40,19 @@ function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;")
 }
 
+// واتساب يرفض أي صورة أكبر من ~600KB (فيسبوك يقبل حتى 8MB — لهذا صورك
+// كانت تظهر بأداة فيسبوك وتفشل بواتساب بالضبط). صور الدعوات (introPoster
+// إلخ) يرفعها المستخدمين بجودة عالية، فحجمها غالباً أكبر من هذا الحد.
+//
+// الحل: نمرر رابط الصورة عبر خدمة تصغير/ضغط صور مجانية (wsrv.nl) قبل
+// وضعها بـ og:image — تضمن دايماً صورة بمقاس 1200x630 وصيغة JPG وحجم
+// صغير، بغض النظر عن حجم/صيغة الصورة الأصلية المرفوعة.
+function toWhatsappSafeImage(originalUrl: string): string {
+  if (!originalUrl) return originalUrl
+  const encoded = encodeURIComponent(originalUrl.replace(/^https?:\/\//, ""))
+  return `https://wsrv.nl/?url=${encoded}&w=1200&h=630&fit=cover&output=jpg&q=75`
+}
+
 export default async function middleware(request: Request) {
   const url = new URL(request.url)
   const userAgent = request.headers.get("user-agent") || ""
@@ -57,7 +70,7 @@ export default async function middleware(request: Request) {
     const html = buildHtml({
       title: SITE_NAME,
       description: "أنشئ دعوتك الإلكترونية الفاخرة بدقائق",
-      image: DEFAULT_IMAGE,
+      image: toWhatsappSafeImage(DEFAULT_IMAGE),
       pageUrl: url.toString(),
     })
     return htmlResponse(html)
@@ -86,7 +99,7 @@ export default async function middleware(request: Request) {
       const html = buildHtml({
         title: SITE_NAME,
         description: "أنشئ دعوتك الإلكترونية الفاخرة بدقائق",
-        image: DEFAULT_IMAGE,
+        image: toWhatsappSafeImage(DEFAULT_IMAGE),
         pageUrl: url.toString(),
       })
       return htmlResponse(html)
@@ -102,7 +115,9 @@ export default async function middleware(request: Request) {
       inv.subtitle ||
       "أنت مدعو لحضور مناسبتنا"
 
-    const image = inv.introPoster || inv.heroBg || inv.coverImage || DEFAULT_IMAGE
+    const image = toWhatsappSafeImage(
+      inv.introPoster || inv.heroBg || inv.coverImage || DEFAULT_IMAGE,
+    )
 
     const html = buildHtml({
       title,
@@ -118,7 +133,7 @@ export default async function middleware(request: Request) {
     const html = buildHtml({
       title: SITE_NAME,
       description: "أنشئ دعوتك الإلكترونية الفاخرة بدقائق",
-      image: DEFAULT_IMAGE,
+      image: toWhatsappSafeImage(DEFAULT_IMAGE),
       pageUrl: url.toString(),
     })
     return htmlResponse(html)
