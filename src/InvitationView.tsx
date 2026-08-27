@@ -682,8 +682,16 @@ function WisalTemplateView({
                   </EditableText>
                 </p>
               </Reveal>
+            </EditableBackground>
 
-              {/* العداد التنازلي المكبر */}
+            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
+                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
+                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+            <EditableBackground
+              id="bg-countdown-section"
+              className="py-16 px-6 flex flex-col items-center"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
               <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
@@ -1008,7 +1016,8 @@ function WisalTemplateView({
     {editable && (
       <BackgroundsMenu
         sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية والعداد التنازلي" },
+          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
+          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
           { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
@@ -1601,8 +1610,16 @@ function WisalTemplateTwoView({
                   </EditableText>
                 </p>
               </Reveal>
+            </EditableBackground>
 
-              {/* العداد التنازلي المكبر */}
+            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
+                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
+                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+            <EditableBackground
+              id="bg-countdown-section"
+              className="py-16 px-6 flex flex-col items-center"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
               <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
@@ -1971,7 +1988,8 @@ function WisalTemplateTwoView({
     {editable && (
       <BackgroundsMenu
         sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية والعداد التنازلي" },
+          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
+          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
           { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
@@ -2567,8 +2585,16 @@ function WisalTemplateThreeView({
                   </EditableText>
                 </p>
               </Reveal>
+            </EditableBackground>
 
-              {/* العداد التنازلي المكبر */}
+            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
+                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
+                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+            <EditableBackground
+              id="bg-countdown-section"
+              className="py-16 px-6 flex flex-col items-center"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
               <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
@@ -2937,7 +2963,8 @@ function WisalTemplateThreeView({
     {editable && (
       <BackgroundsMenu
         sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية والعداد التنازلي" },
+          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
+          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
           { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
