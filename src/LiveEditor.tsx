@@ -1,3022 +1,1452 @@
-import { useState, useEffect, useRef, type RefObject, type ReactNode } from "react"
-import { Invitation, TextStyle, CustomFont } from "./types"
-import { submitRSVP } from "./backend"
-import Reveal from "./Reveal"
-import { RoseIcon } from "./icons"
-import {
-  EditModeProvider,
-  DeselectSurface,
-  EditableText,
-  EditableBackground,
-  EditableButton,
-  EditableLinkBackground,
-  EditPanel,
-  BackgroundsMenu,
-  TransitionsMenu,
-  useEditMode,
-} from "./LiveEditor"
+/**
+ * ============================================================================
+ * Live Editor — نظام تعديل مباشر شبيه بـ Figma/Canva
+ * ============================================================================
+ * نسخة "فريش" مجرّدة بالكامل من أي إعدادات أو بيانات أو Cache خاصة بأي
+ * مشروع. ما فيها أي اعتماد على Supabase أو أي Backend محدد — كل حفظ/رفع
+ * صورة يمر عبر Callbacks تمررها أنت من مشروعك.
+ *
+ * الاستخدام الأساسي:
+ *
+ *   <EditModeProvider editable={isEditing} initialStyles={{}} onSave={handleSave}>
+ *     <EditableText id="title">عنوان قابل للتعديل</EditableText>
+ *     <EditableImage id="hero-img" src="/img.jpg" alt="" />
+ *     <EditPanel />
+ *   </EditModeProvider>
+ *
+ * كل التعديلات (نص/لون/حجم/موضع/خط...) تتجمع بكائن واحد:
+ *   Record<elementId, TextStyle>
+ * وتوصلك جاهزة بدالة onSave اللي تمررها — احفظها وين ما تحب (DB, API...).
+ * ما فيه أي تخزين محلي (localStorage/cache) داخل المكتبة نفسها.
+ * ============================================================================
+ */
 
-interface GoldenParticle {
-  id: number
-  type: "heart" | "star"
-  left: number
-  size: number
-  duration: number
-  delay: number
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+} from "react"
+
+// ---------------------------------------------------------------------------
+// النموذج الأساسي للبيانات
+// ---------------------------------------------------------------------------
+
+export interface TextStyle {
+  size?: number // px
+  x?: number // % من عرض الشاشة (إزاحة أفقية)
+  y?: number // % من عرض الشاشة (إزاحة رأسية)
+  rotation?: number // درجات 0-360
+  font?: string
+  fontUrl?: string // رابط ملف خط مرفوع (اختياري)
+  color?: string
+  bgColor?: string
+  hidden?: boolean
+  text?: string // نص مخصص يحل محل النص الأصلي
+  imageUrl?: string // للصور المضافة يدويًا فقط
+  // لو العنصر ده "نسخة مكرّرة" من عنصر ثاني (زر "تكرار العنصر")، هذا
+  // الحقل يحمل معرّف العنصر الأصلي اللي انسخت منه. العنصر الأصلي (id)
+  // نفسه هو اللي يتكفّل يعرض كل نسخه المكرّرة جنبه (شوف EditableText).
+  duplicateOf?: string
+  // مدة انتقال/تلاشي (بالميلي ثانية) — تُستخدم بعناصر "انتقال" خاصة
+  // (مو نص عادي) زي عنصر تلاشي فتح الدعوة. شوف TransitionsMenu.
+  duration?: number
+  // نوع منحنى الحركة (سرعة الانتقال) — CSS transition-timing-function.
+  easing?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"
 }
 
-// معرّف عنصر "ثيم الورد المتطاير" بنظام التصميم المباشر — عنصر واحد يتحكم
-// بشكل كل الجزيئات المتطايرة دفعة وحدة (مو كل وردة لحالها). التعديل يتم من
-// نفس لوحة الخصائص العادية: النص (الحقل "النص") يغيّر الرمز (✿، ❤، ★...)،
-// ولون النص يغيّر لون كل الورود مرة وحدة.
-const PARTICLES_THEME_ID = "particles-theme"
+export type SidebarTab = "text" | "background" | "properties" | "insert"
 
-// معرّف عنصر "انتقال تلاشي نصوص القسم الأول" — يتحكم بمدة/سرعة ظهور
-// النصوص والعناصر (بعد اختفاء الباب/الفيديو بالكامل) من لوحة التعديل
-// عبر TransitionsMenu، بدل ما تكون مثبّتة بالكود (1000ms).
-const DOOR_TEXT_TRANSITION_ID = "transition-door-text"
+const MIN_PX = 8
+const MAX_PX = 160
+const MAX_OFFSET = 40 // % حد أقصى للإزاحة حتى لا يخرج العنصر عن الشاشة
+export const MIN_ZOOM = 0.5
+export const MAX_ZOOM = 1.5
 
-// عنصر جزيئات الخلفية المتطايرة — قابل للتحديد بوضع التعديل مثل أي عنصر
-// ثاني، ويقرأ شكله (الرمز) ولونه من TextStyle الخاص بمعرّفه بدل ما يكون
-// مثبّت على "✿" دايماً.
-function FloatingParticles({ particles }: { particles: GoldenParticle[] }) {
-  const { editable, styles, selectedId, setSelectedId } = useEditMode()
-  const style = styles[PARTICLES_THEME_ID] || {}
-  const glyph = style.text || "✿"
-  const color = style.color || "#F1D989"
-  const isSelected = editable && selectedId === PARTICLES_THEME_ID
+// المرجع اللي نستخدمه لتحويل نسبة% <-> بكسل بناءً على عرض شاشة العميل فعليًا
+function referenceWidth() {
+  if (typeof window === "undefined") return 400
+  return Math.min(window.innerWidth, 480)
+}
+function pxToPercent(px: number) {
+  return (px / referenceWidth()) * 100
+}
+function percentToPx(percent: number) {
+  return (percent / 100) * referenceWidth()
+}
+
+// ---------------------------------------------------------------------------
+// خطوط وألوان جاهزة (استبدلها بما يناسب مشروعك الجديد بحرية تامة)
+// ---------------------------------------------------------------------------
+
+export const FONT_OPTIONS: { label: string; family: string }[] = [
+  { label: "افتراضي", family: "inherit" },
+  { label: "Sans", family: "system-ui, sans-serif" },
+  { label: "Serif", family: "Georgia, serif" },
+  { label: "Mono", family: "ui-monospace, monospace" },
+]
+
+export const COLOR_PRESETS: string[] = [
+  "#111111",
+  "#333333",
+  "#666666",
+  "#B8862F",
+  "#D4AF37",
+  "#7A3546",
+  "#2A6F97",
+  "#2F7A4F",
+  "#F5E9E4",
+  "#FFFFFF",
+]
+
+const injectedFonts = new Set<string>()
+export function injectFontFace(family: string, url: string) {
+  if (!family || !url || injectedFonts.has(family)) return
+  injectedFonts.add(family)
+  const styleEl = document.createElement("style")
+  styleEl.textContent = `@font-face { font-family: '${family}'; src: url('${url}'); font-display: swap; }`
+  document.head.appendChild(styleEl)
+}
+
+// خط مخصص واحد أضافه المشرف (اسم + رابط ملف الخط) — شكله هنا مطابق
+// لـ CustomFont بـ types.ts لكن معرّف محلياً حتى LiveEditor يضل مستقل
+// بالكامل عن باقي المشروع (شوف تعليق أعلى الملف).
+export interface CustomFontOption {
+  name: string
+  url: string
+}
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
+
+interface EditModeValue {
+  editable: boolean
+  styles: Record<string, TextStyle>
+  selectedId: string | null
+  setSelectedId: (id: string | null) => void
+  updateStyle: (id: string, patch: Partial<TextStyle>) => void
+  resetStyle: (id: string) => void
+  // ينشئ نسخة جديدة كاملة من عنصر موجود (نفس الستايل) بمعرّف جديد،
+  // ويحددها تلقائياً حتى يقدر المستخدم يسحبها لمكانها فوراً.
+  duplicateElement: (id: string) => void
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
+  activeTab: SidebarTab | null
+  setActiveTab: (tab: SidebarTab | null) => void
+  zoom: number
+  setZoom: (z: number) => void
+  // اختياري: تمرره لو تحتاج رفع صور حقيقية (بدل base64 المؤقت)
+  onUploadImage?: (file: File) => Promise<string>
+  // خطوط مخصصة إضافية (فوق FONT_OPTIONS الثابتة) — تظهر بقائمة اختيار
+  // الخط بـ EditPanel. تُحقن كـ @font-face تلقائياً عند التوفر.
+  customFonts: CustomFontOption[]
+}
+
+const EditModeContext = createContext<EditModeValue>({
+  editable: false,
+  styles: {},
+  selectedId: null,
+  setSelectedId: () => {},
+  updateStyle: () => {},
+  resetStyle: () => {},
+  duplicateElement: () => {},
+  undo: () => {},
+  redo: () => {},
+  canUndo: false,
+  canRedo: false,
+  activeTab: null,
+  setActiveTab: () => {},
+  zoom: 1,
+  setZoom: () => {},
+  customFonts: [],
+})
+
+export function useEditMode() {
+  return useContext(EditModeContext)
+}
+
+// ---------------------------------------------------------------------------
+// Provider — القلب: يمسك الحالة، التراجع/الإعادة، والحفظ
+// ---------------------------------------------------------------------------
+
+export function EditModeProvider({
+  editable,
+  initialStyles = {},
+  onStylesChange,
+  onUploadImage,
+  customFonts = [],
+  children,
+}: {
+  editable: boolean
+  initialStyles?: Record<string, TextStyle>
+  // يُستدعى مع كل تغيير — مرره لدالة تحفظ بمشروعك (API/DB). لا تخزين داخلي.
+  onStylesChange?: (styles: Record<string, TextStyle>) => void
+  onUploadImage?: (file: File) => Promise<string>
+  // خطوط مخصصة (اسم + رابط ملف) تضاف لقائمة اختيار الخط — مرّرها من
+  // إعدادات مشروعك (مثلاً SiteSettings.customFonts) حتى تبقى محفوظة
+  // ومتاحة بكل مكان يستخدم هذا الـ Provider.
+  customFonts?: CustomFontOption[]
+  children: ReactNode
+}) {
+  const [styles, setStyles] = useState<Record<string, TextStyle>>(initialStyles)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<SidebarTab | null>(null)
+  const [zoom, setZoomState] = useState(1)
+  // مرجع دايم التحديث لآخر عنصر محدد — نستخدمه بمستمع لوحة المفاتيح
+  // (تحريك بالأسهم) حتى ما نحتاج نعيد تسجيل الـ listener كل مرة يتغيّر
+  // فيها التحديد (وإلا تصير كل خطوة سهم "تتأخر" خطوة عن آخر تحديث).
+  const selectedRef = useRef<string | null>(null)
+  selectedRef.current = selectedId
+
+  // تراجع/إعادة بسيط: مكدّس من اللقطات الكاملة لـ styles
+  const undoStack = useRef<Record<string, TextStyle>[]>([])
+  const redoStack = useRef<Record<string, TextStyle>[]>([])
+
+  const pushHistory = (prev: Record<string, TextStyle>) => {
+    undoStack.current.push(prev)
+    if (undoStack.current.length > 50) undoStack.current.shift()
+    redoStack.current = []
+  }
+
+  const updateStyle = (id: string, patch: Partial<TextStyle>) => {
+    setStyles((prev) => {
+      pushHistory(prev)
+      const next = { ...prev, [id]: { ...prev[id], ...patch } }
+      onStylesChange?.(next)
+      return next
+    })
+  }
+
+  const resetStyle = (id: string) => {
+    setStyles((prev) => {
+      pushHistory(prev)
+      const next = { ...prev }
+      delete next[id]
+      onStylesChange?.(next)
+      return next
+    })
+  }
+
+  // تكرار عنصر: ننسخ كل خصائص التصميم الحالية للعنصر الأصلي (النص،
+  // اللون، الخط، الحجم...) بمعرّف جديد فريد، ونربطه بالأصل عبر
+  // duplicateOf حتى EditableText يعرف يعرض النسخة جنب عنصرها الأصلي.
+  // ننزّل النسخة شوي (y +6%) حتى تبان كعنصر منفصل بدل ما تتراكب بالضبط
+  // فوق الأصل، ونحددها فوراً حتى المستخدم يقدر يسحبها لمكانها.
+  const duplicateElement = (id: string) => {
+    const newId = `${id}__dup${Date.now()}`
+    setStyles((prev) => {
+      pushHistory(prev)
+      const base = prev[id] || {}
+      const next = {
+        ...prev,
+        [newId]: { ...base, duplicateOf: id, y: (base.y || 0) + 6 },
+      }
+      onStylesChange?.(next)
+      return next
+    })
+    setSelectedId(newId)
+  }
+
+  const undo = () => {
+    const prev = undoStack.current.pop()
+    if (!prev) return
+    setStyles((current) => {
+      redoStack.current.push(current)
+      onStylesChange?.(prev)
+      return prev
+    })
+  }
+
+  const redo = () => {
+    const next = redoStack.current.pop()
+    if (!next) return
+    setStyles((current) => {
+      undoStack.current.push(current)
+      onStylesChange?.(next)
+      return next
+    })
+  }
+
+  const setZoom = (z: number) => setZoomState(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z)))
+
+  // نحقن @font-face لكل خط مخصص فور توفره (لو الصفحة تحمّل خطوط قبل ما
+  // أي عنصر يختارها فعلياً) حتى معاينة الخط بقائمة الاختيار نفسها تبان
+  // بشكلها الصح فوراً، مو بس بعد ما ينحفظ باستايل عنصر.
+  useEffect(() => {
+    customFonts.forEach((f) => injectFontFace(f.name, f.url))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customFonts])
+
+  // اختصارات لوحة المفاتيح: Ctrl/Cmd+Z للتراجع، Ctrl/Cmd+Shift+Z للإعادة
+  useEffect(() => {
+    if (!editable) return
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey
+      if (!mod || e.key.toLowerCase() !== "z") return
+      e.preventDefault()
+      if (e.shiftKey) redo()
+      else undo()
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable])
+
+  // تحريك بالأسهم: تحريك العنصر المحدد حبة حبة (خطوة صغيرة ثابتة) بدل
+  // السحب الحر — أدق وأسهل للتحكم، خصوصاً لضبط موضع دقيق. Shift+سهم
+  // يعطي خطوة أكبر للتحريك السريع. نتجاهل الضغط لو المستخدم يكتب داخل
+  // حقل نص/textarea (مثلاً بنموذج RSVP الحقيقي بالمعاينة) حتى ما نخطف
+  // أسهم لوحة المفاتيح من التمرير/التحرير داخل الحقل.
+  useEffect(() => {
+    if (!editable) return
+    const ARROW_KEYS: Record<string, [number, number]> = {
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+    }
+    const STEP = 0.4 // % — خطوة صغيرة دقيقة
+    const STEP_FAST = 2 // % — خطوة أكبر مع Shift
+    const handler = (e: KeyboardEvent) => {
+      const dir = ARROW_KEYS[e.key]
+      if (!dir) return
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return
+      // عناصر الخلفية (EditableBackground) ما تدعم تحريك أصلاً (بس لون/صورة)
+      if (!selectedRef.current || selectedRef.current.startsWith("bg-")) return
+      e.preventDefault()
+      const step = e.shiftKey ? STEP_FAST : STEP
+      setStyles((prev) => {
+        pushHistory(prev)
+        const id = selectedRef.current as string
+        const cur = prev[id] || {}
+        const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, (cur.x || 0) + dir[0] * step))
+        const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, (cur.y || 0) + dir[1] * step))
+        const next = { ...prev, [id]: { ...cur, x: nextX, y: nextY } }
+        onStylesChange?.(next)
+        return next
+      })
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable])
 
   return (
-    <div
-      data-editable-id={PARTICLES_THEME_ID}
-      className="absolute inset-0 z-10 overflow-hidden"
-      style={{
-        pointerEvents: editable ? "auto" : "none",
-        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
-        outlineOffset: -2,
-        cursor: editable ? "pointer" : undefined,
-      }}
-      onClick={(e) => {
-        if (!editable) return
-        e.stopPropagation()
-        setSelectedId(PARTICLES_THEME_ID)
+    <EditModeContext.Provider
+      value={{
+        editable,
+        styles,
+        selectedId,
+        setSelectedId,
+        updateStyle,
+        resetStyle,
+        duplicateElement,
+        undo,
+        redo,
+        canUndo: undoStack.current.length > 0,
+        canRedo: redoStack.current.length > 0,
+        activeTab,
+        setActiveTab,
+        zoom,
+        setZoom,
+        onUploadImage,
+        customFonts,
       }}
     >
-      {editable && (
-        <span
-          className="absolute top-3 inset-inline-end-3 z-30 px-2.5 py-1 rounded-full text-[10px] font-bold"
-          style={{ background: "#1A1210", border: "1px solid #B8862F", color: "#F1D989" }}
-        >
-          🌸 ثيم الورد المتطاير — اضغط هنا وعدّل «النص» أو «اللون» بلوحة اليمين
-        </span>
-      )}
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute bottom-0 opacity-70 pointer-events-none"
-          style={{
-            left: `${p.left}%`,
-            fontSize: `${style.size ?? p.size}px`,
-            color,
-            animation: `goldenParticle ${p.duration}s linear infinite`,
-            animationDelay: `-${p.delay}s`,
-          }}
-        >
-          {glyph}
-        </div>
-      ))}
-    </div>
+      {children}
+    </EditModeContext.Provider>
   )
 }
 
-// حاوية نصوص وعناصر القسم الأول (اسم العريس/العروسة، التاريخ، رسالة
-// الترحيب...) — تتلاشى للظهور بعد ما يختفي الباب/الفيديو بالكامل
-// (doorRemoved)، مو بنفس لحظته. مدة وسرعة هذا التلاشي قابلة للتحكم من
-// لوحة "⏱️ الانتقالات" بوضع التصميم المباشر (شوف TransitionsMenu)
-// بدل ما تكون مثبّتة بالكود.
-function DoorTextReveal({
-  doorRemoved,
-  children,
-}: {
-  doorRemoved: boolean
-  children: ReactNode
-}) {
-  const { styles } = useEditMode()
-  const st = styles[DOOR_TEXT_TRANSITION_ID] || {}
-  const duration = st.duration ?? 1000
-  const easing = st.easing || "ease"
-
+// يلغي التحديد لو ضغط المستخدم على مساحة فاضية (خارج أي عنصر قابل للتعديل)
+export function DeselectSurface({ children }: { children: ReactNode }) {
+  const { setSelectedId } = useEditMode()
   return (
-    <div
-      className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen"
-      style={{
-        opacity: doorRemoved ? 1 : 0,
-        // الإخفاء فوري (بدون transition) — التلاشي المقصود اتجاه واحد بس:
-        // الظهور بعد اختفاء الباب. هذا كمان يخلي إعادة التشغيل (زر "جرّب
-        // الآن") تشتغل صح: تختفي النصوص فوراً ثم تتلاشى للظهور من جديد
-        // بنفس المدة/السرعة، بدل ما يتصادم اتجاهي الحركة مع بعض.
-        transition: doorRemoved ? `opacity ${duration}ms ${easing}` : "none",
-      }}
-    >
+    <div style={{ width: "100%", height: "100%" }} onClick={() => setSelectedId(null)}>
       {children}
     </div>
   )
 }
 
-// رابط الموقع اللي يحطه المشرف بلوحة التحكم أحياناً يكون ناقص البروتوكول
-// (مثلاً "maps.google.com/..." أو "goo.gl/maps/xyz" بدون "https://" بالأول)
-// — بهالحالة يعامله المتصفح كرابط داخلي نسبي لموقعنا نفسه فيصير الزر ما
-// يسوي شي فعلياً (أو يوديك لصفحة غير موجودة بنفس الدومين) بدل ما يفتح
-// خرائط جوجل. هذي الدالة تتأكد إن الرابط دايماً يبدأ ببروتوكول صحيح قبل
-// ما نستخدمه بـ href، وترجع الرابط الافتراضي لو الحقل فاضي.
-function normalizeExternalUrl(url: string | undefined, fallback: string): string {
-  const trimmed = (url ?? "").trim()
-  if (!trimmed) return fallback
-  if (/^https?:\/\//i.test(trimmed)) return trimmed
-  return `https://${trimmed}`
+// ---------------------------------------------------------------------------
+// EditableText — نص قابل للتحديد/السحب/التكبير/التدوير/التلوين
+// ---------------------------------------------------------------------------
+
+type DragMode = "resize" | "move" | "rotate"
+interface DragState {
+  mode: DragMode
+  startX: number
+  startY: number
+  startSize: number
+  startX0: number
+  startY0: number
+  centerX: number
+  centerY: number
+  startRotation: number
 }
 
-// برنامج الحفل الافتراضي — يُستخدم لو الدعوة ما عندها جدول مخصص محفوظ
-// (schedule فاضي أو غير موجود، مثلاً دعوات قديمة قبل إضافة هالحقل).
-export const DEFAULT_SCHEDULE = [
-  { label: "استقبال الضيوف", time: "٧:٠٠ مساءً" },
-  { label: "عقد القران", time: "٧:٣٠ مساءً" },
-  { label: "العشاء", time: "٩:٠٠ مساءً" },
+export function EditableText({
+  id,
+  as = "span",
+  className,
+  style,
+  children,
+}: {
+  id: string
+  as?: string
+  className?: string
+  style?: React.CSSProperties
+  children: ReactNode
+}) {
+  const { editable, styles, selectedId, setSelectedId, updateStyle, zoom } = useEditMode()
+  const ref = useRef<HTMLElement | null>(null)
+  const dragRef = useRef<DragState | null>(null)
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
+
+  const currentStyle = styles[id]
+  useEffect(() => {
+    if (currentStyle?.font && currentStyle?.fontUrl) {
+      injectFontFace(currentStyle.font, currentStyle.fontUrl)
+    }
+  }, [currentStyle?.font, currentStyle?.fontUrl])
+
+  const Tag = as as any
+  const displayChildren = currentStyle?.text !== undefined ? currentStyle.text : children
+
+  // أي عناصر ثانية بستايلز الصفحة مربوطة بهالعنصر عن طريق duplicateOf
+  // (يعني اتسوّت له بزر "تكرار") — نعرضها كنسخ شقيقة جنبه مباشرة، بنفس
+  // الشكل (as/className/style/children) بس كل وحدة فيها تدير نفسها
+  // بمعرّفها الخاص (موقعها/لونها/نصها...) بشكل مستقل تماماً عن الأصل.
+  const duplicateIds = Object.keys(styles).filter(
+    (key) => styles[key]?.duplicateOf === id,
+  )
+  const duplicatesNode =
+    duplicateIds.length > 0 ? (
+      <>
+        {duplicateIds.map((dupId) => (
+          <EditableText key={dupId} id={dupId} as={as} className={className} style={style}>
+            {children}
+          </EditableText>
+        ))}
+      </>
+    ) : null
+
+  // ---- وضع العرض العادي (خارج التعديل) ----
+  if (!editable) {
+    const saved = styles[id]
+    if (saved?.hidden) return duplicatesNode
+    if (!saved) {
+      return (
+        <>
+          <Tag className={className} style={style}>
+            {children}
+          </Tag>
+          {duplicatesNode}
+        </>
+      )
+    }
+    const x = percentToPx(Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, saved.x || 0)))
+    const y = percentToPx(Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, saved.y || 0)))
+    return (
+      <>
+        <Tag
+          className={className}
+          style={{
+            ...style,
+            ...(saved.size ? { fontSize: `${saved.size}px` } : null),
+            ...(saved.font ? { fontFamily: saved.font } : null),
+            ...(saved.color ? { color: saved.color } : null),
+            ...(saved.bgColor ? { backgroundColor: saved.bgColor } : null),
+            transform: `translate(${x}px, ${y}px)`,
+            ...(saved.rotation ? { rotate: `${saved.rotation}deg` } : null),
+            display: "inline-block",
+            position: "relative",
+          }}
+        >
+          {displayChildren}
+        </Tag>
+        {duplicatesNode}
+      </>
+    )
+  }
+
+  // ---- وضع التعديل ----
+  const isSelected = selectedId === id
+  const st = styles[id] || {}
+  const px = st.size
+  const offX = st.x || 0
+  const offY = st.y || 0
+  const rotation = st.rotation || 0
+
+  const handleMove = (ev: PointerEvent) => {
+    const d = dragRef.current
+    if (!d) return
+    if (d.mode === "resize") {
+      const delta = (ev.clientY - d.startY) / zoomRef.current
+      const next = Math.max(MIN_PX, Math.min(MAX_PX, d.startSize + delta * 0.6))
+      updateStyle(id, { size: next })
+    } else if (d.mode === "rotate") {
+      const startAngle = (Math.atan2(d.startY - d.centerY, d.startX - d.centerX) * 180) / Math.PI
+      const currentAngle = (Math.atan2(ev.clientY - d.centerY, ev.clientX - d.centerX) * 180) / Math.PI
+      let next = d.startRotation + (currentAngle - startAngle)
+      next = ((next % 360) + 360) % 360
+      const snapped = Math.round(next / 15) * 15
+      if (Math.abs(snapped - next) < 4) next = snapped % 360
+      updateStyle(id, { rotation: next })
+    } else {
+      const dxPct = (pxToPercent(ev.clientX - d.startX))
+      const dyPct = (pxToPercent(ev.clientY - d.startY))
+      const nextX = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startX0 + dxPct))
+      const nextY = Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, d.startY0 + dyPct))
+      updateStyle(id, { x: nextX, y: nextY })
+    }
+  }
+  const handleUp = () => {
+    dragRef.current = null
+    window.removeEventListener("pointermove", handleMove)
+    window.removeEventListener("pointerup", handleUp)
+  }
+
+  const beginDrag = (mode: DragMode) => (e: React.PointerEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const el = ref.current
+    const rect = el?.getBoundingClientRect()
+    dragRef.current = {
+      mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      startSize: px ?? (el ? parseFloat(getComputedStyle(el).fontSize) : 24),
+      startX0: offX,
+      startY0: offY,
+      centerX: rect ? rect.left + rect.width / 2 : e.clientX,
+      centerY: rect ? rect.top + rect.height / 2 : e.clientY,
+      startRotation: rotation,
+    }
+    window.addEventListener("pointermove", handleMove)
+    window.addEventListener("pointerup", handleUp)
+  }
+
+  const isHidden = !!st.hidden
+  const handleBtnStyle: React.CSSProperties = {
+    width: 22,
+    height: 22,
+    borderRadius: "50%",
+    background: "#1A1210",
+    border: "1px solid #B8862F",
+    color: "#F1D989",
+    fontSize: 12,
+    lineHeight: "20px",
+    textAlign: "center",
+    userSelect: "none",
+    touchAction: "none",
+  }
+
+  return (
+    <>
+    <Tag
+      ref={ref}
+      className={className}
+      data-editable-id={id}
+      style={{
+        ...style,
+        ...(px ? { fontSize: `${px}px` } : null),
+        ...(st.font ? { fontFamily: st.font } : null),
+        ...(st.color ? { color: st.color } : null),
+        ...(st.bgColor ? { backgroundColor: st.bgColor } : null),
+        transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)`,
+        ...(rotation ? { rotate: `${rotation}deg` } : null),
+        display: "inline-block",
+        position: "relative",
+        cursor: "pointer",
+        opacity: isHidden ? 0.35 : 1,
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: 4,
+        borderRadius: 4,
+        transition: "outline-color .15s ease, opacity .15s ease",
+        zIndex: isSelected ? 350 : offX || offY ? 40 : undefined,
+      }}
+      onClick={(e: React.MouseEvent) => {
+        e.stopPropagation()
+        setSelectedId(id)
+      }}
+    >
+      {displayChildren}
+      {isSelected && (
+        <span
+          contentEditable={false}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            insetInlineStart: "50%",
+            transform: "translateX(-50%)",
+            bottom: -30,
+            display: "flex",
+            gap: 5,
+            background: "#1A1210",
+            border: "1px solid #B8862F",
+            borderRadius: 999,
+            padding: "3px 5px",
+            zIndex: 400,
+            whiteSpace: "nowrap",
+            boxShadow: "0 4px 14px rgba(0,0,0,.35)",
+          }}
+        >
+          <span onPointerDown={beginDrag("resize")} title="تكبير/تصغير" style={handleBtnStyle}>⇕</span>
+          <span onPointerDown={beginDrag("move")} title="تحريك" style={handleBtnStyle}>✥</span>
+          <span onPointerDown={beginDrag("rotate")} title="تدوير" style={handleBtnStyle}>⟳</span>
+        </span>
+      )}
+    </Tag>
+    {duplicatesNode}
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// EditableLinkBackground — رابط <a> حقيقي (مثل زر "الموقع على الخريطة")
+// بخلفية قابلة للتلوين. بوضع التعديل: الضغط يحدد الرابط بدل ما يفتحه
+// فعلياً (حتى ما ينقلك لصفحة الخريطة وأنت بس عم تلوّن الزر).
+// ---------------------------------------------------------------------------
+
+export function EditableLinkBackground({
+  id,
+  href,
+  target,
+  rel,
+  className,
+  style,
+  children,
+}: {
+  id: string
+  href: string
+  target?: string
+  rel?: string
+  className?: string
+  style?: React.CSSProperties
+  children?: ReactNode
+}) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const st = styles[id] || {}
+  const isSelected = editable && selectedId === id
+
+  if (!editable && st.hidden) return null
+
+  return (
+    <a
+      href={editable ? undefined : href}
+      target={editable ? undefined : target}
+      rel={editable ? undefined : rel}
+      data-editable-id={id}
+      className={className}
+      style={{
+        ...style,
+        ...(st.bgColor ? { backgroundColor: st.bgColor } : null),
+        ...(st.color ? { color: st.color } : null),
+        cursor: editable ? "pointer" : undefined,
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: 2,
+        ...(editable && st.hidden ? { opacity: 0.35 } : null),
+      }}
+      onClick={(e) => {
+        if (editable) {
+          e.preventDefault()
+          e.stopPropagation()
+          setSelectedId(id)
+        }
+      }}
+    >
+      {children}
+    </a>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// EditableImage — نفس فكرة EditableText بس لصورة (بدون لون/خط)
+// ---------------------------------------------------------------------------
+
+export function EditableImage({
+  id,
+  src,
+  alt = "",
+  className,
+  style,
+}: {
+  id: string
+  src: string
+  alt?: string
+  className?: string
+  style?: React.CSSProperties
+}) {
+  const { editable, styles, selectedId, setSelectedId, updateStyle } = useEditMode()
+  const st = styles[id] || {}
+  const finalSrc = st.imageUrl || src
+  const isSelected = editable && selectedId === id
+
+  if (!editable && st.hidden) return null
+
+  const x = percentToPx(st.x || 0)
+  const y = percentToPx(st.y || 0)
+
+  return (
+    <img
+      src={finalSrc}
+      alt={alt}
+      data-editable-id={id}
+      className={className}
+      style={{
+        ...style,
+        ...(st.size ? { width: `${st.size}px` } : null),
+        transform: `translate(${x}px, ${y}px)`,
+        ...(st.rotation ? { rotate: `${st.rotation}deg` } : null),
+        position: "relative",
+        cursor: editable ? "pointer" : undefined,
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: 4,
+        opacity: st.hidden ? 0.35 : 1,
+      }}
+      onClick={(e) => {
+        if (!editable) return
+        e.stopPropagation()
+        setSelectedId(id)
+      }}
+      onError={() => {}}
+    />
+  )
+}
+
+// ---------------------------------------------------------------------------
+// EditableButton — زر حقيقي (submit/button) بخلفية قابلة للتلوين من لوحة
+// التصميم. بوضع التعديل: الضغط يحدد الزر بدل ما ينفّذ فعله الأصلي (مهم
+// خصوصاً لأزرار type="submit" حتى ما ترسل نموذج RSVP فعلياً وإحنا بس
+// عم نلوّن الزر).
+// ---------------------------------------------------------------------------
+
+export function EditableButton({
+  id,
+  type = "button",
+  onClick,
+  className,
+  style,
+  children,
+  disabled,
+}: {
+  id: string
+  type?: "button" | "submit" | "reset"
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
+  className?: string
+  style?: React.CSSProperties
+  children?: ReactNode
+  disabled?: boolean
+}) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const st = styles[id] || {}
+  const isSelected = editable && selectedId === id
+
+  return (
+    <button
+      type={editable ? "button" : type}
+      disabled={disabled}
+      data-editable-id={id}
+      className={className}
+      style={{
+        ...style,
+        ...(st.bgColor ? { backgroundColor: st.bgColor } : null),
+        ...(st.color ? { color: st.color } : null),
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: 2,
+      }}
+      onClick={(e) => {
+        if (editable) {
+          e.preventDefault()
+          e.stopPropagation()
+          setSelectedId(id)
+          return
+        }
+        onClick?.(e)
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// EditableBackground — خلفية قسم قابلة لتغيير اللون/الصورة
+// ---------------------------------------------------------------------------
+
+export function EditableBackground({
+  id,
+  className,
+  style,
+  children,
+}: {
+  id: string
+  className?: string
+  style?: React.CSSProperties
+  children?: ReactNode
+}) {
+  const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const st = styles[id] || {}
+  const isSelected = editable && selectedId === id
+
+  // وضع العرض العادي (زوار الدعوة الحقيقيين): لو القسم اتطفى بالكامل من
+  // التصميم المباشر، ما نرندر منه ولا حرف — القسم كله (بكل ما فيه من
+  // نصوص/صور/بطاقات) يختفي من الصفحة تمامًا، مو بس تصير خلفيته شفافة.
+  if (!editable && st.hidden) return null
+
+  return (
+    <div
+      data-editable-id={id}
+      className={className}
+      style={{
+        ...style,
+        ...(st.bgColor ? { backgroundColor: st.bgColor, backgroundImage: "none" } : null),
+        ...(st.imageUrl ? { backgroundImage: `url(${st.imageUrl})`, backgroundSize: "cover" } : null),
+        position: "relative",
+        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
+        outlineOffset: -2,
+        // بوضع التصميم المباشر نفسه نبقي القسم ظاهر (باهت) حتى المصمم
+        // يقدر يرجّعه أو يعدّل عليه، بدل ما يختفي كليًا ويصير يصعب الوصول له.
+        ...(editable && st.hidden ? { opacity: 0.35 } : null),
+      }}
+      onClick={(e) => {
+        if (!editable) return
+        e.stopPropagation()
+        setSelectedId(id)
+      }}
+    >
+      {editable && st.hidden && (
+        <div
+          contentEditable={false}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            top: 8,
+            insetInlineStart: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 60,
+            background: "#1A1210",
+            border: "1px solid #B8862F",
+            color: "#F1D989",
+            fontSize: 11,
+            fontFamily: "system-ui, sans-serif",
+            padding: "4px 12px",
+            borderRadius: 999,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+          }}
+        >
+          🚫 هذا القسم مخفي عن الزوار
+        </div>
+      )}
+      {children}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// EditPanel — لوحة الخصائص الجانبية (بسيطة: نص/لون/خط/حجم/إخفاء/تصفير)
+// ---------------------------------------------------------------------------
+
+export function EditPanel() {
+  const {
+    editable,
+    selectedId,
+    styles,
+    updateStyle,
+    resetStyle,
+    duplicateElement,
+    setSelectedId,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    onUploadImage,
+    customFonts,
+  } = useEditMode()
+
+  if (!editable || !selectedId) return null
+  const st = styles[selectedId] || {}
+  const isDuplicate = !!st.duplicateOf
+  // عناصر الخلفية (EditableBackground) معرّفها يبدأ بـ "bg-" — نعرض لها
+  // لوحة مختصرة (لون خلفية + صورة + إخفاء) بدل كل خصائص النص اللي ما
+  // تنطبق عليها (حجم خط، خط، تدوير...).
+  const isBackground = selectedId.startsWith("bg-")
+
+  const panelStyle: React.CSSProperties = {
+    position: "fixed",
+    insetInlineEnd: 16,
+    top: 64,
+    width: 260,
+    maxHeight: "calc(100vh - 96px)",
+    overflowY: "auto",
+    background: "#15100E",
+    border: "1px solid #3A2A1E",
+    borderRadius: 16,
+    padding: 16,
+    color: "#F1D989",
+    fontFamily: "system-ui, sans-serif",
+    fontSize: 13,
+    zIndex: 500,
+    boxShadow: "0 20px 50px rgba(0,0,0,.4)",
+  }
+
+  const row: React.CSSProperties = { marginBottom: 14 }
+  const label: React.CSSProperties = { display: "block", marginBottom: 6, opacity: 0.8, fontSize: 11 }
+  const input: React.CSSProperties = {
+    width: "100%",
+    background: "#1F1712",
+    border: "1px solid #3A2A1E",
+    borderRadius: 8,
+    color: "#fff",
+    padding: "6px 8px",
+    fontSize: 13,
+  }
+  const btn: React.CSSProperties = {
+    padding: "6px 10px",
+    borderRadius: 999,
+    border: "1px solid #3A2A1E",
+    background: "transparent",
+    color: "#F1D989",
+    fontSize: 11,
+    cursor: "pointer",
+  }
+
+  return (
+    <div style={panelStyle}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button style={btn} disabled={!canUndo} onClick={undo}>↶ تراجع</button>
+          <button style={btn} disabled={!canRedo} onClick={redo}>↷ إعادة</button>
+        </div>
+        <button style={btn} onClick={() => setSelectedId(null)}>✕</button>
+      </div>
+
+      {isBackground ? (
+        <>
+          <div style={row}>
+            <label style={label}>لون الخلفية</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateStyle(selectedId, { bgColor: c, imageUrl: undefined })}
+                  style={{
+                    width: 22, height: 22, borderRadius: "50%", background: c,
+                    border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
+              <input
+                type="color"
+                value={st.bgColor || "#ffffff"}
+                onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value, imageUrl: undefined })}
+                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+              />
+              <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>افتراضي</button>
+            </div>
+          </div>
+
+          {onUploadImage && (
+            <div style={row}>
+              <label style={label}>صورة خلفية (اختياري)</label>
+              <input
+                type="file"
+                accept="image/*"
+                style={input}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const url = await onUploadImage(file)
+                  updateStyle(selectedId, { imageUrl: url })
+                }}
+              />
+              {st.imageUrl && (
+                <button style={{ ...btn, marginTop: 6 }} onClick={() => updateStyle(selectedId, { imageUrl: undefined })}>
+                  إزالة صورة الخلفية
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* تشغيل/إطفاء القسم بالكامل — يخفي كل محتوى القسم (نصوصه
+              وصوره وبطاقاته) عن الزوار دفعة وحدة، مو بس لونه/صورته. */}
+          <div style={row}>
+            <button
+              style={{
+                ...btn,
+                width: "100%",
+                fontWeight: 700,
+                borderColor: st.hidden ? "#B8862F" : "#3A2A1E",
+                background: st.hidden ? "rgba(184,134,47,.18)" : "transparent",
+              }}
+              onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
+            >
+              {st.hidden ? "👁 تشغيل (إظهار) القسم" : "🚫 إطفاء (إخفاء) القسم كامل"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={row}>
+            <label style={label}>النص</label>
+            <textarea
+              style={{ ...input, minHeight: 60, resize: "vertical" }}
+              value={st.text ?? ""}
+              placeholder="(النص الأصلي)"
+              onChange={(e) => updateStyle(selectedId, { text: e.target.value || undefined })}
+            />
+          </div>
+
+          <div style={row}>
+            <label style={label}>حجم الخط ({st.size ?? "افتراضي"})</label>
+            <input
+              type="range"
+              min={MIN_PX}
+              max={MAX_PX}
+              value={st.size ?? 24}
+              style={{ width: "100%" }}
+              onChange={(e) => updateStyle(selectedId, { size: Number(e.target.value) })}
+            />
+          </div>
+
+          <div style={row}>
+            <label style={label}>الخط</label>
+            <select
+              style={input}
+              value={st.font ?? ""}
+              onChange={(e) => {
+                const chosenFamily = e.target.value || undefined
+                // لو اختار خط مخصص (من قائمة "خطوط مضافة")، نخزن رابط ملفه
+                // (fontUrl) مع اسمه بنفس TextStyle العنصر، مو بس الاسم —
+                // حتى الخط يشتغل بأي صفحة يفتح فيها العنصر لحاله (مثل رابط
+                // المعاينة ?preview=ID) حتى لو ما وصلتها قائمة customFonts
+                // الكاملة لأي سبب، بدل ما يعتمد بس على حقن الخط العام وقت
+                // فتح لوحة التصميم.
+                const customMatch = customFonts.find((f) => f.name === chosenFamily)
+                updateStyle(selectedId, {
+                  font: chosenFamily,
+                  fontUrl: customMatch?.url,
+                })
+              }}
+            >
+              <option value="">افتراضي</option>
+              {FONT_OPTIONS.map((f) => (
+                <option key={f.family} value={f.family}>{f.label}</option>
+              ))}
+              {customFonts.length > 0 && (
+                <optgroup label="خطوط مضافة">
+                  {customFonts.map((f) => (
+                    <option key={f.name} value={f.name}>{f.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+
+          <div style={row}>
+            <label style={label}>لون النص</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateStyle(selectedId, { color: c })}
+                  style={{
+                    width: 22, height: 22, borderRadius: "50%", background: c,
+                    border: st.color === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
+              <input
+                type="color"
+                value={st.color || "#ffffff"}
+                onChange={(e) => updateStyle(selectedId, { color: e.target.value })}
+                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+              />
+            </div>
+          </div>
+
+          <div style={row}>
+            <label style={label}>لون الخلفية</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => updateStyle(selectedId, { bgColor: c })}
+                  style={{
+                    width: 22, height: 22, borderRadius: "50%", background: c,
+                    border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
+              <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>بدون</button>
+            </div>
+          </div>
+
+          {onUploadImage && (
+            <div style={row}>
+              <label style={label}>رفع صورة (لو العنصر صورة)</label>
+              <input
+                type="file"
+                accept="image/*"
+                style={input}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const url = await onUploadImage(file)
+                  updateStyle(selectedId, { imageUrl: url })
+                }}
+              />
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button
+              style={{ ...btn, flex: 1 }}
+              onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
+            >
+              {st.hidden ? "إظهار" : "إخفاء"}
+            </button>
+            <button style={{ ...btn, flex: 1 }} onClick={() => duplicateElement(selectedId)}>
+              ⧉ تكرار
+            </button>
+          </div>
+        </>
+      )}
+
+      <div style={{ marginTop: 8 }}>
+        <button
+          style={{ ...btn, width: "100%" }}
+          onClick={() => {
+            resetStyle(selectedId)
+            if (isDuplicate) setSelectedId(null)
+          }}
+        >
+          {isBackground ? "إرجاع الخلفية الأصلية" : isDuplicate ? "🗑 حذف النسخة" : "إرجاع الأصل"}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// BackgroundsMenu — قائمة سريعة لتحديد أي خلفية بالصفحة بالاسم بدل الضغط
+// عليها مباشرة بالمعاينة. مفيدة لخلفيات صار مساحتها الظاهرة صغيرة/متغطاة
+// (مثل خلفية قسم كامل ورا بطاقة كبيرة بتاخذ كل المساحة) وصعب توصلها
+// بالضغط المباشر — هذا الطريق يضمن اختيارها دايماً بشكل مضمون ١٠٠٪.
+// ---------------------------------------------------------------------------
+
+export interface BackgroundSectionOption {
+  id: string
+  label: string
+}
+
+export function BackgroundsMenu({ sections }: { sections: BackgroundSectionOption[] }) {
+  const { editable, styles, selectedId, setSelectedId, updateStyle } = useEditMode()
+  const [open, setOpen] = useState(false)
+
+  if (!editable || sections.length === 0) return null
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 16,
+        insetInlineStart: 16,
+        zIndex: 530,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+      }}
+    >
+      {open && (
+        <div
+          style={{
+            marginBottom: 8,
+            background: "#15100E",
+            border: "1px solid #3A2A1E",
+            borderRadius: 12,
+            padding: 6,
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            maxHeight: 320,
+            overflowY: "auto",
+            minWidth: 240,
+            boxShadow: "0 12px 30px rgba(0,0,0,.4)",
+          }}
+        >
+          {sections.map((s) => {
+            const isHidden = !!styles[s.id]?.hidden
+            return (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button
+                  onClick={() => {
+                    setSelectedId(s.id)
+                    setOpen(false)
+                  }}
+                  style={{
+                    flex: 1,
+                    textAlign: "start",
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: selectedId === s.id ? "1px solid #B8862F" : "1px solid transparent",
+                    background: selectedId === s.id ? "rgba(184,134,47,.18)" : "transparent",
+                    color: isHidden ? "#8C7A6B" : "#F1D989",
+                    fontSize: 12,
+                    fontFamily: "system-ui, sans-serif",
+                    cursor: "pointer",
+                    textDecoration: isHidden ? "line-through" : "none",
+                  }}
+                >
+                  {s.label}
+                </button>
+                {/* تشغيل/إطفاء سريع بدون فتح اللوحة الجانبية */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    updateStyle(s.id, { hidden: !isHidden })
+                  }}
+                  title={isHidden ? "إظهار القسم" : "إخفاء القسم"}
+                  style={{
+                    flexShrink: 0,
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    border: isHidden ? "1px solid #B8862F" : "1px solid #3A2A1E",
+                    background: isHidden ? "rgba(184,134,47,.18)" : "transparent",
+                    color: "#F1D989",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  {isHidden ? "🚫" : "👁"}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,.2)",
+          background: "rgba(0,0,0,.65)",
+          color: "#fff",
+          fontSize: 12,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
+          cursor: "pointer",
+          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
+        }}
+      >
+        🎨 الخلفيات
+      </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// TransitionsMenu — قائمة سريعة للتحكم بمدة/سرعة أي "انتقال تلاشي" بالصفحة
+// (مثل تلاشي ظهور النصوص بعد فتح الدعوة). كل عنصر انتقال له id مستقل
+// يُخزَّن ضبطه (duration + easing) بنفس نظام styles العام، فينحفظ وينحمّل
+// تلقائياً زي أي تعديل ثاني بدون أي تخزين إضافي.
+// ---------------------------------------------------------------------------
+
+export interface TransitionOption {
+  id: string
+  label: string
+  defaultDuration?: number // ms — لو ما فيه قيمة محفوظة بعد
+  // اختياري: تمرّرها لو تبي زر "جرّب الآن" يعيد تشغيل الانتقال فعلياً
+  // بالمعاينة (بنفس المدة/السرعة الحالية) بدل ما يبقى بس سلايدر بدون
+  // نتيجة مرئية فورية.
+  onPreview?: () => void
+}
+
+const EASING_OPTIONS: {
+  value: NonNullable<TextStyle["easing"]>
+  label: string
+}[] = [
+  { value: "linear", label: "ثابتة" },
+  { value: "ease", label: "طبيعية" },
+  { value: "ease-in", label: "بطيئة البداية" },
+  { value: "ease-out", label: "بطيئة النهاية" },
+  { value: "ease-in-out", label: "بطيئة الطرفين" },
 ]
 
-// مسار برنامج الحفل: خط ذهبي رفيع يربط النقاط الذهبية، ووردة زخرفية
-// تبدأ من أول نقطة ذهبية (استقبال الضيوف) وتنزل تدريجياً مع تمرير
-// الصفحة لتصل آخر نقطة (العشاء). نعتمد على موضع أول وآخر نقطة فعلياً
-// (بدل نسب ثابتة) حتى تبقى الوردة مثبتة على الخط بالضبط مهما تغيّر ارتفاع
-// الأسطر. نربطها بحاوية السكرول الفعلية عبر containerRef (مو window، لأن
-// صفحة الدعوة تستخدم div داخلي قابل للتمرير بدل الصفحة نفسها).
-function ScheduleTrack({
-  items,
-  containerRef,
-}: {
-  items: { label: string; time: string }[]
-  containerRef: RefObject<HTMLDivElement | null>
-}) {
-  const trackRef = useRef<HTMLDivElement>(null)
-  const firstDotRef = useRef<HTMLSpanElement>(null)
-  const lastDotRef = useRef<HTMLSpanElement>(null)
-  const [line, setLine] = useState({ top: 0, bottom: 0 })
-  const [flowerTop, setFlowerTop] = useState(0)
-  // نقطة ◆ الفاصلة بين كل بند تحتاج خلفية بنفس لون خلفية القسم (مو لون
-  // ثابت) حتى "تقطع" الخط الذهبي اللي ماشي وراها بدون ما تبين كصندوق
-  // غريب أو "مرقّع" لو المستخدم غيّر لون خلفية القسم (bg-venue-section)
-  // من لوحة التصميم المباشر. نقرأها من نفس التخزين اللي تقرأ منه
-  // EditableBackground حتى تبقى متزامنة تلقائياً بدون أي إعداد إضافي.
-  const { styles } = useEditMode()
-  const sectionBg = styles["bg-venue-section"]?.bgColor || "#4E1019"
-  // لون الوردة المتحركة — نقرأه هنا (مو بس جوّا EditableText) حتى نقدر
-  // نستخدمه بتوهج الظل (drop-shadow) لحظة تحريكها بنفس اللون المختار.
-  const flowerColor = styles["schedule-flower-icon"]?.color || "#D4AF37"
-  // لون الخط الرفيع الواصل بين النقاط — قابل للتغيير من قائمة "الخلفيات"
-  // بالتصميم المباشر (معرّفه bg-schedule-line)، بنفس آلية لون خلفية القسم.
-  const lineColor = styles["bg-schedule-line"]?.bgColor || "#D4AF37"
+export function TransitionsMenu({ items }: { items: TransitionOption[] }) {
+  const { editable, styles, updateStyle } = useEditMode()
+  const [open, setOpen] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(items[0]?.id ?? null)
 
-  useEffect(() => {
-    const container = containerRef.current
-    const track = trackRef.current
-    const firstDot = firstDotRef.current
-    const lastDot = lastDotRef.current
-    if (!container || !track || !firstDot || !lastDot) return
+  if (!editable || items.length === 0) return null
 
-    let ticking = false
-    const update = () => {
-      ticking = false
-      const containerRect = container.getBoundingClientRect()
-      const trackRect = track.getBoundingClientRect()
-      const firstRect = firstDot.getBoundingClientRect()
-      const lastRect = lastDot.getBoundingClientRect()
-
-      // موضع أول وآخر نقطة نسبةً لأعلى المسار (ثابت، ما يتغير إلا بتغيير الحجم)
-      const trackTop = firstRect.top + firstRect.height / 2 - trackRect.top
-      const trackBottom = lastRect.top + lastRect.height / 2 - trackRect.top
-      setLine({ top: trackTop, bottom: trackBottom })
-
-      // تقدّم التمرير: 0 لما توصل أول نقطة منتصف الشاشة المرئية للحاوية،
-      // و1 لما توصل آخر نقطة نفس المنتصف — فتتحرك الوردة تدريجياً بينهما.
-      const containerCenter = containerRect.top + containerRect.height / 2
-      const start = trackRect.top + trackTop
-      const end = trackRect.top + trackBottom
-      let progress = end === start ? 0 : (containerCenter - start) / (end - start)
-      progress = Math.max(0, Math.min(1, progress))
-
-      setFlowerTop(trackTop + (trackBottom - trackTop) * progress)
-    }
-    const handleScroll = () => {
-      if (!ticking) {
-        ticking = true
-        requestAnimationFrame(update)
-      }
-    }
-
-    update()
-    container.addEventListener("scroll", handleScroll, { passive: true })
-    window.addEventListener("resize", handleScroll)
-    return () => {
-      container.removeEventListener("scroll", handleScroll)
-      window.removeEventListener("resize", handleScroll)
-    }
-  }, [containerRef])
+  const active = items.find((i) => i.id === activeId) || items[0]
+  const st = styles[active.id] || {}
+  const duration = st.duration ?? active.defaultDuration ?? 1000
+  const easing = st.easing || "ease"
 
   return (
-    <div ref={trackRef} className="relative">
-      {/* الخط الذهبي الرفيع الواصل بين النقاط — لونه قابل للتغيير من قائمة
-          "الخلفيات" بالتصميم المباشر (معرّفه bg-schedule-line) */}
-      <EditableBackground
-        id="bg-schedule-line"
-        className="absolute left-1/2 -translate-x-1/2 w-px opacity-25"
-        style={{ top: line.top, height: Math.max(0, line.bottom - line.top), backgroundColor: lineColor }}
-      />
-      {/* الوردة المتحركة فوق الخط — نحركها بـ transform (مو top) حتى تكون
-          الحركة أنعم (GPU-accelerated)، ومدة أطول مع تسارع طبيعي بدل القفز
-          الخطي. z-20 حتى تطلع دايماً فوق النقاط الذهبية. */}
-      <div
-        className="absolute left-1/2 top-0 z-20 flex items-center justify-center pointer-events-none will-change-transform"
-        style={{
-          transform: `translate(-50%, calc(${flowerTop}px - 50%))`,
-          transition: "transform 450ms cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
-      >
-        <span
-          className="text-2xl"
-          style={{
-            color: flowerColor,
-            filter: "drop-shadow(0 0 10px rgba(212,175,55,0.45))",
-          }}
-        >
-          <EditableText id="schedule-flower-icon">
-            <RoseIcon />
-          </EditableText>
-        </span>
-      </div>
-
-      {items.map((item, i) => (
-        <div
-          key={`${i}-${item.label}`}
-          className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-6"
-        >
-          <span className="text-right custom-font-tajawal">
-            <EditableText id={`schedule-item-${i}-label`}>
-              {item.label}
-            </EditableText>
-          </span>
-          <span
-            ref={
-              i === 0
-                ? firstDotRef
-                : i === items.length - 1
-                  ? lastDotRef
-                  : undefined
-            }
-            className="relative z-10 px-1 text-[#D4AF37] text-xs"
-            style={{ backgroundColor: sectionBg }}
-          >
-            <EditableText id="schedule-bullet-icon">◆</EditableText>
-          </span>
-          <span className="text-left font-bold text-[#F1D989] custom-font-amiri">
-            <EditableText id={`schedule-item-${i}-time`}>
-              {item.time}
-            </EditableText>
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function WisalTemplateView({
-  inv,
-  editable = false,
-  onStylesChange,
-  customFonts = [],
-  skipIntro = false,
-}: {
-  inv: Invitation
-  editable?: boolean
-  onStylesChange?: (styles: Record<string, TextStyle>) => void
-  customFonts?: CustomFont[]
-  skipIntro?: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(skipIntro)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [particles, setParticles] = useState<GoldenParticle[]>([])
-
-  // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
-  // لو الدعوة ما عندها موعد محدد (دعوات قديمة قبل إضافة هالحقل)، نرجع
-  // لنفس القيم الافتراضية اللي كانت موجودة سابقاً حتى ما ينكسر العرض.
-  const calcTimeLeft = () => {
-    if (!inv.eventDateTime) {
-      return { days: 108, hours: 14, minutes: 51, seconds: 12 }
-    }
-    const diff = new Date(inv.eventDateTime).getTime() - Date.now()
-    if (isNaN(diff) || diff <= 0) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0 }
-    }
-    return {
-      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((diff / (1000 * 60)) % 60),
-      seconds: Math.floor((diff / 1000) % 60),
-    }
-  }
-
-  const [timeLeft, setTimeLeft] = useState(calcTimeLeft)
-  const [attendance, setAttendance] = useState("نعم")
-  const [companions, setCompanions] = useState(0)
-  const [guestName, setGuestName] = useState("")
-  const [guestNote, setGuestNote] = useState("")
-  const [submitted, setSubmitted] = useState(false)
-  const [showFlash, setShowFlash] = useState(false)
-  // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
-  // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
-  // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
-  // التمرير باللمس حتى لو صارت شفافة تماماً — كإنها تفضل "عالقة" بمنطقة
-  // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
-  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
-  // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
-  const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
-  // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
-  // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
-  // الدعوة)، حتى يقدر المصمم يشرف على الخطوات الثلاث كلها لا بس الأخيرة.
-  const doorCardVisible = !doorRemoved
-
-  const generateGoldenParticles = () => {
-    const items: GoldenParticle[] = []
-    for (let i = 0; i < 25; i++) {
-      items.push({
-        id: i,
-        type: i % 2 === 0 ? "heart" : "star",
-        left: Math.random() * 92 + 4,
-        size: Math.random() * 8 + 8,
-        duration: Math.random() * 8 + 10,
-        delay: Math.random() * 5,
-      })
-    }
-    setParticles(items)
-  }
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(calcTimeLeft())
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [inv.eventDateTime])
-
-  // بوضع "التصميم المباشر" ما نتخطى خطوات فتح الدعوة — يشوف المصمم
-  // شاشة الباب المغلق أول شي (زي أي زائر بالظبط)، ويضغط عليها بنفسه
-  // لينتقل لحركة الفتح ثم لمحتوى الدعوة، حتى يقدر يعدّل ويشرف على
-  // الخطوات الثلاث كلها (الباب، حركة الفتح/الدق، ثم المحتوى) لا بس
-  // الخطوة الأخيرة. زر "🔄 ابدأ من شاشة الباب" تحت يرجّعه لأول خطوة
-  // بأي وقت أثناء التصميم.
-
-  // معاينة بدون فيديو الفتح (skipIntro) — بما إن isOpen/doorRemoved
-  // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
-  // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
-  useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
-  // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
-  // ثم نرجعها تظهر بالإطار التالي، حتى تشتغل حركة CSS transition من جديد
-  // بنفس المدة/السرعة المختارة حالياً، وتشوف المصمم النتيجة النهائية فوراً.
-  const replayDoorTextTransition = () => {
-    setDoorRemoved(false)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setDoorRemoved(true))
-    })
-  }
-
-  const completeOpening = () => {
-    audioRef.current?.play().catch(() => {})
-    setIsOpen((prev) => {
-      if (!prev) {
-        generateGoldenParticles()
-        setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 1300)
-        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
-        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
-        setTimeout(() => setDoorRemoved(true), 1450)
-      }
-      return true
-    })
-    setIsPlaying(false)
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-  }
-
-  const handleDoorTap = () => {
-    if (isOpen) return
-    if (isPlaying) {
-      videoRef.current?.pause()
-      completeOpening()
-      return
-    }
-    // "تخطي فيديو الفتح": نبقي شاشة "اضغط لفتح الدعوة" (الخطوة الأولى)
-    // زي ما هي، بس لما الضيف يضغط نفتح المحتوى فوراً بدون ما نشغّل
-    // فيديو/حركة الفتح.
-    if (inv.skipIntroVideo) {
-      completeOpening()
-      return
-    }
-    setIsPlaying(true)
-    audioRef.current?.play().catch(() => {})
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => completeOpening())
-      timeoutRef.current = setTimeout(() => {
-        if (videoRef.current) videoRef.current.pause()
-        completeOpening()
-      }, 5000)
-    } else {
-      completeOpening()
-    }
-  }
-
-  const handleRSVP = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
-    // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
-    if (inv.sheetId) {
-      const result = await submitRSVP({
-        sheetId: inv.sheetId,
-        name: guestName,
-        attendance,
-        companions,
-        message: guestNote,
-      })
-      if (!result.success) {
-        console.error("فشل إرسال تأكيد الحضور للشيت")
-      }
-    }
-
-    setSubmitted(true)
-  }
-
-  return (
-    <EditModeProvider
-      editable={editable}
-      initialStyles={inv.textStyles || {}}
-      onStylesChange={onStylesChange}
-      customFonts={customFonts}
-    >
-    <DeselectSurface>
     <div
-      className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
-      dir="rtl"
+      style={{
+        position: "fixed",
+        bottom: 16,
+        insetInlineStart: 150,
+        zIndex: 530,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+      }}
     >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
-        @keyframes goldenParticle {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-          15% { opacity: 0.6; }
-          85% { opacity: 0.6; }
-          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes goldLine{
-0%{transform:translateX(-120%)}
-100%{transform:translateX(350%)}
-}
-@keyframes fadeInUp{
-0%{opacity:0;transform:translateY(60px)}
-100%{opacity:1;transform:translateY(0)}
-}
-        @keyframes bounceDown {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
-        @keyframes goldFlash {
-          0% { opacity: 0; }
-          45% { opacity: 0.85; }
-          100% { opacity: 0; }
-        }
-        .royal-scroll::-webkit-scrollbar { display: none; }
-        .royal-scroll {
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: contain;
-          touch-action: pan-y;
-        }
-        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
-        .custom-font-amiri { font-family: 'Amiri', serif; }
-        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
-      `}</style>
-
-      <audio
-        ref={audioRef}
-        src={inv.musicUrl || "/music/background.mp3"}
-        loop
-      />
-
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
+      {open && (
         <div
-          className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
-            animation: "goldFlash 1300ms ease-in-out forwards",
+            marginBottom: 8,
+            background: "#15100E",
+            border: "1px solid #3A2A1E",
+            borderRadius: 12,
+            padding: 14,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            minWidth: 240,
+            boxShadow: "0 12px 30px rgba(0,0,0,.4)",
           }}
-        />
-      )}
-
-      <div
-        ref={scrollContainerRef}
-        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll"
-      >
-        <div className="relative w-full">
-          {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
-              (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
-              خفيف فوقها، بنفس الشكل الأصلي) */}
-          <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={
-              inv.doorBgVideo && !doorBgVideoFailed
-                ? undefined
-                : {
-                    backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-                  }
-            }
-          >
-            <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
-              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
-            </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
-            {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
-              <video
-                key={inv.doorBgVideo || "default-door-bg"}
-                src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                autoPlay
-                loop
-                muted
-                playsInline
-                onError={() => setDoorBgVideoFailed(true)}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
-
-
-            <FloatingParticles particles={particles} />
-
-            <DoorTextReveal doorRemoved={doorRemoved}>
-              <div />
-              <div className="my-auto flex flex-col items-center text-center">
-                <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
-                  <EditableText id="intro-title">دعوة زفاف</EditableText>
-                </p>
-                <span className="text-[#D4AF37] text-xl mb-4">
-                  <EditableText id="intro-icon">✿</EditableText>
-                </span>
-                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  <EditableText id="groom">{inv.groom}</EditableText>
-                </h1>
-                <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
-                  <EditableText id="names-separator">و</EditableText>
-                </span>
-                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  <EditableText id="bride">{inv.bride}</EditableText>
-                </h1>
-                <div className="mt-8 space-y-2">
-                  <p className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri">
-                    <EditableText id="date">{inv.date}</EditableText>
-                  </p>
-                  <p className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
-                    <EditableText id="welcome-message">
-                      فتحنا باب فرحتنا... وطارت البشائر تدعوكم
-                    </EditableText>
-                  </p>
-                </div>
-              </div>
-              <div className="mb-4 flex flex-col items-center opacity-80">
-                <p className="text-sm tracking-widest text-[#E8DCC4] mb-1 custom-font-tajawal">
-                  <EditableText id="scroll-hint">مرر للأسفل</EditableText>
-                </p>
-                <span
-                  className="text-xl text-[#D4AF37]"
-                  style={{ animation: "bounceDown 2s ease-in-out infinite" }}
-                >
-                  <EditableText id="scroll-arrow">↓</EditableText>
-                </span>
-              </div>
-            </DoorTextReveal>
-          </section>
-
-          {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
-          <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
-            {/* قسم الآية وبطاقة الدعوة والعداد التنازلي — خلفية كريمية
-                (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-verse-section"
-              className="py-24 px-6 flex flex-col items-center"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="text-center max-w-xl mb-20">
-                <p
-                  className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
-                  style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
-                >
-                  <EditableText id="verse">{inv.verse}</EditableText>
-                </p>
-              </Reveal>
-
-              {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
-                  (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
-                  ولونه من التصميم المباشر لكل دعوة على حدة) */}
-              <Reveal className="text-center max-w-lg mb-20">
-                <p className="text-base text-[#8C7A6B] mb-6 custom-font-amiri">
-                  <EditableText id="invite-line-1">
-                    اللهم بارك لهما وبارك عليهما واجمع بينهما في خير
-                  </EditableText>
-                </p>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-1">
-                  <EditableText id="invite-line-2">في ليلة جميلة</EditableText>
-                </p>
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-6">
-                  <EditableText id="invite-line-3">يضوي الفرح بعالي سماها</EditableText>
-                </p>
-
-                <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-6 custom-font-amiri">
-                  <EditableText id="invite-line-4">تتشرف</EditableText>
-                </h3>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
-                  <EditableText id="invite-line-5">
-                    {inv.groomFamily || "عائلة العريس"} و {inv.brideFamily || "عائلة العروس"}
-                  </EditableText>
-                </p>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-8">
-                  <EditableText id="invite-line-6">
-                    بدعوتكم لحضور حفل زفاف نجلهم وابنتهم
-                  </EditableText>
-                </p>
-
-                <h2 className="text-4xl md:text-5xl font-bold text-[#4A3B2C] mb-8 custom-font-amiri">
-                  <EditableText id="invite-line-7">
-                    {inv.groom} &amp; {inv.bride}
-                  </EditableText>
-                </h2>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
-                  <EditableText id="invite-line-8">
-                    وذلك بمشيئة الله تعالى {inv.date}
-                  </EditableText>
-                </p>
-
-                <p className="text-base text-[#8C7A6B] custom-font-amiri">
-                  <EditableText id="invite-line-9">
-                    ويسعدنا حضوركم فهو زينة الفرح والسرور
-                  </EditableText>
-                </p>
-              </Reveal>
-            </EditableBackground>
-
-            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
-                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
-                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
-            <EditableBackground
-              id="bg-countdown-section"
-              className="py-16 px-6 flex flex-col items-center"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="text-center w-full max-w-lg mb-16">
-                <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
-                  <EditableText id="countdown-title">باقي على فرحنا</EditableText>
-                </h4>
-                <div
-                  className="flex justify-center items-center gap-4"
-                  dir="ltr"
-                >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.seconds).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-seconds">ثانية</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.minutes).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-minutes">دقيقة</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.hours).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-hours">ساعة</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {timeLeft.days}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-days">يوم</EditableText>
-                    </span>
-                  </div>
-                </div>
-              </Reveal>
-            </EditableBackground>
-
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-venue-section"
-              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
-              style={{ backgroundColor: "#4E1019" }}
-            >
-              {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
-                  <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
-                    <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
-                      <EditableText id="schedule-title">برنامج الحفل</EditableText>
-                    </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
-                  </div>
-                  <div className="text-base md:text-lg text-[#F5EBE0]">
-                    <ScheduleTrack
-                      containerRef={scrollContainerRef}
-                      items={inv.schedule}
-                    />
-                  </div>
-                </Reveal>
-              )}
-
-              <Reveal className="text-center max-w-lg w-full mb-24">
-                <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
-                  <EditableText id="venue-title">مكان الحفل</EditableText>
-                </h3>
-                <h4 className="text-2xl font-bold text-[#F5EBE0] mb-3">
-                  <EditableText id="venue">{inv.venue}</EditableText>
-                </h4>
-                <p className="text-base text-[#E8DCC4]/80 mb-7">
-                  <EditableText id="city">{inv.city}</EditableText>
-                </p>
-                <EditableLinkBackground
-                  id="bg-map-button"
-                  href={normalizeExternalUrl(inv.mapUrl, "https://maps.google.com")}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
-                  style={{ backgroundColor: "#B8862F" }}
-                >
-                  <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
-                </EditableLinkBackground>
-              </Reveal>
-            </EditableBackground>
-
-            {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-rsvp-section"
-              className="py-20 px-6 flex flex-col items-center border-t-2 border-[#D4AF37]"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="max-w-md w-full">
-              <EditableBackground
-                id="bg-rsvp-card"
-                className="bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg"
-              >
-                <div className="text-center mb-10">
-                  <span className="text-lg">
-                    <EditableText id="rsvp-icon">⚙️</EditableText>
-                  </span>
-                  <h3 className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-amiri">
-                    <EditableText id="rsvp-title">تأكيد الحضور</EditableText>
-                  </h3>
-                  <p className="text-sm text-[#8C7A6B] mt-1">
-                    <EditableText id="rsvp-subtitle">يسعدنا تأكيد حضوركم</EditableText>
-                  </p>
-                </div>
-
-                {submitted ? (
-                  <div className="text-center py-10 text-emerald-600 font-bold text-lg">
-                    <EditableText id="rsvp-success-message">
-                      تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
-                    </EditableText>
-                  </div>
-                ) : (
-                  <form onSubmit={handleRSVP} className="space-y-7">
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-name-label">الاسم الكريم</EditableText>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="اسمك الكريم"
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
-                      </label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => {
-                          const isActive = attendance === opt
-                          return (
-                            <EditableButton
-                              key={opt}
-                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
-                              type="button"
-                              onClick={() => setAttendance(opt)}
-                              className={`py-3 rounded-xl text-base font-medium transition ${
-                                isActive
-                                  ? "text-white shadow"
-                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
-                              }`}
-                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
-                            >
-                              <EditableText id={`rsvp-option-${opt}`}>
-                                {opt}
-                              </EditableText>
-                            </EditableButton>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-companions-label">
-                          عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
-                        </EditableText>
-                      </label>
-                      <EditableBackground
-                        id="bg-rsvp-companions-box"
-                        className="flex items-center justify-center gap-6 border border-[#D4AF37]/30 rounded-2xl py-3"
-                        style={{ backgroundColor: "#FAF7F2" }}
-                      >
-                        <EditableButton
-                          id="bg-rsvp-counter-btn"
-                          type="button"
-                          onClick={() =>
-                            setCompanions(Math.max(0, companions - 1))
-                          }
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
-                          style={{ backgroundColor: "#ffffff" }}
-                        >
-                          -
-                        </EditableButton>
-                        <span className="text-xl font-bold text-[#4A3B2C]">
-                          {companions}
-                        </span>
-                        <EditableButton
-                          id="bg-rsvp-counter-btn"
-                          type="button"
-                          onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
-                          style={{ backgroundColor: "#ffffff" }}
-                        >
-                          +
-                        </EditableButton>
-                      </EditableBackground>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-note-label">
-                          كلمة للعروسين 💌
-                        </EditableText>
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={guestNote}
-                        onChange={(e) => setGuestNote(e.target.value)}
-                        placeholder="اكتب تهنئتك للعروسين..."
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
-                      />
-                    </div>
-
-                    <EditableButton
-                      id="bg-rsvp-submit"
-                      type="submit"
-                      className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "#B8862F" }}
-                    >
-                      <EditableText id="rsvp-submit-button">
-                        إرسال التأكيد
-                      </EditableText>
-                    </EditableButton>
-                  </form>
-                )}
-              </EditableBackground>
-              </Reveal>
-            </EditableBackground>
-          </div>
-        </div>
-      </div>
-
-      {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر.
-          ملاحظة: ما نشيلها فوراً لمن isOpen تصير true، لأن هذا يقطع
-          حركة التلاشي البصرية. بدل هيك نخليها opacity-0 لحد ما تخلص
-          الحركة (١٠٠٠ملي ثانية) ثم doorRemoved يشيلها كلياً. */}
-      {doorCardVisible && inv.doorStyle === "card" && (
-        <div
-          onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
-            editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
-          }`}
-          style={{ height: "100dvh" }}
         >
-          <video
-            key={inv.introVideo || "default-intro-video"}
-            ref={videoRef}
-            src={inv.introVideo || "/videos/intro.mp4"}
-            muted
-            playsInline
-            preload="none"
-            poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          />
-
-          {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
-          <div
-            className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
-          >
-            {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[#D4AF37]/30" />
-
-            <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
-              <EditableText id="door-card-title">دعوة زفاف</EditableText>
-            </p>
-            <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
-              <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {!doorRemoved && inv.doorStyle !== "card" && (
-        <div
-          onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
-            isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-          style={{ height: "100dvh" }}
-        >
-          <video
-            key={inv.introVideo || "default-intro-video"}
-            ref={videoRef}
-            src={inv.introVideo || "/videos/intro.mp4"}
-            muted
-            playsInline
-            preload="none"
-            poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
-          />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
-            <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
-          </p>
-        </div>
-      )}
-    </div>
-    </DeselectSurface>
-    {editable && <EditPanel />}
-    {editable && (
-      <BackgroundsMenu
-        sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
-          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
-          { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
-          { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
-          { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
-          { id: "bg-map-button", label: "خلفية زر الموقع على الخريطة" },
-          { id: "bg-rsvp-section", label: "خلفية قسم تأكيد الحضور (كاملة)" },
-          { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
-          { id: "bg-rsvp-companions-box", label: "خلفية صندوق عدد المرافقين" },
-          { id: "bg-rsvp-counter-btn", label: "خلفية زري + / -" },
-          { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
-          { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
-          { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
-        ]}
-      />
-    )}
-    {editable && (
-      <TransitionsMenu
-        items={[
-          {
-            id: DOOR_TEXT_TRANSITION_ID,
-            label: "تلاشي نصوص القسم الأول",
-            defaultDuration: 1000,
-            onPreview: replayDoorTextTransition,
-          },
-        ]}
-      />
-    )}
-    {editable && (
-      // بوضع التصميم المباشر الباب يشتغل عادي زي عند الزوّار (اضغطي عليه
-      // بنفسك لتفتحينه)، وهذا الزر يرجّعك لشاشة الباب المغلقة من جديد
-      // بأي لحظة، حتى تقدرين تعدّلين نصوصها أو تعيدين تجربة الفتح كم
-      // مرة ما تحتاجين بدون ما تسكرين لوحة التصميم وترجعين تفتحينها.
-      <button
-        onClick={() => {
-          setIsPlaying(false)
-          if (timeoutRef.current) clearTimeout(timeoutRef.current)
-          if (videoRef.current) {
-            videoRef.current.pause()
-            videoRef.current.currentTime = 0
-          }
-          setShowFlash(false)
-          setIsOpen(false)
-          setDoorRemoved(false)
-        }}
-        style={{
-          position: "fixed",
-          bottom: 70,
-          insetInlineStart: 16,
-          zIndex: 530,
-          padding: "9px 16px",
-          borderRadius: 999,
-          border: "1px solid rgba(255,255,255,.2)",
-          background: "rgba(0,0,0,.65)",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
-          fontFamily: "system-ui, sans-serif",
-          cursor: "pointer",
-          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
-        }}
-      >
-        🔄 ابدأ من شاشة الباب
-      </button>
-    )}
-    {editable && isPlaying && (
-      // زر تخطي فيديو الفتح وقت التصميم بس — يقفل الفيديو فوراً وينهي
-      // حركة الفتح زي ما لو خلصت لحالها، حتى ما تنتظرين مدتها كل مرة
-      // تجربين تصميم خطوة المحتوى النهائي وأنتِ بنص خطوة الفتح.
-      <button
-        onClick={() => {
-          videoRef.current?.pause()
-          completeOpening()
-        }}
-        style={{
-          position: "fixed",
-          bottom: 114,
-          insetInlineStart: 16,
-          zIndex: 530,
-          padding: "9px 16px",
-          borderRadius: 999,
-          border: "1px solid rgba(255,255,255,.2)",
-          background: "rgba(184,134,47,.85)",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
-          fontFamily: "system-ui, sans-serif",
-          cursor: "pointer",
-          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
-        }}
-      >
-        ⏭️ تخطي فيديو الفتح
-      </button>
-    )}
-    </EditModeProvider>
-  )
-}
-
-// ─── نسخة كاملة ثانية من نفس قالب "وصال" (نفس الكود بالضبط) — نسخة
-// مستقلة تماماً بملفها عشان تقدرين تعدّلين تصميمها لاحقاً بدون ما يأثر
-// على القالب الأصلي فوق. تُختار من لوحة التحكم عبر templateType="wisal2".
-// ───────────────────────────────────────────────────────────────────
-function WisalTemplateTwoView({
-  inv,
-  editable = false,
-  onStylesChange,
-  customFonts = [],
-  skipIntro = false,
-}: {
-  inv: Invitation
-  editable?: boolean
-  onStylesChange?: (styles: Record<string, TextStyle>) => void
-  customFonts?: CustomFont[]
-  skipIntro?: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(skipIntro)
-  const [isPlaying, setIsPlaying] = useState(false)
-  // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
-  // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
-  const [knockCount, setKnockCount] = useState(0)
-  // المربع (والتعليمة تحته) يختفي أول بمجرد ما تكتمل الدقة الثالثة،
-  // وبعدها بلحظة يبدأ فيديو الفتح — حتى ما يضلوا فوق بعض بنفس الوقت.
-  const [boxHidden, setBoxHidden] = useState(false)
-  // دوائر "الدق" اللي تطلع بمكان الضغطة بالضبط وتختفي بعد لحظات
-  const [knockRipples, setKnockRipples] = useState<
-    { id: number; x: number; y: number }[]
-  >([])
-  const knockRippleIdRef = useRef(0)
-  const audioCtxRef = useRef<AudioContext | null>(null)
-  const knockAudioRef = useRef<HTMLAudioElement | null>(null)
-
-  // صوت دقّة الباب: لو المشرف رفع صوت مخصص (knockSoundUrl) نشغّله هو —
-  // وإلا نرجع لصوت مُصنَّع بالمتصفح مباشرة (بدون ملف صوتي خارجي)، نغمتين
-  // خشبيتين قصيرتين متتاليتين تحاكي صوت "طق طق" بسيط.
-  const playKnockSound = () => {
-    if (inv.knockSoundUrl) {
-      try {
-        if (
-          !knockAudioRef.current ||
-          knockAudioRef.current.src !== inv.knockSoundUrl
-        ) {
-          knockAudioRef.current = new Audio(inv.knockSoundUrl)
-        }
-        const audio = knockAudioRef.current
-        audio.currentTime = 0
-        audio.play().catch(() => {})
-        return
-      } catch {
-        // نكمل لصوت المتصفح الافتراضي لو الصوت المرفوع ما اشتغل
-      }
-    }
-    try {
-      const AudioCtx =
-        window.AudioContext || (window as any).webkitAudioContext
-      if (!AudioCtx) return
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx()
-      const ctx = audioCtxRef.current
-      if (ctx.state === "suspended") ctx.resume()
-
-      const now = ctx.currentTime
-      ;[0, 0.09].forEach((delay) => {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = "triangle"
-        osc.frequency.setValueAtTime(140, now + delay)
-        osc.frequency.exponentialRampToValueAtTime(70, now + delay + 0.08)
-        gain.gain.setValueAtTime(0.0001, now + delay)
-        gain.gain.exponentialRampToValueAtTime(0.5, now + delay + 0.01)
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.12)
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.start(now + delay)
-        osc.stop(now + delay + 0.14)
-      })
-    } catch {
-      // متصفحات ما تدعم Web Audio API — نتجاهل الصوت بصمت بدون كسر الضغطة
-    }
-  }
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [particles, setParticles] = useState<GoldenParticle[]>([])
-
-  // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
-  // لو الدعوة ما عندها موعد محدد (دعوات قديمة قبل إضافة هالحقل)، نرجع
-  // لنفس القيم الافتراضية اللي كانت موجودة سابقاً حتى ما ينكسر العرض.
-  const calcTimeLeft = () => {
-    if (!inv.eventDateTime) {
-      return { days: 108, hours: 14, minutes: 51, seconds: 12 }
-    }
-    const diff = new Date(inv.eventDateTime).getTime() - Date.now()
-    if (isNaN(diff) || diff <= 0) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0 }
-    }
-    return {
-      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((diff / (1000 * 60)) % 60),
-      seconds: Math.floor((diff / 1000) % 60),
-    }
-  }
-
-  const [timeLeft, setTimeLeft] = useState(calcTimeLeft)
-  const [attendance, setAttendance] = useState("نعم")
-  const [companions, setCompanions] = useState(0)
-  const [guestName, setGuestName] = useState("")
-  const [guestNote, setGuestNote] = useState("")
-  const [submitted, setSubmitted] = useState(false)
-  const [showFlash, setShowFlash] = useState(false)
-  // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
-  // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
-  // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
-  // التمرير باللمس حتى لو صارت شفافة تماماً — كإنها تفضل "عالقة" بمنطقة
-  // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
-  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
-  // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
-  const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
-  // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
-  // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
-  // الدعوة)، حتى يقدر المصمم يشرف على الخطوات الثلاث كلها لا بس الأخيرة.
-  const doorCardVisible = !doorRemoved
-
-  const generateGoldenParticles = () => {
-    const items: GoldenParticle[] = []
-    for (let i = 0; i < 25; i++) {
-      items.push({
-        id: i,
-        type: i % 2 === 0 ? "heart" : "star",
-        left: Math.random() * 92 + 4,
-        size: Math.random() * 8 + 8,
-        duration: Math.random() * 8 + 10,
-        delay: Math.random() * 5,
-      })
-    }
-    setParticles(items)
-  }
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(calcTimeLeft())
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [inv.eventDateTime])
-
-  // بوضع "التصميم المباشر" ما نتخطى خطوات فتح الدعوة — يشوف المصمم
-  // شاشة الباب المغلق أول شي (زي أي زائر بالظبط)، ويضغط عليها بنفسه
-  // لينتقل لحركة الفتح ثم لمحتوى الدعوة، حتى يقدر يعدّل ويشرف على
-  // الخطوات الثلاث كلها (الباب، حركة الفتح/الدق، ثم المحتوى) لا بس
-  // الخطوة الأخيرة. زر "🔄 ابدأ من شاشة الباب" تحت يرجّعه لأول خطوة
-  // بأي وقت أثناء التصميم.
-
-  // معاينة بدون فيديو الفتح (skipIntro) — بما إن isOpen/doorRemoved
-  // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
-  // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
-  useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
-  // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
-  // ثم نرجعها تظهر بالإطار التالي، حتى تشتغل حركة CSS transition من جديد
-  // بنفس المدة/السرعة المختارة حالياً، وتشوف المصمم النتيجة النهائية فوراً.
-  const replayDoorTextTransition = () => {
-    setDoorRemoved(false)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setDoorRemoved(true))
-    })
-  }
-
-  const completeOpening = () => {
-    audioRef.current?.play().catch(() => {})
-    setIsOpen((prev) => {
-      if (!prev) {
-        generateGoldenParticles()
-        setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 1300)
-        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
-        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
-        setTimeout(() => setDoorRemoved(true), 1450)
-      }
-      return true
-    })
-    setIsPlaying(false)
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-  }
-
-  // مدة حركة دائرة الدق (لازم تطابق KNOCK_RIPPLE_MS بمدة @keyframes
-  // knockRipple بالـ<style> تحت — نستخدمها هنا كمان لتأخير بداية فيديو
-  // الفتح بالدقة الثالثة حتى تختفي الدائرة أول.
-  const KNOCK_RIPPLE_MS = 600
-
-  const startDoorOpenSequence = () => {
-    setIsPlaying(true)
-    audioRef.current?.play().catch(() => {})
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => completeOpening())
-      timeoutRef.current = setTimeout(() => {
-        if (videoRef.current) videoRef.current.pause()
-        completeOpening()
-      }, 5000)
-    } else {
-      completeOpening()
-    }
-  }
-
-  const handleDoorTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isOpen) return
-    if (isPlaying) {
-      videoRef.current?.pause()
-      completeOpening()
-      return
-    }
-
-    // دائرة الدق تطلع بمكان الضغطة بالضبط (إحداثيات نسبية لحاوية الطبقة)
-    // وتختفي تلقائياً بعد ما تخلص حركة التكبير/التلاشي.
-    const rect = e.currentTarget.getBoundingClientRect()
-    const rippleId = ++knockRippleIdRef.current
-    setKnockRipples((prev) => [
-      ...prev,
-      { id: rippleId, x: e.clientX - rect.left, y: e.clientY - rect.top },
-    ])
-    setTimeout(() => {
-      setKnockRipples((prev) => prev.filter((r) => r.id !== rippleId))
-    }, KNOCK_RIPPLE_MS)
-    playKnockSound()
-
-    // القالب 2: أول دقتين بس نعدّهم ونعرض النقاط تتعبى، وبالدقة الثالثة
-    // نبدأ فعلياً حركة فتح الباب — بس نستنى لحد ما دائرة الدق تختفي أول
-    // (نفس مدة KNOCK_RIPPLE_MS) قبل ما نشغّل فيديو الفتح.
-    const nextKnock = knockCount + 1
-    if (nextKnock < 3) {
-      setKnockCount(nextKnock)
-      return
-    }
-    setKnockCount(nextKnock)
-    setBoxHidden(true)
-    // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
-    // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
-    if (inv.skipIntroVideo) {
-      setTimeout(completeOpening, KNOCK_RIPPLE_MS)
-    } else {
-      setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
-    }
-  }
-
-  const handleRSVP = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
-    // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
-    if (inv.sheetId) {
-      const result = await submitRSVP({
-        sheetId: inv.sheetId,
-        name: guestName,
-        attendance,
-        companions,
-        message: guestNote,
-      })
-      if (!result.success) {
-        console.error("فشل إرسال تأكيد الحضور للشيت")
-      }
-    }
-
-    setSubmitted(true)
-  }
-
-  return (
-    <EditModeProvider
-      editable={editable}
-      initialStyles={inv.textStyles || {}}
-      onStylesChange={onStylesChange}
-      customFonts={customFonts}
-    >
-    <DeselectSurface>
-    <div
-      className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
-      dir="rtl"
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
-        @keyframes goldenParticle {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-          15% { opacity: 0.6; }
-          85% { opacity: 0.6; }
-          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes goldLine{
-0%{transform:translateX(-120%)}
-100%{transform:translateX(350%)}
-}
-@keyframes fadeInUp{
-0%{opacity:0;transform:translateY(60px)}
-100%{opacity:1;transform:translateY(0)}
-}
-        @keyframes bounceDown {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
-        @keyframes goldFlash {
-          0% { opacity: 0; }
-          45% { opacity: 0.85; }
-          100% { opacity: 0; }
-        }
-        @keyframes knockRipple {
-          0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.65; }
-          100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
-        }
-        .royal-scroll::-webkit-scrollbar { display: none; }
-        .royal-scroll {
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: contain;
-          touch-action: pan-y;
-        }
-        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
-        .custom-font-amiri { font-family: 'Amiri', serif; }
-        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
-      `}</style>
-
-      <audio
-        ref={audioRef}
-        src={inv.musicUrl || "/music/background.mp3"}
-        loop
-      />
-
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
-
-      <div
-        ref={scrollContainerRef}
-        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll"
-      >
-        <div className="relative w-full">
-          {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
-              (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
-              خفيف فوقها، بنفس الشكل الأصلي) */}
-          <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={
-              inv.doorBgVideo && !doorBgVideoFailed
-                ? undefined
-                : {
-                    backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-                  }
-            }
-          >
-            <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
-              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
-            </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
-            {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
-              <video
-                key={inv.doorBgVideo || "default-door-bg"}
-                src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                autoPlay
-                loop
-                muted
-                playsInline
-                onError={() => setDoorBgVideoFailed(true)}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
-
-
-            <FloatingParticles particles={particles} />
-
-            <DoorTextReveal doorRemoved={doorRemoved}>
-              <div />
-              <div className="my-auto flex flex-col items-center text-center">
-                <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
-                  <EditableText id="intro-title">دعوة زفاف</EditableText>
-                </p>
-                <span className="text-[#D4AF37] text-xl mb-4">
-                  <EditableText id="intro-icon">✿</EditableText>
-                </span>
-                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  <EditableText id="groom">{inv.groom}</EditableText>
-                </h1>
-                <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
-                  <EditableText id="names-separator">و</EditableText>
-                </span>
-                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  <EditableText id="bride">{inv.bride}</EditableText>
-                </h1>
-                <div className="mt-8 space-y-2">
-                  <p className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri">
-                    <EditableText id="date">{inv.date}</EditableText>
-                  </p>
-                  <p className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
-                    <EditableText id="welcome-message">
-                      فتحنا باب فرحتنا... وطارت البشائر تدعوكم
-                    </EditableText>
-                  </p>
-                </div>
-              </div>
-              <div className="mb-4 flex flex-col items-center opacity-80">
-                <p className="text-sm tracking-widest text-[#E8DCC4] mb-1 custom-font-tajawal">
-                  <EditableText id="scroll-hint">مرر للأسفل</EditableText>
-                </p>
-                <span
-                  className="text-xl text-[#D4AF37]"
-                  style={{ animation: "bounceDown 2s ease-in-out infinite" }}
-                >
-                  <EditableText id="scroll-arrow">↓</EditableText>
-                </span>
-              </div>
-            </DoorTextReveal>
-          </section>
-
-          {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
-          <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
-            {/* قسم الآية وبطاقة الدعوة والعداد التنازلي — خلفية كريمية
-                (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-verse-section"
-              className="py-24 px-6 flex flex-col items-center"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="text-center max-w-xl mb-20">
-                <p
-                  className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
-                  style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
-                >
-                  <EditableText id="verse">{inv.verse}</EditableText>
-                </p>
-              </Reveal>
-
-              {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
-                  (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
-                  ولونه من التصميم المباشر لكل دعوة على حدة) */}
-              <Reveal className="text-center max-w-lg mb-20">
-                <p className="text-base text-[#8C7A6B] mb-6 custom-font-amiri">
-                  <EditableText id="invite-line-1">
-                    اللهم بارك لهما وبارك عليهما واجمع بينهما في خير
-                  </EditableText>
-                </p>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-1">
-                  <EditableText id="invite-line-2">في ليلة جميلة</EditableText>
-                </p>
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-6">
-                  <EditableText id="invite-line-3">يضوي الفرح بعالي سماها</EditableText>
-                </p>
-
-                <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-6 custom-font-amiri">
-                  <EditableText id="invite-line-4">تتشرف</EditableText>
-                </h3>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
-                  <EditableText id="invite-line-5">
-                    {inv.groomFamily || "عائلة العريس"} و {inv.brideFamily || "عائلة العروس"}
-                  </EditableText>
-                </p>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-8">
-                  <EditableText id="invite-line-6">
-                    بدعوتكم لحضور حفل زفاف نجلهم وابنتهم
-                  </EditableText>
-                </p>
-
-                <h2 className="text-4xl md:text-5xl font-bold text-[#4A3B2C] mb-8 custom-font-amiri">
-                  <EditableText id="invite-line-7">
-                    {inv.groom} &amp; {inv.bride}
-                  </EditableText>
-                </h2>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
-                  <EditableText id="invite-line-8">
-                    وذلك بمشيئة الله تعالى {inv.date}
-                  </EditableText>
-                </p>
-
-                <p className="text-base text-[#8C7A6B] custom-font-amiri">
-                  <EditableText id="invite-line-9">
-                    ويسعدنا حضوركم فهو زينة الفرح والسرور
-                  </EditableText>
-                </p>
-              </Reveal>
-            </EditableBackground>
-
-            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
-                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
-                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
-            <EditableBackground
-              id="bg-countdown-section"
-              className="py-16 px-6 flex flex-col items-center"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="text-center w-full max-w-lg mb-16">
-                <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
-                  <EditableText id="countdown-title">باقي على فرحنا</EditableText>
-                </h4>
-                <div
-                  className="flex justify-center items-center gap-4"
-                  dir="ltr"
-                >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.seconds).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-seconds">ثانية</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.minutes).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-minutes">دقيقة</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.hours).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-hours">ساعة</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {timeLeft.days}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-days">يوم</EditableText>
-                    </span>
-                  </div>
-                </div>
-              </Reveal>
-            </EditableBackground>
-
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-venue-section"
-              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
-              style={{ backgroundColor: "#4E1019" }}
-            >
-              {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
-                  <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
-                    <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
-                      <EditableText id="schedule-title">برنامج الحفل</EditableText>
-                    </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
-                  </div>
-                  <div className="text-base md:text-lg text-[#F5EBE0]">
-                    <ScheduleTrack
-                      containerRef={scrollContainerRef}
-                      items={inv.schedule}
-                    />
-                  </div>
-                </Reveal>
-              )}
-
-              <Reveal className="text-center max-w-lg w-full mb-24">
-                <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
-                  <EditableText id="venue-title">مكان الحفل</EditableText>
-                </h3>
-                <h4 className="text-2xl font-bold text-[#F5EBE0] mb-3">
-                  <EditableText id="venue">{inv.venue}</EditableText>
-                </h4>
-                <p className="text-base text-[#E8DCC4]/80 mb-7">
-                  <EditableText id="city">{inv.city}</EditableText>
-                </p>
-                <EditableLinkBackground
-                  id="bg-map-button"
-                  href={normalizeExternalUrl(inv.mapUrl, "https://maps.google.com")}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
-                  style={{ backgroundColor: "#B8862F" }}
-                >
-                  <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
-                </EditableLinkBackground>
-              </Reveal>
-            </EditableBackground>
-
-            {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-rsvp-section"
-              className="py-20 px-6 flex flex-col items-center border-t-2 border-[#D4AF37]"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="max-w-md w-full">
-              <EditableBackground
-                id="bg-rsvp-card"
-                className="bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg"
-              >
-                <div className="text-center mb-10">
-                  <span className="text-lg">
-                    <EditableText id="rsvp-icon">⚙️</EditableText>
-                  </span>
-                  <h3 className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-amiri">
-                    <EditableText id="rsvp-title">تأكيد الحضور</EditableText>
-                  </h3>
-                  <p className="text-sm text-[#8C7A6B] mt-1">
-                    <EditableText id="rsvp-subtitle">يسعدنا تأكيد حضوركم</EditableText>
-                  </p>
-                </div>
-
-                {submitted ? (
-                  <div className="text-center py-10 text-emerald-600 font-bold text-lg">
-                    <EditableText id="rsvp-success-message">
-                      تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
-                    </EditableText>
-                  </div>
-                ) : (
-                  <form onSubmit={handleRSVP} className="space-y-7">
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-name-label">الاسم الكريم</EditableText>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="اسمك الكريم"
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
-                      </label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => {
-                          const isActive = attendance === opt
-                          return (
-                            <EditableButton
-                              key={opt}
-                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
-                              type="button"
-                              onClick={() => setAttendance(opt)}
-                              className={`py-3 rounded-xl text-base font-medium transition ${
-                                isActive
-                                  ? "text-white shadow"
-                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
-                              }`}
-                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
-                            >
-                              <EditableText id={`rsvp-option-${opt}`}>
-                                {opt}
-                              </EditableText>
-                            </EditableButton>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-companions-label">
-                          عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
-                        </EditableText>
-                      </label>
-                      <EditableBackground
-                        id="bg-rsvp-companions-box"
-                        className="flex items-center justify-center gap-6 border border-[#D4AF37]/30 rounded-2xl py-3"
-                        style={{ backgroundColor: "#FAF7F2" }}
-                      >
-                        <EditableButton
-                          id="bg-rsvp-counter-btn"
-                          type="button"
-                          onClick={() =>
-                            setCompanions(Math.max(0, companions - 1))
-                          }
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
-                          style={{ backgroundColor: "#ffffff" }}
-                        >
-                          -
-                        </EditableButton>
-                        <span className="text-xl font-bold text-[#4A3B2C]">
-                          {companions}
-                        </span>
-                        <EditableButton
-                          id="bg-rsvp-counter-btn"
-                          type="button"
-                          onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
-                          style={{ backgroundColor: "#ffffff" }}
-                        >
-                          +
-                        </EditableButton>
-                      </EditableBackground>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-note-label">
-                          كلمة للعروسين 💌
-                        </EditableText>
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={guestNote}
-                        onChange={(e) => setGuestNote(e.target.value)}
-                        placeholder="اكتب تهنئتك للعروسين..."
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
-                      />
-                    </div>
-
-                    <EditableButton
-                      id="bg-rsvp-submit"
-                      type="submit"
-                      className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "#B8862F" }}
-                    >
-                      <EditableText id="rsvp-submit-button">
-                        إرسال التأكيد
-                      </EditableText>
-                    </EditableButton>
-                  </form>
-                )}
-              </EditableBackground>
-              </Reveal>
-            </EditableBackground>
-          </div>
-        </div>
-      </div>
-
-      {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر.
-          ملاحظة: ما نشيلها فوراً لمن isOpen تصير true، لأن هذا يقطع
-          حركة التلاشي البصرية. بدل هيك نخليها opacity-0 لحد ما تخلص
-          الحركة (١٠٠٠ملي ثانية) ثم doorRemoved يشيلها كلياً. */}
-      {doorCardVisible && inv.doorStyle === "card" && (
-        <div
-          onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
-            editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
-          }`}
-          style={{ height: "100dvh" }}
-        >
-          <video
-            key={inv.introVideo || "default-intro-video"}
-            ref={videoRef}
-            src={inv.introVideo || "/videos/intro.mp4"}
-            muted
-            playsInline
-            preload="none"
-            poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          />
-
-          {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
-          {knockRipples.map((r) => (
-            <span
-              key={r.id}
-              className="pointer-events-none absolute rounded-full border-2 border-[#F1D989]"
-              style={{
-                left: r.x,
-                top: r.y,
-                width: 70,
-                height: 70,
-                animation: "knockRipple 600ms ease-out forwards",
-              }}
-            />
-          ))}
-
-          {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
-              يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
-          <div
-            className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl transition-opacity duration-500 ${
-              boxHidden ? "opacity-0" : "opacity-100"
-            }`}
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
-          >
-            {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[#D4AF37]/30" />
-
-            <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
-              <EditableText id="door-card-title">دعوة زفاف</EditableText>
-            </p>
-            <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
-              <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
-            </p>
-          </div>
-
-          {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً.
-              نفس فكرة الاختفاء قبل الفيديو. */}
-          <div
-            className={`relative z-10 flex flex-col items-center text-center mt-4 transition-opacity duration-500 ${
-              boxHidden ? "opacity-0" : "opacity-100"
-            }`}
-          >
-            <p className="text-sm font-bold text-[#F1D989] custom-font-amiri drop-shadow-lg mb-2">
-              دُقّوا على الباب ثلاث دقّات ليُفتح
-            </p>
-            <div className="flex items-center justify-center gap-2.5">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="rounded-full transition-colors duration-300"
+          {items.length > 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {items.map((it) => (
+                <button
+                  key={it.id}
+                  onClick={() => setActiveId(it.id)}
                   style={{
-                    width: 9,
-                    height: 9,
-                    border: "1.5px solid #F1D989",
-                    backgroundColor: i < knockCount ? "#F1D989" : "transparent",
+                    textAlign: "start",
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    border:
+                      activeId === it.id
+                        ? "1px solid #B8862F"
+                        : "1px solid transparent",
+                    background:
+                      activeId === it.id
+                        ? "rgba(184,134,47,.18)"
+                        : "transparent",
+                    color: "#F1D989",
+                    fontSize: 12,
+                    fontFamily: "system-ui, sans-serif",
+                    cursor: "pointer",
                   }}
-                />
+                >
+                  {it.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <label
+              style={{
+                color: "#F1D989",
+                fontSize: 11,
+                fontFamily: "system-ui, sans-serif",
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 4,
+              }}
+            >
+              <span>مدة التلاشي</span>
+              <span>{(duration / 1000).toFixed(1)} ثانية</span>
+            </label>
+            <input
+              type="range"
+              min={200}
+              max={3000}
+              step={100}
+              value={duration}
+              onChange={(e) =>
+                updateStyle(active.id, { duration: Number(e.target.value) })
+              }
+              style={{ width: "100%" }}
+            />
+          </div>
+
+          <div>
+            <label
+              style={{
+                color: "#F1D989",
+                fontSize: 11,
+                fontFamily: "system-ui, sans-serif",
+                display: "block",
+                marginBottom: 6,
+              }}
+            >
+              سرعة الحركة
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {EASING_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => updateStyle(active.id, { easing: opt.value })}
+                  style={{
+                    padding: "5px 9px",
+                    borderRadius: 999,
+                    fontSize: 11,
+                    fontFamily: "system-ui, sans-serif",
+                    border:
+                      easing === opt.value
+                        ? "1px solid #B8862F"
+                        : "1px solid rgba(255,255,255,.15)",
+                    background:
+                      easing === opt.value
+                        ? "rgba(184,134,47,.25)"
+                        : "transparent",
+                    color: "#F1D989",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {!doorRemoved && inv.doorStyle !== "card" && (
-        <div
-          onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
-            isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-          style={{ height: "100dvh" }}
-        >
-          <video
-            key={inv.introVideo || "default-intro-video"}
-            ref={videoRef}
-            src={inv.introVideo || "/videos/intro.mp4"}
-            muted
-            playsInline
-            preload="none"
-            poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
-          />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
-            <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
-          </p>
-        </div>
-      )}
-    </div>
-    </DeselectSurface>
-    {editable && <EditPanel />}
-    {editable && (
-      <BackgroundsMenu
-        sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
-          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
-          { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
-          { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
-          { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
-          { id: "bg-map-button", label: "خلفية زر الموقع على الخريطة" },
-          { id: "bg-rsvp-section", label: "خلفية قسم تأكيد الحضور (كاملة)" },
-          { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
-          { id: "bg-rsvp-companions-box", label: "خلفية صندوق عدد المرافقين" },
-          { id: "bg-rsvp-counter-btn", label: "خلفية زري + / -" },
-          { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
-          { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
-          { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
-        ]}
-      />
-    )}
-    {editable && (
-      <TransitionsMenu
-        items={[
-          {
-            id: DOOR_TEXT_TRANSITION_ID,
-            label: "تلاشي نصوص القسم الأول",
-            defaultDuration: 1000,
-            onPreview: replayDoorTextTransition,
-          },
-        ]}
-      />
-    )}
-    {editable && (
-      // بوضع التصميم المباشر الباب يشتغل عادي زي عند الزوّار (اضغطي عليه
-      // ثلاث ضغطات بنفسك لتفتحينه)، وهذا الزر يرجّعك لشاشة الباب المغلقة
-      // (بعداد الدقّات صفر) من جديد بأي لحظة، حتى تقدرين تعدّلين نصوصها
-      // أو تعيدين تجربة الفتح كم مرة ما تحتاجين بدون تسكير لوحة التصميم.
-      <button
-        onClick={() => {
-          setIsPlaying(false)
-          if (timeoutRef.current) clearTimeout(timeoutRef.current)
-          if (videoRef.current) {
-            videoRef.current.pause()
-            videoRef.current.currentTime = 0
-          }
-          setShowFlash(false)
-          setIsOpen(false)
-          setDoorRemoved(false)
-          setKnockCount(0)
-          setBoxHidden(false)
-          setKnockRipples([])
-        }}
-        style={{
-          position: "fixed",
-          bottom: 70,
-          insetInlineStart: 16,
-          zIndex: 530,
-          padding: "9px 16px",
-          borderRadius: 999,
-          border: "1px solid rgba(255,255,255,.2)",
-          background: "rgba(0,0,0,.65)",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
-          fontFamily: "system-ui, sans-serif",
-          cursor: "pointer",
-          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
-        }}
-      >
-        🔄 ابدأ من شاشة الباب
-      </button>
-    )}
-    {editable && isPlaying && (
-      // زر تخطي فيديو الفتح وقت التصميم بس — يقفل الفيديو فوراً وينهي
-      // حركة الفتح زي ما لو خلصت لحالها، حتى ما تنتظرين مدتها كل مرة
-      // تجربين تصميم خطوة المحتوى النهائي وأنتِ بنص خطوة الفتح.
-      <button
-        onClick={() => {
-          videoRef.current?.pause()
-          completeOpening()
-        }}
-        style={{
-          position: "fixed",
-          bottom: 114,
-          insetInlineStart: 16,
-          zIndex: 530,
-          padding: "9px 16px",
-          borderRadius: 999,
-          border: "1px solid rgba(255,255,255,.2)",
-          background: "rgba(184,134,47,.85)",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
-          fontFamily: "system-ui, sans-serif",
-          cursor: "pointer",
-          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
-        }}
-      >
-        ⏭️ تخطي فيديو الفتح
-      </button>
-    )}
-    </EditModeProvider>
-  )
-}
-
-// ─── نسخة كاملة ثالثة من نفس قالب "وصال" (نفس الكود بالضبط) — نسخة
-// مستقلة تماماً بملفها عشان تقدرين تعدّلين تصميمها لاحقاً بدون ما يأثر
-// على القالبين السابقين فوق. تُختار من لوحة التحكم عبر templateType="wisal3".
-// ───────────────────────────────────────────────────────────────────
-function WisalTemplateThreeView({
-  inv,
-  editable = false,
-  onStylesChange,
-  customFonts = [],
-  skipIntro = false,
-}: {
-  inv: Invitation
-  editable?: boolean
-  onStylesChange?: (styles: Record<string, TextStyle>) => void
-  customFonts?: CustomFont[]
-  skipIntro?: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(skipIntro)
-  const [isPlaying, setIsPlaying] = useState(false)
-  // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
-  // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
-  const [knockCount, setKnockCount] = useState(0)
-  // المربع (والتعليمة تحته) يختفي أول بمجرد ما تكتمل الدقة الثالثة،
-  // وبعدها بلحظة يبدأ فيديو الفتح — حتى ما يضلوا فوق بعض بنفس الوقت.
-  const [boxHidden, setBoxHidden] = useState(false)
-  // دوائر "الدق" اللي تطلع بمكان الضغطة بالضبط وتختفي بعد لحظات
-  const [knockRipples, setKnockRipples] = useState<
-    { id: number; x: number; y: number }[]
-  >([])
-  const knockRippleIdRef = useRef(0)
-  const audioCtxRef = useRef<AudioContext | null>(null)
-  const knockAudioRef = useRef<HTMLAudioElement | null>(null)
-
-  // صوت دقّة الباب: لو المشرف رفع صوت مخصص (knockSoundUrl) نشغّله هو —
-  // وإلا نرجع لصوت مُصنَّع بالمتصفح مباشرة (بدون ملف صوتي خارجي)، نغمتين
-  // خشبيتين قصيرتين متتاليتين تحاكي صوت "طق طق" بسيط.
-  const playKnockSound = () => {
-    if (inv.knockSoundUrl) {
-      try {
-        if (
-          !knockAudioRef.current ||
-          knockAudioRef.current.src !== inv.knockSoundUrl
-        ) {
-          knockAudioRef.current = new Audio(inv.knockSoundUrl)
-        }
-        const audio = knockAudioRef.current
-        audio.currentTime = 0
-        audio.play().catch(() => {})
-        return
-      } catch {
-        // نكمل لصوت المتصفح الافتراضي لو الصوت المرفوع ما اشتغل
-      }
-    }
-    try {
-      const AudioCtx =
-        window.AudioContext || (window as any).webkitAudioContext
-      if (!AudioCtx) return
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx()
-      const ctx = audioCtxRef.current
-      if (ctx.state === "suspended") ctx.resume()
-
-      const now = ctx.currentTime
-      ;[0, 0.09].forEach((delay) => {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = "triangle"
-        osc.frequency.setValueAtTime(140, now + delay)
-        osc.frequency.exponentialRampToValueAtTime(70, now + delay + 0.08)
-        gain.gain.setValueAtTime(0.0001, now + delay)
-        gain.gain.exponentialRampToValueAtTime(0.5, now + delay + 0.01)
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.12)
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.start(now + delay)
-        osc.stop(now + delay + 0.14)
-      })
-    } catch {
-      // متصفحات ما تدعم Web Audio API — نتجاهل الصوت بصمت بدون كسر الضغطة
-    }
-  }
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [particles, setParticles] = useState<GoldenParticle[]>([])
-
-  // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
-  // لو الدعوة ما عندها موعد محدد (دعوات قديمة قبل إضافة هالحقل)، نرجع
-  // لنفس القيم الافتراضية اللي كانت موجودة سابقاً حتى ما ينكسر العرض.
-  const calcTimeLeft = () => {
-    if (!inv.eventDateTime) {
-      return { days: 108, hours: 14, minutes: 51, seconds: 12 }
-    }
-    const diff = new Date(inv.eventDateTime).getTime() - Date.now()
-    if (isNaN(diff) || diff <= 0) {
-      return { days: 0, hours: 0, minutes: 0, seconds: 0 }
-    }
-    return {
-      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((diff / (1000 * 60)) % 60),
-      seconds: Math.floor((diff / 1000) % 60),
-    }
-  }
-
-  const [timeLeft, setTimeLeft] = useState(calcTimeLeft)
-  const [attendance, setAttendance] = useState("نعم")
-  const [companions, setCompanions] = useState(0)
-  const [guestName, setGuestName] = useState("")
-  const [guestNote, setGuestNote] = useState("")
-  const [submitted, setSubmitted] = useState(false)
-  const [showFlash, setShowFlash] = useState(false)
-  // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
-  // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
-  // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
-  // التمرير باللمس حتى لو صارت شفافة تماماً — كإنها تفضل "عالقة" بمنطقة
-  // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
-  // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
-  // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
-  const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
-  // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
-  // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
-  // الدعوة)، حتى يقدر المصمم يشرف على الخطوات الثلاث كلها لا بس الأخيرة.
-  const doorCardVisible = !doorRemoved
-
-  const generateGoldenParticles = () => {
-    const items: GoldenParticle[] = []
-    for (let i = 0; i < 25; i++) {
-      items.push({
-        id: i,
-        type: i % 2 === 0 ? "heart" : "star",
-        left: Math.random() * 92 + 4,
-        size: Math.random() * 8 + 8,
-        duration: Math.random() * 8 + 10,
-        delay: Math.random() * 5,
-      })
-    }
-    setParticles(items)
-  }
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(calcTimeLeft())
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [inv.eventDateTime])
-
-  // بوضع "التصميم المباشر" ما نتخطى خطوات فتح الدعوة — يشوف المصمم
-  // شاشة الباب المغلق أول شي (زي أي زائر بالظبط)، ويضغط عليها بنفسه
-  // لينتقل لحركة الفتح ثم لمحتوى الدعوة، حتى يقدر يعدّل ويشرف على
-  // الخطوات الثلاث كلها (الباب، حركة الفتح/الدق، ثم المحتوى) لا بس
-  // الخطوة الأخيرة. زر "🔄 ابدأ من شاشة الباب" تحت يرجّعه لأول خطوة
-  // بأي وقت أثناء التصميم.
-
-  // معاينة بدون فيديو الفتح (skipIntro) — بما إن isOpen/doorRemoved
-  // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
-  // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
-  useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
-  // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
-  // ثم نرجعها تظهر بالإطار التالي، حتى تشتغل حركة CSS transition من جديد
-  // بنفس المدة/السرعة المختارة حالياً، وتشوف المصمم النتيجة النهائية فوراً.
-  const replayDoorTextTransition = () => {
-    setDoorRemoved(false)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setDoorRemoved(true))
-    })
-  }
-
-  const completeOpening = () => {
-    audioRef.current?.play().catch(() => {})
-    setIsOpen((prev) => {
-      if (!prev) {
-        generateGoldenParticles()
-        setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 1300)
-        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
-        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
-        setTimeout(() => setDoorRemoved(true), 1450)
-      }
-      return true
-    })
-    setIsPlaying(false)
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-  }
-
-  // مدة حركة دائرة الدق (لازم تطابق KNOCK_RIPPLE_MS بمدة @keyframes
-  // knockRipple بالـ<style> تحت — نستخدمها هنا كمان لتأخير بداية فيديو
-  // الفتح بالدقة الثالثة حتى تختفي الدائرة أول.
-  const KNOCK_RIPPLE_MS = 600
-
-  const startDoorOpenSequence = () => {
-    setIsPlaying(true)
-    audioRef.current?.play().catch(() => {})
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => completeOpening())
-      timeoutRef.current = setTimeout(() => {
-        if (videoRef.current) videoRef.current.pause()
-        completeOpening()
-      }, 5000)
-    } else {
-      completeOpening()
-    }
-  }
-
-  const handleDoorTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isOpen) return
-    if (isPlaying) {
-      videoRef.current?.pause()
-      completeOpening()
-      return
-    }
-
-    // دائرة الدق تطلع بمكان الضغطة بالضبط (إحداثيات نسبية لحاوية الطبقة)
-    // وتختفي تلقائياً بعد ما تخلص حركة التكبير/التلاشي.
-    const rect = e.currentTarget.getBoundingClientRect()
-    const rippleId = ++knockRippleIdRef.current
-    setKnockRipples((prev) => [
-      ...prev,
-      { id: rippleId, x: e.clientX - rect.left, y: e.clientY - rect.top },
-    ])
-    setTimeout(() => {
-      setKnockRipples((prev) => prev.filter((r) => r.id !== rippleId))
-    }, KNOCK_RIPPLE_MS)
-    playKnockSound()
-
-    // القالب 2: أول دقتين بس نعدّهم ونعرض النقاط تتعبى، وبالدقة الثالثة
-    // نبدأ فعلياً حركة فتح الباب — بس نستنى لحد ما دائرة الدق تختفي أول
-    // (نفس مدة KNOCK_RIPPLE_MS) قبل ما نشغّل فيديو الفتح.
-    const nextKnock = knockCount + 1
-    if (nextKnock < 3) {
-      setKnockCount(nextKnock)
-      return
-    }
-    setKnockCount(nextKnock)
-    setBoxHidden(true)
-    // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
-    // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
-    if (inv.skipIntroVideo) {
-      setTimeout(completeOpening, KNOCK_RIPPLE_MS)
-    } else {
-      setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
-    }
-  }
-
-  const handleRSVP = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
-    // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
-    if (inv.sheetId) {
-      const result = await submitRSVP({
-        sheetId: inv.sheetId,
-        name: guestName,
-        attendance,
-        companions,
-        message: guestNote,
-      })
-      if (!result.success) {
-        console.error("فشل إرسال تأكيد الحضور للشيت")
-      }
-    }
-
-    setSubmitted(true)
-  }
-
-  return (
-    <EditModeProvider
-      editable={editable}
-      initialStyles={inv.textStyles || {}}
-      onStylesChange={onStylesChange}
-      customFonts={customFonts}
-    >
-    <DeselectSurface>
-    <div
-      className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
-      dir="rtl"
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
-        @keyframes goldenParticle {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-          15% { opacity: 0.6; }
-          85% { opacity: 0.6; }
-          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes goldLine{
-0%{transform:translateX(-120%)}
-100%{transform:translateX(350%)}
-}
-@keyframes fadeInUp{
-0%{opacity:0;transform:translateY(60px)}
-100%{opacity:1;transform:translateY(0)}
-}
-        @keyframes bounceDown {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
-        @keyframes goldFlash {
-          0% { opacity: 0; }
-          45% { opacity: 0.85; }
-          100% { opacity: 0; }
-        }
-        @keyframes knockRipple {
-          0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.65; }
-          100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
-        }
-        .royal-scroll::-webkit-scrollbar { display: none; }
-        .royal-scroll {
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: contain;
-          touch-action: pan-y;
-        }
-        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
-        .custom-font-amiri { font-family: 'Amiri', serif; }
-        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
-      `}</style>
-
-      <audio
-        ref={audioRef}
-        src={inv.musicUrl || "/music/background.mp3"}
-        loop
-      />
-
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
-
-      <div
-        ref={scrollContainerRef}
-        className="absolute inset-0 overflow-y-auto overflow-x-hidden z-10 royal-scroll"
-      >
-        <div className="relative w-full">
-          {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
-              (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
-              خفيف فوقها، بنفس الشكل الأصلي) */}
-          <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={
-              inv.doorBgVideo && !doorBgVideoFailed
-                ? undefined
-                : {
-                    backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-                  }
-            }
-          >
-            <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
-              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
-            </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
-            {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
-              <video
-                key={inv.doorBgVideo || "default-door-bg"}
-                src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                autoPlay
-                loop
-                muted
-                playsInline
-                onError={() => setDoorBgVideoFailed(true)}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
-
-
-            <FloatingParticles particles={particles} />
-
-            <DoorTextReveal doorRemoved={doorRemoved}>
-              <div />
-              <div className="my-auto flex flex-col items-center text-center">
-                <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
-                  <EditableText id="intro-title">دعوة زفاف</EditableText>
-                </p>
-                <span className="text-[#D4AF37] text-xl mb-4">
-                  <EditableText id="intro-icon">✿</EditableText>
-                </span>
-                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  <EditableText id="groom">{inv.groom}</EditableText>
-                </h1>
-                <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
-                  <EditableText id="names-separator">و</EditableText>
-                </span>
-                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
-                  <EditableText id="bride">{inv.bride}</EditableText>
-                </h1>
-                <div className="mt-8 space-y-2">
-                  <p className="text-xl md:text-2xl text-[#FDFBF7] custom-font-amiri">
-                    <EditableText id="date">{inv.date}</EditableText>
-                  </p>
-                  <p className="text-base md:text-lg text-[#E8DCC4] custom-font-tajawal">
-                    <EditableText id="welcome-message">
-                      فتحنا باب فرحتنا... وطارت البشائر تدعوكم
-                    </EditableText>
-                  </p>
-                </div>
-              </div>
-              <div className="mb-4 flex flex-col items-center opacity-80">
-                <p className="text-sm tracking-widest text-[#E8DCC4] mb-1 custom-font-tajawal">
-                  <EditableText id="scroll-hint">مرر للأسفل</EditableText>
-                </p>
-                <span
-                  className="text-xl text-[#D4AF37]"
-                  style={{ animation: "bounceDown 2s ease-in-out infinite" }}
-                >
-                  <EditableText id="scroll-arrow">↓</EditableText>
-                </span>
-              </div>
-            </DoorTextReveal>
-          </section>
-
-          {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
-          <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
-            {/* قسم الآية وبطاقة الدعوة والعداد التنازلي — خلفية كريمية
-                (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-verse-section"
-              className="py-24 px-6 flex flex-col items-center"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="text-center max-w-xl mb-20">
-                <p
-                  className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
-                  style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
-                >
-                  <EditableText id="verse">{inv.verse}</EditableText>
-                </p>
-              </Reveal>
-
-              {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
-                  (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
-                  ولونه من التصميم المباشر لكل دعوة على حدة) */}
-              <Reveal className="text-center max-w-lg mb-20">
-                <p className="text-base text-[#8C7A6B] mb-6 custom-font-amiri">
-                  <EditableText id="invite-line-1">
-                    اللهم بارك لهما وبارك عليهما واجمع بينهما في خير
-                  </EditableText>
-                </p>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-1">
-                  <EditableText id="invite-line-2">في ليلة جميلة</EditableText>
-                </p>
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-loose custom-font-amiri mb-6">
-                  <EditableText id="invite-line-3">يضوي الفرح بعالي سماها</EditableText>
-                </p>
-
-                <h3 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-6 custom-font-amiri">
-                  <EditableText id="invite-line-4">تتشرف</EditableText>
-                </h3>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
-                  <EditableText id="invite-line-5">
-                    {inv.groomFamily || "عائلة العريس"} و {inv.brideFamily || "عائلة العروس"}
-                  </EditableText>
-                </p>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-8">
-                  <EditableText id="invite-line-6">
-                    بدعوتكم لحضور حفل زفاف نجلهم وابنتهم
-                  </EditableText>
-                </p>
-
-                <h2 className="text-4xl md:text-5xl font-bold text-[#4A3B2C] mb-8 custom-font-amiri">
-                  <EditableText id="invite-line-7">
-                    {inv.groom} &amp; {inv.bride}
-                  </EditableText>
-                </h2>
-
-                <p className="text-lg md:text-xl text-[#5A4A3C] leading-relaxed custom-font-amiri mb-6">
-                  <EditableText id="invite-line-8">
-                    وذلك بمشيئة الله تعالى {inv.date}
-                  </EditableText>
-                </p>
-
-                <p className="text-base text-[#8C7A6B] custom-font-amiri">
-                  <EditableText id="invite-line-9">
-                    ويسعدنا حضوركم فهو زينة الفرح والسرور
-                  </EditableText>
-                </p>
-              </Reveal>
-            </EditableBackground>
-
-            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
-                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
-                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
-            <EditableBackground
-              id="bg-countdown-section"
-              className="py-16 px-6 flex flex-col items-center"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="text-center w-full max-w-lg mb-16">
-                <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
-                  <EditableText id="countdown-title">باقي على فرحنا</EditableText>
-                </h4>
-                <div
-                  className="flex justify-center items-center gap-4"
-                  dir="ltr"
-                >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.seconds).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-seconds">ثانية</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.minutes).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-minutes">دقيقة</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {String(timeLeft.hours).padStart(2, "0")}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-hours">ساعة</EditableText>
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
-                    <EditableText
-                      id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
-                    >
-                      {timeLeft.days}
-                    </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
-                      <EditableText id="countdown-label-days">يوم</EditableText>
-                    </span>
-                  </div>
-                </div>
-              </Reveal>
-            </EditableBackground>
-
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-venue-section"
-              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
-              style={{ backgroundColor: "#4E1019" }}
-            >
-              {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
-                  <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
-                    <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
-                      <EditableText id="schedule-title">برنامج الحفل</EditableText>
-                    </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
-                  </div>
-                  <div className="text-base md:text-lg text-[#F5EBE0]">
-                    <ScheduleTrack
-                      containerRef={scrollContainerRef}
-                      items={inv.schedule}
-                    />
-                  </div>
-                </Reveal>
-              )}
-
-              <Reveal className="text-center max-w-lg w-full mb-24">
-                <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
-                  <EditableText id="venue-title">مكان الحفل</EditableText>
-                </h3>
-                <h4 className="text-2xl font-bold text-[#F5EBE0] mb-3">
-                  <EditableText id="venue">{inv.venue}</EditableText>
-                </h4>
-                <p className="text-base text-[#E8DCC4]/80 mb-7">
-                  <EditableText id="city">{inv.city}</EditableText>
-                </p>
-                <EditableLinkBackground
-                  id="bg-map-button"
-                  href={normalizeExternalUrl(inv.mapUrl, "https://maps.google.com")}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
-                  style={{ backgroundColor: "#B8862F" }}
-                >
-                  <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
-                </EditableLinkBackground>
-              </Reveal>
-            </EditableBackground>
-
-            {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
-            <EditableBackground
-              id="bg-rsvp-section"
-              className="py-20 px-6 flex flex-col items-center border-t-2 border-[#D4AF37]"
-              style={{ backgroundColor: "#FAF7F2" }}
-            >
-              <Reveal className="max-w-md w-full">
-              <EditableBackground
-                id="bg-rsvp-card"
-                className="bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg"
-              >
-                <div className="text-center mb-10">
-                  <span className="text-lg">
-                    <EditableText id="rsvp-icon">⚙️</EditableText>
-                  </span>
-                  <h3 className="text-3xl font-bold text-[#4A3B2C] mt-2 custom-font-amiri">
-                    <EditableText id="rsvp-title">تأكيد الحضور</EditableText>
-                  </h3>
-                  <p className="text-sm text-[#8C7A6B] mt-1">
-                    <EditableText id="rsvp-subtitle">يسعدنا تأكيد حضوركم</EditableText>
-                  </p>
-                </div>
-
-                {submitted ? (
-                  <div className="text-center py-10 text-emerald-600 font-bold text-lg">
-                    <EditableText id="rsvp-success-message">
-                      تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
-                    </EditableText>
-                  </div>
-                ) : (
-                  <form onSubmit={handleRSVP} className="space-y-7">
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-name-label">الاسم الكريم</EditableText>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="اسمك الكريم"
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
-                      </label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => {
-                          const isActive = attendance === opt
-                          return (
-                            <EditableButton
-                              key={opt}
-                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
-                              type="button"
-                              onClick={() => setAttendance(opt)}
-                              className={`py-3 rounded-xl text-base font-medium transition ${
-                                isActive
-                                  ? "text-white shadow"
-                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
-                              }`}
-                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
-                            >
-                              <EditableText id={`rsvp-option-${opt}`}>
-                                {opt}
-                              </EditableText>
-                            </EditableButton>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-companions-label">
-                          عدد المرافقين (عدا حضورك - 0 إن كنت وحدك)
-                        </EditableText>
-                      </label>
-                      <EditableBackground
-                        id="bg-rsvp-companions-box"
-                        className="flex items-center justify-center gap-6 border border-[#D4AF37]/30 rounded-2xl py-3"
-                        style={{ backgroundColor: "#FAF7F2" }}
-                      >
-                        <EditableButton
-                          id="bg-rsvp-counter-btn"
-                          type="button"
-                          onClick={() =>
-                            setCompanions(Math.max(0, companions - 1))
-                          }
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
-                          style={{ backgroundColor: "#ffffff" }}
-                        >
-                          -
-                        </EditableButton>
-                        <span className="text-xl font-bold text-[#4A3B2C]">
-                          {companions}
-                        </span>
-                        <EditableButton
-                          id="bg-rsvp-counter-btn"
-                          type="button"
-                          onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
-                          style={{ backgroundColor: "#ffffff" }}
-                        >
-                          +
-                        </EditableButton>
-                      </EditableBackground>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
-                        <EditableText id="rsvp-note-label">
-                          كلمة للعروسين 💌
-                        </EditableText>
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={guestNote}
-                        onChange={(e) => setGuestNote(e.target.value)}
-                        placeholder="اكتب تهنئتك للعروسين..."
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
-                      />
-                    </div>
-
-                    <EditableButton
-                      id="bg-rsvp-submit"
-                      type="submit"
-                      className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "#B8862F" }}
-                    >
-                      <EditableText id="rsvp-submit-button">
-                        إرسال التأكيد
-                      </EditableText>
-                    </EditableButton>
-                  </form>
-                )}
-              </EditableBackground>
-              </Reveal>
-            </EditableBackground>
-          </div>
-        </div>
-      </div>
-
-      {/* طبقة الضغط لفتح الدعوة — بدون بطاقة أو زر ظاهر.
-          ملاحظة: ما نشيلها فوراً لمن isOpen تصير true، لأن هذا يقطع
-          حركة التلاشي البصرية. بدل هيك نخليها opacity-0 لحد ما تخلص
-          الحركة (١٠٠٠ملي ثانية) ثم doorRemoved يشيلها كلياً. */}
-      {doorCardVisible && inv.doorStyle === "card" && (
-        <div
-          onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
-            editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
-          }`}
-          style={{ height: "100dvh" }}
-        >
-          <video
-            key={inv.introVideo || "default-intro-video"}
-            ref={videoRef}
-            src={inv.introVideo || "/videos/intro.mp4"}
-            muted
-            playsInline
-            preload="none"
-            poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          />
-
-          {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
-          {knockRipples.map((r) => (
-            <span
-              key={r.id}
-              className="pointer-events-none absolute rounded-full border-2 border-[#F1D989]"
+          {active.onPreview && (
+            <button
+              onClick={active.onPreview}
               style={{
-                left: r.x,
-                top: r.y,
-                width: 70,
-                height: 70,
-                animation: "knockRipple 600ms ease-out forwards",
+                padding: "9px 12px",
+                borderRadius: 10,
+                border: "1px solid #B8862F",
+                background: "rgba(184,134,47,.18)",
+                color: "#F1D989",
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "system-ui, sans-serif",
+                cursor: "pointer",
               }}
-            />
-          ))}
-
-          {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
-              يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
-          <div
-            className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl transition-opacity duration-500 ${
-              boxHidden ? "opacity-0" : "opacity-100"
-            }`}
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
-          >
-            {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[#D4AF37]/30" />
-
-            <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
-              <EditableText id="door-card-title">دعوة زفاف</EditableText>
-            </p>
-            <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
-              <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
-            </p>
-          </div>
-
-          {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً.
-              نفس فكرة الاختفاء قبل الفيديو. */}
-          <div
-            className={`relative z-10 flex flex-col items-center text-center mt-4 transition-opacity duration-500 ${
-              boxHidden ? "opacity-0" : "opacity-100"
-            }`}
-          >
-            <p className="text-sm font-bold text-[#F1D989] custom-font-amiri drop-shadow-lg mb-2">
-              دُقّوا على الباب ثلاث دقّات ليُفتح
-            </p>
-            <div className="flex items-center justify-center gap-2.5">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="rounded-full transition-colors duration-300"
-                  style={{
-                    width: 9,
-                    height: 9,
-                    border: "1.5px solid #F1D989",
-                    backgroundColor: i < knockCount ? "#F1D989" : "transparent",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+            >
+              ▶ جرّب الآن
+            </button>
+          )}
         </div>
       )}
-
-      {!doorRemoved && inv.doorStyle !== "card" && (
-        <div
-          onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
-            isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
-          }`}
-          style={{ height: "100dvh" }}
-        >
-          <video
-            key={inv.introVideo || "default-intro-video"}
-            ref={videoRef}
-            src={inv.introVideo || "/videos/intro.mp4"}
-            muted
-            playsInline
-            preload="none"
-            poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
-            className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
-          />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
-            <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
-          </p>
-        </div>
-      )}
-    </div>
-    </DeselectSurface>
-    {editable && <EditPanel />}
-    {editable && (
-      <BackgroundsMenu
-        sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
-          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
-          { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
-          { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
-          { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
-          { id: "bg-map-button", label: "خلفية زر الموقع على الخريطة" },
-          { id: "bg-rsvp-section", label: "خلفية قسم تأكيد الحضور (كاملة)" },
-          { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
-          { id: "bg-rsvp-companions-box", label: "خلفية صندوق عدد المرافقين" },
-          { id: "bg-rsvp-counter-btn", label: "خلفية زري + / -" },
-          { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
-          { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
-          { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
-        ]}
-      />
-    )}
-    {editable && (
-      <TransitionsMenu
-        items={[
-          {
-            id: DOOR_TEXT_TRANSITION_ID,
-            label: "تلاشي نصوص القسم الأول",
-            defaultDuration: 1000,
-            onPreview: replayDoorTextTransition,
-          },
-        ]}
-      />
-    )}
-    {editable && (
-      // بوضع التصميم المباشر الباب يشتغل عادي زي عند الزوّار (اضغطي عليه
-      // ثلاث ضغطات بنفسك لتفتحينه)، وهذا الزر يرجّعك لشاشة الباب المغلقة
-      // (بعداد الدقّات صفر) من جديد بأي لحظة، حتى تقدرين تعدّلين نصوصها
-      // أو تعيدين تجربة الفتح كم مرة ما تحتاجين بدون تسكير لوحة التصميم.
       <button
-        onClick={() => {
-          setIsPlaying(false)
-          if (timeoutRef.current) clearTimeout(timeoutRef.current)
-          if (videoRef.current) {
-            videoRef.current.pause()
-            videoRef.current.currentTime = 0
-          }
-          setShowFlash(false)
-          setIsOpen(false)
-          setDoorRemoved(false)
-          setKnockCount(0)
-          setBoxHidden(false)
-          setKnockRipples([])
-        }}
+        onClick={() => setOpen((v) => !v)}
         style={{
-          position: "fixed",
-          bottom: 70,
-          insetInlineStart: 16,
-          zIndex: 530,
           padding: "9px 16px",
           borderRadius: 999,
           border: "1px solid rgba(255,255,255,.2)",
@@ -3029,132 +1459,34 @@ function WisalTemplateThreeView({
           boxShadow: "0 6px 18px rgba(0,0,0,.35)",
         }}
       >
-        🔄 ابدأ من شاشة الباب
+        ⏱️ الانتقالات
       </button>
-    )}
-    {editable && isPlaying && (
-      // زر تخطي فيديو الفتح وقت التصميم بس — يقفل الفيديو فوراً وينهي
-      // حركة الفتح زي ما لو خلصت لحالها، حتى ما تنتظرين مدتها كل مرة
-      // تجربين تصميم خطوة المحتوى النهائي وأنتِ بنص خطوة الفتح.
-      <button
-        onClick={() => {
-          videoRef.current?.pause()
-          completeOpening()
-        }}
-        style={{
-          position: "fixed",
-          bottom: 114,
-          insetInlineStart: 16,
-          zIndex: 530,
-          padding: "9px 16px",
-          borderRadius: 999,
-          border: "1px solid rgba(255,255,255,.2)",
-          background: "rgba(184,134,47,.85)",
-          color: "#fff",
-          fontSize: 12,
-          fontWeight: 700,
-          fontFamily: "system-ui, sans-serif",
-          cursor: "pointer",
-          boxShadow: "0 6px 18px rgba(0,0,0,.35)",
-        }}
-      >
-        ⏭️ تخطي فيديو الفتح
-      </button>
-    )}
-    </EditModeProvider>
+    </div>
   )
 }
 
-export default function InvitationFullView({
-  inv,
-  onClose,
-  editable = false,
-  onStylesChange,
-  customFonts = [],
-  skipIntro = false,
-}: {
-  inv: Invitation
-  onClose: () => void
-  editable?: boolean
-  onStylesChange?: (styles: Record<string, TextStyle>) => void
-  // خطوط مخصصة (من SiteSettings.customFonts) — تمرّ لكل القوالب حتى
-  // تظهر بقائمة اختيار الخط بوضع "تعديل التصميم مباشر".
-  customFonts?: CustomFont[]
-  // معاينة بدون مقطع فيديو/حركة فتح الباب — تفتح الدعوة مباشرة على
-  // محتواها النهائي بدون ما تحتاجين تضغطين الباب أو تنتظرين الفيديو.
-  // تُستخدم من رابط المعاينة بلوحة التحكم (?preview=ID&skipIntro=1).
-  skipIntro?: boolean
-}) {
-  useEffect(() => {
-    window.scrollTo(0, 0)
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [])
+// ---------------------------------------------------------------------------
+// ZoomControls — شريط تحكم بالزوم (اختياري، للعرض بالمحرر فقط)
+// ---------------------------------------------------------------------------
 
+export function ZoomControls() {
+  const { zoom, setZoom } = useEditMode()
+  const percent = Math.round(zoom * 100)
+  const btn: React.CSSProperties = {
+    width: 28, height: 28, borderRadius: "50%", border: "none",
+    background: "transparent", color: "#fff", fontSize: 14, cursor: "pointer",
+  }
   return (
-    <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-[#0D0706]">
-      {inv.templateType === "wisal" ? (
-        <WisalTemplateView
-          inv={inv}
-          editable={editable}
-          onStylesChange={onStylesChange}
-          customFonts={customFonts}
-          skipIntro={skipIntro}
-        />
-      ) : inv.templateType === "wisal2" ? (
-        <WisalTemplateTwoView
-          inv={inv}
-          editable={editable}
-          onStylesChange={onStylesChange}
-          customFonts={customFonts}
-          skipIntro={skipIntro}
-        />
-      ) : inv.templateType === "wisal3" ? (
-        <WisalTemplateThreeView
-          inv={inv}
-          editable={editable}
-          onStylesChange={onStylesChange}
-          customFonts={customFonts}
-          skipIntro={skipIntro}
-        />
-      ) : (
-        <EditModeProvider
-          editable={editable}
-          initialStyles={inv.textStyles || {}}
-          onStylesChange={onStylesChange}
-          customFonts={customFonts}
-        >
-        <DeselectSurface>
-        <div
-          className="flex-1 w-full h-full overflow-y-auto p-12 text-center"
-          style={{
-            background: `linear-gradient(180deg, ${inv.gradient[0]}, ${inv.gradient[1]})`,
-            color: inv.accentColor,
-            WebkitOverflowScrolling: "touch",
-            overscrollBehaviorY: "contain",
-            touchAction: "pan-y",
-          }}
-        >
-          <Reveal>
-            <EditableText
-              id="title"
-              as="h1"
-              className="text-4xl font-bold mb-4"
-              style={{ fontFamily: "Amiri, serif" }}
-            >
-              {inv.title}
-            </EditableText>
-            <EditableText id="subtitle" as="p" className="text-xl">
-              {inv.subtitle}
-            </EditableText>
-          </Reveal>
-        </div>
-        </DeselectSurface>
-        {editable && <EditPanel />}
-        </EditModeProvider>
-      )}
+    <div
+      style={{
+        position: "fixed", bottom: 16, insetInlineStart: "50%", transform: "translateX(-50%)",
+        display: "flex", alignItems: "center", gap: 4, background: "rgba(0,0,0,.6)",
+        border: "1px solid rgba(255,255,255,.2)", borderRadius: 999, padding: 6, zIndex: 530,
+      }}
+    >
+      <button style={btn} disabled={zoom <= MIN_ZOOM} onClick={() => setZoom(zoom - 0.1)}>−</button>
+      <span style={{ color: "#fff", fontSize: 11, minWidth: 40, textAlign: "center" }}>{percent}%</span>
+      <button style={btn} disabled={zoom >= MAX_ZOOM} onClick={() => setZoom(zoom + 0.1)}>+</button>
     </div>
   )
 }
