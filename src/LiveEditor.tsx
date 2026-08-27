@@ -638,6 +638,8 @@ export function EditableLinkBackground({
   const st = styles[id] || {}
   const isSelected = editable && selectedId === id
 
+  if (!editable && st.hidden) return null
+
   return (
     <a
       href={editable ? undefined : href}
@@ -652,6 +654,7 @@ export function EditableLinkBackground({
         cursor: editable ? "pointer" : undefined,
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
         outlineOffset: 2,
+        ...(editable && st.hidden ? { opacity: 0.35 } : null),
       }}
       onClick={(e) => {
         if (editable) {
@@ -795,6 +798,11 @@ export function EditableBackground({
   const st = styles[id] || {}
   const isSelected = editable && selectedId === id
 
+  // وضع العرض العادي (زوار الدعوة الحقيقيين): لو القسم اتطفى بالكامل من
+  // التصميم المباشر، ما نرندر منه ولا حرف — القسم كله (بكل ما فيه من
+  // نصوص/صور/بطاقات) يختفي من الصفحة تمامًا، مو بس تصير خلفيته شفافة.
+  if (!editable && st.hidden) return null
+
   return (
     <div
       data-editable-id={id}
@@ -806,6 +814,9 @@ export function EditableBackground({
         position: "relative",
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
         outlineOffset: -2,
+        // بوضع التصميم المباشر نفسه نبقي القسم ظاهر (باهت) حتى المصمم
+        // يقدر يرجّعه أو يعدّل عليه، بدل ما يختفي كليًا ويصير يصعب الوصول له.
+        ...(editable && st.hidden ? { opacity: 0.35 } : null),
       }}
       onClick={(e) => {
         if (!editable) return
@@ -813,6 +824,30 @@ export function EditableBackground({
         setSelectedId(id)
       }}
     >
+      {editable && st.hidden && (
+        <div
+          contentEditable={false}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            top: 8,
+            insetInlineStart: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 60,
+            background: "#1A1210",
+            border: "1px solid #B8862F",
+            color: "#F1D989",
+            fontSize: 11,
+            fontFamily: "system-ui, sans-serif",
+            padding: "4px 12px",
+            borderRadius: 999,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+          }}
+        >
+          🚫 هذا القسم مخفي عن الزوار
+        </div>
+      )}
       {children}
     </div>
   )
@@ -943,6 +978,23 @@ export function EditPanel() {
               )}
             </div>
           )}
+
+          {/* تشغيل/إطفاء القسم بالكامل — يخفي كل محتوى القسم (نصوصه
+              وصوره وبطاقاته) عن الزوار دفعة وحدة، مو بس لونه/صورته. */}
+          <div style={row}>
+            <button
+              style={{
+                ...btn,
+                width: "100%",
+                fontWeight: 700,
+                borderColor: st.hidden ? "#B8862F" : "#3A2A1E",
+                background: st.hidden ? "rgba(184,134,47,.18)" : "transparent",
+              }}
+              onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
+            >
+              {st.hidden ? "👁 تشغيل (إظهار) القسم" : "🚫 إطفاء (إخفاء) القسم كامل"}
+            </button>
+          </div>
         </>
       ) : (
         <>
@@ -1102,7 +1154,7 @@ export interface BackgroundSectionOption {
 }
 
 export function BackgroundsMenu({ sections }: { sections: BackgroundSectionOption[] }) {
-  const { editable, selectedId, setSelectedId } = useEditMode()
+  const { editable, styles, selectedId, setSelectedId, updateStyle } = useEditMode()
   const [open, setOpen] = useState(false)
 
   if (!editable || sections.length === 0) return null
@@ -1132,32 +1184,59 @@ export function BackgroundsMenu({ sections }: { sections: BackgroundSectionOptio
             gap: 3,
             maxHeight: 320,
             overflowY: "auto",
-            minWidth: 220,
+            minWidth: 240,
             boxShadow: "0 12px 30px rgba(0,0,0,.4)",
           }}
         >
-          {sections.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => {
-                setSelectedId(s.id)
-                setOpen(false)
-              }}
-              style={{
-                textAlign: "start",
-                padding: "7px 10px",
-                borderRadius: 8,
-                border: selectedId === s.id ? "1px solid #B8862F" : "1px solid transparent",
-                background: selectedId === s.id ? "rgba(184,134,47,.18)" : "transparent",
-                color: "#F1D989",
-                fontSize: 12,
-                fontFamily: "system-ui, sans-serif",
-                cursor: "pointer",
-              }}
-            >
-              {s.label}
-            </button>
-          ))}
+          {sections.map((s) => {
+            const isHidden = !!styles[s.id]?.hidden
+            return (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button
+                  onClick={() => {
+                    setSelectedId(s.id)
+                    setOpen(false)
+                  }}
+                  style={{
+                    flex: 1,
+                    textAlign: "start",
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: selectedId === s.id ? "1px solid #B8862F" : "1px solid transparent",
+                    background: selectedId === s.id ? "rgba(184,134,47,.18)" : "transparent",
+                    color: isHidden ? "#8C7A6B" : "#F1D989",
+                    fontSize: 12,
+                    fontFamily: "system-ui, sans-serif",
+                    cursor: "pointer",
+                    textDecoration: isHidden ? "line-through" : "none",
+                  }}
+                >
+                  {s.label}
+                </button>
+                {/* تشغيل/إطفاء سريع بدون فتح اللوحة الجانبية */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    updateStyle(s.id, { hidden: !isHidden })
+                  }}
+                  title={isHidden ? "إظهار القسم" : "إخفاء القسم"}
+                  style={{
+                    flexShrink: 0,
+                    width: 26,
+                    height: 26,
+                    borderRadius: "50%",
+                    border: isHidden ? "1px solid #B8862F" : "1px solid #3A2A1E",
+                    background: isHidden ? "rgba(184,134,47,.18)" : "transparent",
+                    color: "#F1D989",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  {isHidden ? "🚫" : "👁"}
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
       <button
