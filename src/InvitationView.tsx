@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type RefObject, type ReactNode } from "react"
 import { Invitation, TextStyle, CustomFont } from "./types"
-import { submitRSVP } from "./backend"
+import { submitRSVP, uploadMedia } from "./backend"
 import Reveal from "./Reveal"
 import { RoseIcon } from "./icons"
 import {
@@ -15,6 +15,23 @@ import {
   TransitionsMenu,
   useEditMode,
 } from "./LiveEditor"
+
+// رفع صورة من التصميم المباشر (خلفية قسم، أو أي صورة عنصر) — يستخدم
+// نفس آلية رفع الوسائط الموجودة أصلاً بالمشروع (Supabase Storage)،
+// ويرجّع رابط الصورة النهائي مباشرة كنص كما يتوقعه EditModeProvider
+// (onUploadImage). لو فشل الرفع (مثلاً الـ bucket مو مفعّل) نرمي خطأ
+// واضح بدل ما نرجّع رابط فاضي.
+async function uploadDesignImage(file: File): Promise<string> {
+  const res = await uploadMedia(file, "design-uploads")
+  if (!res.success || !res.url) {
+    throw new Error(
+      res.bucketMissing
+        ? "تخزين الوسائط غير مفعّل بعد بحساب Supabase — راجع تعليمات الإعداد."
+        : res.error || "تعذر رفع الصورة، حاول مرة أخرى",
+    )
+  }
+  return res.url
+}
 
 interface GoldenParticle {
   id: number
@@ -467,6 +484,7 @@ function WisalTemplateView({
       editable={editable}
       initialStyles={inv.textStyles || {}}
       onStylesChange={onStylesChange}
+      onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
     <DeselectSurface>
@@ -1391,6 +1409,7 @@ function WisalTemplateTwoView({
       editable={editable}
       initialStyles={inv.textStyles || {}}
       onStylesChange={onStylesChange}
+      onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
     <DeselectSurface>
@@ -2366,6 +2385,7 @@ function WisalTemplateThreeView({
       editable={editable}
       initialStyles={inv.textStyles || {}}
       onStylesChange={onStylesChange}
+      onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
     <DeselectSurface>
@@ -3124,6 +3144,7 @@ export default function InvitationFullView({
           editable={editable}
           initialStyles={inv.textStyles || {}}
           onStylesChange={onStylesChange}
+          onUploadImage={uploadDesignImage}
           customFonts={customFonts}
         >
         <DeselectSurface>
