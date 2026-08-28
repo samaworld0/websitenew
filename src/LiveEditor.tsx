@@ -46,6 +46,7 @@ export interface TextStyle {
   hidden?: boolean
   text?: string // نص مخصص يحل محل النص الأصلي
   imageUrl?: string // للصور المضافة يدويًا فقط
+  videoUrl?: string // فيديو خلفية قسم (بدل صورة) — لعناصر EditableBackground فقط
   // لو العنصر ده "نسخة مكرّرة" من عنصر ثاني (زر "تكرار العنصر")، هذا
   // الحقل يحمل معرّف العنصر الأصلي اللي انسخت منه. العنصر الأصلي (id)
   // نفسه هو اللي يتكفّل يعرض كل نسخه المكرّرة جنبه (شوف EditableText).
@@ -810,8 +811,11 @@ export function EditableBackground({
       style={{
         ...style,
         ...(st.bgColor ? { backgroundColor: st.bgColor, backgroundImage: "none" } : null),
-        ...(st.imageUrl ? { backgroundImage: `url(${st.imageUrl})`, backgroundSize: "cover" } : null),
+        ...(st.imageUrl && !st.videoUrl
+          ? { backgroundImage: `url(${st.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+          : null),
         position: "relative",
+        overflow: st.videoUrl ? "hidden" : undefined,
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
         outlineOffset: -2,
         // بوضع التصميم المباشر نفسه نبقي القسم ظاهر (باهت) حتى المصمم
@@ -824,6 +828,25 @@ export function EditableBackground({
         setSelectedId(id)
       }}
     >
+      {st.videoUrl && (
+        <video
+          key={st.videoUrl}
+          src={st.videoUrl}
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+      )}
       {editable && st.hidden && (
         <div
           contentEditable={false}
@@ -848,7 +871,11 @@ export function EditableBackground({
           🚫 هذا القسم مخفي عن الزوار
         </div>
       )}
-      {children}
+      {st.videoUrl ? (
+        <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
+      ) : (
+        children
+      )}
     </div>
   )
 }
@@ -939,7 +966,7 @@ export function EditPanel() {
               {COLOR_PRESETS.map((c) => (
                 <button
                   key={c}
-                  onClick={() => updateStyle(selectedId, { bgColor: c, imageUrl: undefined })}
+                  onClick={() => updateStyle(selectedId, { bgColor: c, imageUrl: undefined, videoUrl: undefined })}
                   style={{
                     width: 22, height: 22, borderRadius: "50%", background: c,
                     border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
@@ -950,7 +977,7 @@ export function EditPanel() {
               <input
                 type="color"
                 value={st.bgColor || "#ffffff"}
-                onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value, imageUrl: undefined })}
+                onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value, imageUrl: undefined, videoUrl: undefined })}
                 style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
               />
               <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>افتراضي</button>
@@ -959,21 +986,31 @@ export function EditPanel() {
 
           {onUploadImage && (
             <div style={row}>
-              <label style={label}>صورة خلفية (اختياري)</label>
+              <label style={label}>صورة أو مقطع فيديو للخلفية (اختياري)</label>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 style={input}
                 onChange={async (e) => {
                   const file = e.target.files?.[0]
                   if (!file) return
                   const url = await onUploadImage(file)
-                  updateStyle(selectedId, { imageUrl: url })
+                  if (file.type.startsWith("video/")) {
+                    updateStyle(selectedId, { videoUrl: url, imageUrl: undefined })
+                  } else {
+                    updateStyle(selectedId, { imageUrl: url, videoUrl: undefined })
+                  }
                 }}
               />
-              {st.imageUrl && (
-                <button style={{ ...btn, marginTop: 6 }} onClick={() => updateStyle(selectedId, { imageUrl: undefined })}>
-                  إزالة صورة الخلفية
+              <div style={{ fontSize: 10, color: "#8C7A6B", marginTop: 4 }}>
+                اختاري صورة (jpg/png...) أو مقطع فيديو (mp4...) — يشتغل خلفية متحركة تلقائيًا.
+              </div>
+              {(st.imageUrl || st.videoUrl) && (
+                <button
+                  style={{ ...btn, marginTop: 6 }}
+                  onClick={() => updateStyle(selectedId, { imageUrl: undefined, videoUrl: undefined })}
+                >
+                  إزالة {st.videoUrl ? "الفيديو" : "الصورة"}
                 </button>
               )}
             </div>
