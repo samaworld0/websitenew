@@ -766,14 +766,14 @@ function WisalTemplateView({
               </Reveal>
             </EditableBackground>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-venue-section"
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
+                <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
                     <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
@@ -793,8 +793,17 @@ function WisalTemplateView({
                   </div>
                 </Reveal>
               )}
+            </EditableBackground>
 
-              <Reveal className="text-center max-w-lg w-full mb-24">
+            {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
+                قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
+                bg-location-section). */}
+            <EditableBackground
+              id="bg-location-section"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              style={{ backgroundColor: "#4E1019" }}
+            >
+              <Reveal className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -1036,7 +1045,8 @@ function WisalTemplateView({
         sections={[
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
+          { id: "bg-location-section", label: "خلفية قسم مكان الحفل" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
           { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
@@ -1695,14 +1705,14 @@ function WisalTemplateTwoView({
               </Reveal>
             </EditableBackground>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-venue-section"
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
+                <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
                     <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
@@ -1722,8 +1732,17 @@ function WisalTemplateTwoView({
                   </div>
                 </Reveal>
               )}
+            </EditableBackground>
 
-              <Reveal className="text-center max-w-lg w-full mb-24">
+            {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
+                قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
+                bg-location-section). */}
+            <EditableBackground
+              id="bg-location-section"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              style={{ backgroundColor: "#4E1019" }}
+            >
+              <Reveal className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -2009,7 +2028,8 @@ function WisalTemplateTwoView({
         sections={[
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
+          { id: "bg-location-section", label: "خلفية قسم مكان الحفل" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
           { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
@@ -2671,14 +2691,14 @@ function WisalTemplateThreeView({
               </Reveal>
             </EditableBackground>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-venue-section"
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
+                <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
                     <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
@@ -2698,8 +2718,17 @@ function WisalTemplateThreeView({
                   </div>
                 </Reveal>
               )}
+            </EditableBackground>
 
-              <Reveal className="text-center max-w-lg w-full mb-24">
+            {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
+                قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
+                bg-location-section). */}
+            <EditableBackground
+              id="bg-location-section"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              style={{ backgroundColor: "#4E1019" }}
+            >
+              <Reveal className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -2985,7 +3014,8 @@ function WisalTemplateThreeView({
         sections={[
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
+          { id: "bg-location-section", label: "خلفية قسم مكان الحفل" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
           { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
