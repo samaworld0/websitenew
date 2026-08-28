@@ -247,6 +247,7 @@ function ScheduleTrack({
         id="bg-schedule-line"
         className="absolute left-1/2 -translate-x-1/2 w-px opacity-25"
         style={{ top: line.top, height: Math.max(0, line.bottom - line.top), backgroundColor: lineColor }}
+        position="absolute"
       />
       {/* الوردة المتحركة فوق الخط — نحركها بـ transform (مو top) حتى تكون
           الحركة أنعم (GPU-accelerated)، ومدة أطول مع تسارع طبيعي بدل القفز
