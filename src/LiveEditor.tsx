@@ -789,11 +789,17 @@ export function EditableBackground({
   className,
   style,
   children,
+  position = "relative",
 }: {
   id: string
   className?: string
   style?: React.CSSProperties
   children?: ReactNode
+  // بعض الاستخدامات (زي خط برنامج الحفل) تحتاج "absolute" بدل الافتراضي
+  // "relative" حتى تتوسط بالضبط داخل حاويتها بدل ما تاخذ مكانها بالتدفق
+  // العادي للصفحة. الافتراضي "relative" يحافظ على السلوك القديم لكل
+  // الاستخدامات الثانية بدون أي تغيير.
+  position?: React.CSSProperties["position"]
 }) {
   const { editable, styles, selectedId, setSelectedId } = useEditMode()
   const st = styles[id] || {}
@@ -814,7 +820,7 @@ export function EditableBackground({
         ...(st.imageUrl && !st.videoUrl
           ? { backgroundImage: `url(${st.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
           : null),
-        position: "relative",
+        position,
         overflow: st.videoUrl ? "hidden" : undefined,
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
         outlineOffset: -2,
