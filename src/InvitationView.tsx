@@ -73,6 +73,19 @@ function GoldAccentScope({ children }: { children: ReactNode }) {
   )
 }
 
+// الوردتان (❁) المجاورتان لعنوان "برنامج الحفل" — لونهم مستقل تمامًا عن
+// اللون الذهبي العام (بطلب مستخدم)، وله عنصر تحكم خاص فيه لحاله بقائمة
+// الخلفيات (bg-schedule-title-flowers).
+function ScheduleTitleFlower() {
+  const { styles } = useEditMode()
+  const color = styles["bg-schedule-title-flowers"]?.bgColor || "#D4AF37"
+  return (
+    <span className="text-base opacity-80" style={{ color }}>
+      ❁
+    </span>
+  )
+}
+
 // عنصر جزيئات الخلفية المتطايرة — قابل للتحديد بوضع التعديل مثل أي عنصر
 // ثاني، ويقرأ شكله (الرمز) ولونه من TextStyle الخاص بمعرّفه بدل ما يكون
 // مثبّت على "✿" دايماً.
@@ -797,15 +810,11 @@ function WisalTemplateView({
               {inv.schedule && inv.schedule.length > 0 && (
                 <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                   </div>
                   <div className="text-base md:text-lg text-[#F5EBE0]">
                     <ScheduleTrack
@@ -1067,6 +1076,7 @@ function WisalTemplateView({
       <BackgroundsMenu
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
           { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
@@ -1739,15 +1749,11 @@ function WisalTemplateTwoView({
               {inv.schedule && inv.schedule.length > 0 && (
                 <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                   </div>
                   <div className="text-base md:text-lg text-[#F5EBE0]">
                     <ScheduleTrack
@@ -2053,6 +2059,7 @@ function WisalTemplateTwoView({
       <BackgroundsMenu
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
           { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
@@ -2728,15 +2735,11 @@ function WisalTemplateThreeView({
               {inv.schedule && inv.schedule.length > 0 && (
                 <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                   </div>
                   <div className="text-base md:text-lg text-[#F5EBE0]">
                     <ScheduleTrack
@@ -3042,6 +3045,7 @@ function WisalTemplateThreeView({
       <BackgroundsMenu
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
           { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
