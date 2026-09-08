@@ -797,13 +797,13 @@ function WisalTemplateView({
               {inv.schedule && inv.schedule.length > 0 && (
                 <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[var(--gold)] text-base opacity-80">
+                    <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
                     </span>
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[var(--gold)] text-base opacity-80">
+                    <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
                     </span>
                   </div>
@@ -1739,13 +1739,13 @@ function WisalTemplateTwoView({
               {inv.schedule && inv.schedule.length > 0 && (
                 <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[var(--gold)] text-base opacity-80">
+                    <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
                     </span>
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[var(--gold)] text-base opacity-80">
+                    <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
                     </span>
                   </div>
@@ -2728,13 +2728,13 @@ function WisalTemplateThreeView({
               {inv.schedule && inv.schedule.length > 0 && (
                 <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[var(--gold)] text-base opacity-80">
+                    <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
                     </span>
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[var(--gold)] text-base opacity-80">
+                    <span className="text-[#D4AF37] text-base opacity-80">
                       ❁
                     </span>
                   </div>
