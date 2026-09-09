@@ -73,6 +73,22 @@ function GoldAccentScope({ children }: { children: ReactNode }) {
   )
 }
 
+// دائرتا الضوء الذهبي الكبيرتان (blur) خلف القسم الأول — شفافيتهم (نسبة
+// الانتشار) قابلة للتحكم من التصميم المباشر عبر bg-hero-glow (0-100،
+// الافتراضي 20%) بدل ما تكون مثبّتة على opacity-20 دايمًا.
+function HeroGlow() {
+  const { styles } = useEditMode()
+  const st = styles["bg-hero-glow"]
+  if (st?.hidden) return null
+  const opacity = (st?.size ?? 20) / 100
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ opacity }}>
+      <div className="absolute w-[500px] h-[500px] rounded-full bg-[var(--gold)] blur-[180px] top-[-150px] right-[-120px]" />
+      <div className="absolute w-[400px] h-[400px] rounded-full bg-[var(--gold)] blur-[180px] bottom-[-180px] left-[-120px]" />
+    </div>
+  )
+}
+
 // الوردتان (❁) المجاورتان لعنوان "برنامج الحفل" — لونهم مستقل تمامًا عن
 // اللون الذهبي العام (بطلب مستخدم)، وله عنصر تحكم خاص فيه لحاله بقائمة
 // الخلفيات (bg-schedule-title-flowers).
@@ -602,10 +618,7 @@ function WisalTemplateView({
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
             </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[var(--gold)] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[var(--gold)] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
+            <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
               <video
                 key={inv.doorBgVideo || "default-door-bg"}
@@ -1076,6 +1089,7 @@ function WisalTemplateView({
       <BackgroundsMenu
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
           { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
@@ -1541,10 +1555,7 @@ function WisalTemplateTwoView({
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
             </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[var(--gold)] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[var(--gold)] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
+            <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
               <video
                 key={inv.doorBgVideo || "default-door-bg"}
@@ -2059,6 +2070,7 @@ function WisalTemplateTwoView({
       <BackgroundsMenu
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
           { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
@@ -2527,10 +2539,7 @@ function WisalTemplateThreeView({
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
             </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[var(--gold)] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[var(--gold)] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
+            <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
               <video
                 key={inv.doorBgVideo || "default-door-bg"}
@@ -3045,6 +3054,7 @@ function WisalTemplateThreeView({
       <BackgroundsMenu
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
           { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
