@@ -966,60 +966,80 @@ export function EditPanel() {
 
       {isBackground ? (
         <>
-          <div style={row}>
-            <label style={label}>لون الخلفية</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {COLOR_PRESETS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => updateStyle(selectedId, { bgColor: c, imageUrl: undefined, videoUrl: undefined })}
-                  style={{
-                    width: 22, height: 22, borderRadius: "50%", background: c,
-                    border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
-                    cursor: "pointer",
-                  }}
-                />
-              ))}
-              <input
-                type="color"
-                value={st.bgColor || "#ffffff"}
-                onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value, imageUrl: undefined, videoUrl: undefined })}
-                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
-              />
-              <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>افتراضي</button>
-            </div>
-          </div>
-
-          {onUploadImage && (
+          {selectedId === "bg-hero-glow" ? (
             <div style={row}>
-              <label style={label}>صورة أو مقطع فيديو للخلفية (اختياري)</label>
+              <label style={label}>نسبة التوهج ({st.size ?? 20}%)</label>
               <input
-                type="file"
-                accept="image/*,video/*"
-                style={input}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
-                  const url = await onUploadImage(file)
-                  if (file.type.startsWith("video/")) {
-                    updateStyle(selectedId, { videoUrl: url, imageUrl: undefined })
-                  } else {
-                    updateStyle(selectedId, { imageUrl: url, videoUrl: undefined })
-                  }
-                }}
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={st.size ?? 20}
+                onChange={(e) => updateStyle(selectedId, { size: Number(e.target.value) })}
+                style={{ width: "100%" }}
               />
-              <div style={{ fontSize: 10, color: "#8C7A6B", marginTop: 4 }}>
-                اختاري صورة (jpg/png...) أو مقطع فيديو (mp4...) — يشتغل خلفية متحركة تلقائيًا.
-              </div>
-              {(st.imageUrl || st.videoUrl) && (
-                <button
-                  style={{ ...btn, marginTop: 6 }}
-                  onClick={() => updateStyle(selectedId, { imageUrl: undefined, videoUrl: undefined })}
-                >
-                  إزالة {st.videoUrl ? "الفيديو" : "الصورة"}
-                </button>
-              )}
+              <button style={{ ...btn, marginTop: 6 }} onClick={() => updateStyle(selectedId, { size: undefined })}>
+                افتراضي (20%)
+              </button>
             </div>
+          ) : (
+            <>
+              <div style={row}>
+                <label style={label}>لون الخلفية</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {COLOR_PRESETS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => updateStyle(selectedId, { bgColor: c, imageUrl: undefined, videoUrl: undefined })}
+                      style={{
+                        width: 22, height: 22, borderRadius: "50%", background: c,
+                        border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                        cursor: "pointer",
+                      }}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    value={st.bgColor || "#ffffff"}
+                    onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value, imageUrl: undefined, videoUrl: undefined })}
+                    style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+                  />
+                  <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>افتراضي</button>
+                </div>
+              </div>
+
+              {onUploadImage && (
+                <div style={row}>
+                  <label style={label}>صورة أو مقطع فيديو للخلفية (اختياري)</label>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    style={input}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const url = await onUploadImage(file)
+                      if (file.type.startsWith("video/")) {
+                        updateStyle(selectedId, { videoUrl: url, imageUrl: undefined })
+                      } else {
+                        updateStyle(selectedId, { imageUrl: url, videoUrl: undefined })
+                      }
+                    }}
+                  />
+                  <div style={{ fontSize: 10, color: "#8C7A6B", marginTop: 4 }}>
+                    اختاري صورة (jpg/png...) أو مقطع فيديو (mp4...) — يشتغل خلفية متحركة تلقائيًا.
+                  </div>
+                  {(st.imageUrl || st.videoUrl) && (
+                    <button
+                      style={{ ...btn, marginTop: 6 }}
+                      onClick={() => updateStyle(selectedId, { imageUrl: undefined, videoUrl: undefined })}
+                    >
+                      إزالة {st.videoUrl ? "الفيديو" : "الصورة"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           {/* تشغيل/إطفاء القسم بالكامل — يخفي كل محتوى القسم (نصوصه
