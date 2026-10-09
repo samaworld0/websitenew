@@ -632,7 +632,7 @@ function WisalTemplateView({
                 (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
             <EditableBackground
               id="bg-verse-section"
-              className="py-24 px-6 flex flex-col items-center"
+              className="py-16 px-4 sm:py-24 sm:px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="text-center max-w-xl mb-20">
@@ -702,50 +702,50 @@ function WisalTemplateView({
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
                 <div
-                  className="flex justify-center items-center gap-4"
+                  className="flex flex-wrap justify-center items-center gap-2 sm:gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.hours).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {timeLeft.days}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-days">يوم</EditableText>
                     </span>
                   </div>
@@ -1542,7 +1542,7 @@ function WisalTemplateTwoView({
                 (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
             <EditableBackground
               id="bg-verse-section"
-              className="py-24 px-6 flex flex-col items-center"
+              className="py-16 px-4 sm:py-24 sm:px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="text-center max-w-xl mb-20">
@@ -1612,50 +1612,50 @@ function WisalTemplateTwoView({
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
                 <div
-                  className="flex justify-center items-center gap-4"
+                  className="flex flex-wrap justify-center items-center gap-2 sm:gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.hours).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {timeLeft.days}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-days">يوم</EditableText>
                     </span>
                   </div>
@@ -2499,7 +2499,7 @@ function WisalTemplateThreeView({
                 (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
             <EditableBackground
               id="bg-verse-section"
-              className="py-24 px-6 flex flex-col items-center"
+              className="py-16 px-4 sm:py-24 sm:px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="text-center max-w-xl mb-20">
@@ -2569,50 +2569,50 @@ function WisalTemplateThreeView({
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
                 <div
-                  className="flex justify-center items-center gap-4"
+                  className="flex flex-wrap justify-center items-center gap-2 sm:gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.hours).padStart(2, "0")}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-xl sm:rounded-2xl px-2.5 sm:px-5 py-2.5 sm:py-4 shadow-sm min-w-[60px] sm:min-w-[85px]">
                     <EditableText
                       id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-lg sm:text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {timeLeft.days}
                     </EditableText>
-                    <span className="text-sm text-[#8C7A6B] mt-1">
+                    <span className="text-[10px] sm:text-sm text-[#8C7A6B] mt-1">
                       <EditableText id="countdown-label-days">يوم</EditableText>
                     </span>
                   </div>
