@@ -136,6 +136,29 @@ function normalizeExternalUrl(url: string | undefined, fallback: string): string
   return `https://${trimmed}`
 }
 
+// تحويل لون hex (مثل "#D4AF37") لمكوّناته [r, g, b]. لو اللون مو صالح،
+// يرجع للون الذهبي الافتراضي حتى ما ينكسر التدرج.
+function hexToRgbParts(hex: string | undefined): [number, number, number] {
+  const fallback: [number, number, number] = [212, 175, 55] // #D4AF37
+  if (!hex) return fallback
+  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!match) return fallback
+  const n = parseInt(match[1], 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+// لمعة لحظة فتح الدعوة — لون قابل للتخصيص (flashColor) لكل دعوة، لو
+// فاضي يترجع تلقائياً لنفس اللون الذهبي الافتراضي اللي كان ثابت بالكود.
+// نولّد مركز أفتح (مُفتّح بالأبيض) يتدرج للون الأساسي نفسه، حتى يحافظ
+// على نفس إحساس "اللمعة" البرّاقة بدل لون مسطّح بلا عمق.
+function buildFlashGradient(flashColor: string | undefined): string {
+  const [r, g, b] = hexToRgbParts(flashColor)
+  const lighten = (c: number) => Math.round(c + (255 - c) * 0.55)
+  const centerRgb = `${lighten(r)}, ${lighten(g)}, ${lighten(b)}`
+  const baseRgb = `${r}, ${g}, ${b}`
+  return `radial-gradient(circle at center, rgba(${centerRgb},0.6) 0%, rgba(${baseRgb},0.3) 35%, transparent 70%)`
+}
+
 // برنامج الحفل الافتراضي — يُستخدم لو الدعوة ما عندها جدول مخصص محفوظ
 // (schedule فاضي أو غير موجود، مثلاً دعوات قديمة قبل إضافة هالحقل).
 export const DEFAULT_SCHEDULE = [
@@ -513,8 +536,7 @@ function WisalTemplateView({
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            background: buildFlashGradient(inv.flashColor),
             animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
@@ -1424,8 +1446,7 @@ function WisalTemplateTwoView({
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            background: buildFlashGradient(inv.flashColor),
             animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
@@ -2382,8 +2403,7 @@ function WisalTemplateThreeView({
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            background: buildFlashGradient(inv.flashColor),
             animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
