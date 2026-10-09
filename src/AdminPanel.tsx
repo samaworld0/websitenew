@@ -1380,6 +1380,20 @@ function InvitationForm({
               onChange={(url) => set("knockSoundUrl", url)}
             />
           )}
+
+          <div className="flex flex-col gap-1.5 text-sm">
+            <span className="font-bold text-[#2C1810]">
+              لون لمعة فتح الدعوة (flashColor)
+            </span>
+            <ColorField
+              value={inv.flashColor || "#D4AF37"}
+              onChange={(v) => set("flashColor", v)}
+            />
+            <span className="text-xs text-[#8a7561]">
+              لون الوميض اللي يلمع لحظة اكتمال فتح الباب، قبل ما ينتقل
+              للقسم الأول النهائي. لو تركتيه بالافتراضي يطلع ذهبي.
+            </span>
+          </div>
         </div>
 
         <MediaUploadField
@@ -1491,29 +1505,6 @@ function InvitationForm({
             </div>
           )}
         </div>
-
-        <label
-          className={`sm:col-span-2 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
-            inv.skipIntroVideo
-              ? "border-[#D4AF37] bg-[#fdf8ee]"
-              : "border-[#e5d9c3]"
-          }`}
-        >
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4 accent-[#D4AF37]"
-            checked={!!inv.skipIntroVideo}
-            onChange={(e) => set("skipIntroVideo", e.target.checked)}
-          />
-          <span className="text-sm">
-            <span className="font-bold block">تخطي فيديو الفتح</span>
-            <span className="text-[#8a7561]">
-              لو مفعّل، شاشة "اضغط لفتح الدعوة" تظل تظهر زي العادة، بس لما
-              الضيف يضغط يوصل لمحتوى الدعوة مباشرة بدون تشغيل فيديو/حركة
-              الفتح
-            </span>
-          </span>
-        </label>
 
         <MediaUploadField
           label="المقطع الموسيقى (musicUrl)"
@@ -2180,6 +2171,15 @@ function InvitationRow({
           className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
         >
           معاينة
+        </a>
+        <a
+          href={`?preview=${inv.id}&skipIntro=1`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
+          title="تفتح الدعوة مباشرة على محتواها بدون شاشة الباب أو فيديو الفتح"
+        >
+          ⏩ معاينة بدون فيديو الفتح
         </a>
         {resolveSheetLink(inv) ? (
           <a
