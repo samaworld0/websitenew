@@ -585,17 +585,8 @@ function WisalTemplateView({
         loop
       />
 
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
+      {/* لمعة لحظة فتح الدعوة (مربوطة بلوحة التصميم) */}
+      <FlashEffect show={showFlash} />
 
       <div
         ref={scrollContainerRef}
@@ -1522,17 +1513,8 @@ function WisalTemplateTwoView({
         loop
       />
 
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
+      {/* لمعة لحظة فتح الدعوة (مربوطة بلوحة التصميم) */}
+      <FlashEffect show={showFlash} />
 
       <div
         ref={scrollContainerRef}
@@ -2506,17 +2488,8 @@ function WisalTemplateThreeView({
         loop
       />
 
-      {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
+    {/* لمعة لحظة فتح الدعوة (مربوطة بلوحة التصميم) */}
+      <FlashEffect show={showFlash} />
 
       <div
         ref={scrollContainerRef}
