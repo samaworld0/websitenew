@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type RefObject, type ReactNode } from "react"
 import { Invitation, TextStyle, CustomFont } from "./types"
-import { submitRSVP } from "./backend"
+import { submitRSVP, uploadMedia } from "./backend"
 import Reveal from "./Reveal"
 import { RoseIcon } from "./icons"
 import {
@@ -15,6 +15,23 @@ import {
   TransitionsMenu,
   useEditMode,
 } from "./LiveEditor"
+
+// رفع صورة من التصميم المباشر (خلفية قسم، أو أي صورة عنصر) — يستخدم
+// نفس آلية رفع الوسائط الموجودة أصلاً بالمشروع (Supabase Storage)،
+// ويرجّع رابط الصورة النهائي مباشرة كنص كما يتوقعه EditModeProvider
+// (onUploadImage). لو فشل الرفع (مثلاً الـ bucket مو مفعّل) نرمي خطأ
+// واضح بدل ما نرجّع رابط فاضي.
+async function uploadDesignImage(file: File): Promise<string> {
+  const res = await uploadMedia(file, "design-uploads")
+  if (!res.success || !res.url) {
+    throw new Error(
+      res.bucketMissing
+        ? "تخزين الوسائط غير مفعّل بعد بحساب Supabase — راجع تعليمات الإعداد."
+        : res.error || "تعذر رفع الصورة، حاول مرة أخرى",
+    )
+  }
+  return res.url
+}
 
 interface GoldenParticle {
   id: number
@@ -35,6 +52,55 @@ const PARTICLES_THEME_ID = "particles-theme"
 // النصوص والعناصر (بعد اختفاء الباب/الفيديو بالكامل) من لوحة التعديل
 // عبر TransitionsMenu، بدل ما تكون مثبّتة بالكود (1000ms).
 const DOOR_TEXT_TRANSITION_ID = "transition-door-text"
+
+// معرّف عنصر "اللون الذهبي العام" — لون واحد يتحكم بكل الخطوط والحدود
+// والتفاصيل الذهبية المنتشرة بكامل الدعوة (خط أعلى قسم برنامج الحفل،
+// حدود بطاقات العداد التنازلي وتأكيد الحضور، بطاقة الآية، تلميح فتح
+// الباب...) بدل ما تكون كل وحدة منها مثبّتة على #D4AF37 لحالها.
+const GOLD_ACCENT_ID = "bg-invitation-gold"
+
+// غلاف شفاف (display:contents — ما يأثر على التخطيط إطلاقاً) يقرأ اللون
+// الذهبي العام من التصميم المباشر (معرّفه GOLD_ACCENT_ID) ويحقنه كمتغيّر
+// CSS (--gold) على كل ما تحته. أي عنصر تحته يقدر يستخدم var(--gold) بدل
+// اللون الثابت #D4AF37 حتى يتغيّر معه تلقائياً فور تعديله من اللوحة.
+function GoldAccentScope({ children }: { children: ReactNode }) {
+  const { styles } = useEditMode()
+  const gold = styles[GOLD_ACCENT_ID]?.bgColor || "#D4AF37"
+  return (
+    <div className="contents" style={{ ["--gold" as string]: gold } as any}>
+      {children}
+    </div>
+  )
+}
+
+// دائرتا الضوء الذهبي الكبيرتان (blur) خلف القسم الأول — شفافيتهم (نسبة
+// الانتشار) قابلة للتحكم من التصميم المباشر عبر bg-hero-glow (0-100،
+// الافتراضي 20%) بدل ما تكون مثبّتة على opacity-20 دايمًا.
+function HeroGlow() {
+  const { styles } = useEditMode()
+  const st = styles["bg-hero-glow"]
+  if (st?.hidden) return null
+  const opacity = (st?.size ?? 20) / 100
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ opacity }}>
+      <div className="absolute w-[500px] h-[500px] rounded-full bg-[var(--gold)] blur-[180px] top-[-150px] right-[-120px]" />
+      <div className="absolute w-[400px] h-[400px] rounded-full bg-[var(--gold)] blur-[180px] bottom-[-180px] left-[-120px]" />
+    </div>
+  )
+}
+
+// الوردتان (❁) المجاورتان لعنوان "برنامج الحفل" — لونهم مستقل تمامًا عن
+// اللون الذهبي العام (بطلب مستخدم)، وله عنصر تحكم خاص فيه لحاله بقائمة
+// الخلفيات (bg-schedule-title-flowers).
+function ScheduleTitleFlower() {
+  const { styles } = useEditMode()
+  const color = styles["bg-schedule-title-flowers"]?.bgColor || "#D4AF37"
+  return (
+    <span className="text-base opacity-80" style={{ color }}>
+      ❁
+    </span>
+  )
+}
 
 // عنصر جزيئات الخلفية المتطايرة — قابل للتحديد بوضع التعديل مثل أي عنصر
 // ثاني، ويقرأ شكله (الرمز) ولونه من TextStyle الخاص بمعرّفه بدل ما يكون
@@ -230,6 +296,7 @@ function ScheduleTrack({
         id="bg-schedule-line"
         className="absolute left-1/2 -translate-x-1/2 w-px opacity-25"
         style={{ top: line.top, height: Math.max(0, line.bottom - line.top), backgroundColor: lineColor }}
+        position="absolute"
       />
       {/* الوردة المتحركة فوق الخط — نحركها بـ transform (مو top) حتى تكون
           الحركة أنعم (GPU-accelerated)، ومدة أطول مع تسارع طبيعي بدل القفز
@@ -272,7 +339,7 @@ function ScheduleTrack({
                   ? lastDotRef
                   : undefined
             }
-            className="relative z-10 px-1 text-[#D4AF37] text-xs"
+            className="relative z-10 px-1 text-[var(--gold)] text-xs"
             style={{ backgroundColor: sectionBg }}
           >
             <EditableText id="schedule-bullet-icon">◆</EditableText>
@@ -398,6 +465,7 @@ function WisalTemplateView({
   }
 
   const completeOpening = () => {
+    audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
       if (!prev) {
         generateGoldenParticles()
@@ -417,6 +485,13 @@ function WisalTemplateView({
     if (isOpen) return
     if (isPlaying) {
       videoRef.current?.pause()
+      completeOpening()
+      return
+    }
+    // "تخطي فيديو الفتح": نبقي شاشة "اضغط لفتح الدعوة" (الخطوة الأولى)
+    // زي ما هي، بس لما الضيف يضغط نفتح المحتوى فوراً بدون ما نشغّل
+    // فيديو/حركة الفتح.
+    if (inv.skipIntroVideo) {
       completeOpening()
       return
     }
@@ -459,9 +534,11 @@ function WisalTemplateView({
       editable={editable}
       initialStyles={inv.textStyles || {}}
       onStylesChange={onStylesChange}
+      onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
     <DeselectSurface>
+    <GoldAccentScope>
     <div
       className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
       dir="rtl"
@@ -539,12 +616,9 @@ function WisalTemplateView({
             }
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
-              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
+              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
             </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
+            <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
               <video
                 key={inv.doorBgVideo || "default-door-bg"}
@@ -557,6 +631,7 @@ function WisalTemplateView({
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
               />
             )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
 
             <FloatingParticles particles={particles} />
@@ -567,13 +642,13 @@ function WisalTemplateView({
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
                   <EditableText id="intro-title">دعوة زفاف</EditableText>
                 </p>
-                <span className="text-[#D4AF37] text-xl mb-4">
+                <span className="text-[var(--gold)] text-xl mb-4">
                   <EditableText id="intro-icon">✿</EditableText>
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
-                <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
+                <span className="text-3xl text-[var(--gold)] my-3 custom-font-ruqaa">
                   <EditableText id="names-separator">و</EditableText>
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
@@ -595,7 +670,7 @@ function WisalTemplateView({
                   <EditableText id="scroll-hint">مرر للأسفل</EditableText>
                 </p>
                 <span
-                  className="text-xl text-[#D4AF37]"
+                  className="text-xl text-[var(--gold)]"
                   style={{ animation: "bounceDown 2s ease-in-out infinite" }}
                 >
                   <EditableText id="scroll-arrow">↓</EditableText>
@@ -673,8 +748,16 @@ function WisalTemplateView({
                   </EditableText>
                 </p>
               </Reveal>
+            </EditableBackground>
 
-              {/* العداد التنازلي المكبر */}
+            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
+                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
+                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+            <EditableBackground
+              id="bg-countdown-section"
+              className="py-16 px-6 flex flex-col items-center"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
               <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
@@ -683,7 +766,7 @@ function WisalTemplateView({
                   className="flex justify-center items-center gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-seconds"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -694,7 +777,7 @@ function WisalTemplateView({
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-minutes"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -705,7 +788,7 @@ function WisalTemplateView({
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-hours"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -716,7 +799,7 @@ function WisalTemplateView({
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-days"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -731,24 +814,20 @@ function WisalTemplateView({
               </Reveal>
             </EditableBackground>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-venue-section"
-              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
+                <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                   </div>
                   <div className="text-base md:text-lg text-[#F5EBE0]">
                     <ScheduleTrack
@@ -758,8 +837,17 @@ function WisalTemplateView({
                   </div>
                 </Reveal>
               )}
+            </EditableBackground>
 
-              <Reveal className="text-center max-w-lg w-full mb-24">
+            {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
+                قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
+                bg-location-section). */}
+            <EditableBackground
+              id="bg-location-section"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
+              style={{ backgroundColor: "#4E1019" }}
+            >
+              <Reveal className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -775,7 +863,7 @@ function WisalTemplateView({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
-                  style={{ backgroundColor: "#B8862F" }}
+                  style={{ backgroundColor: "var(--gold)" }}
                 >
                   <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
                 </EditableLinkBackground>
@@ -785,13 +873,13 @@ function WisalTemplateView({
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-rsvp-section"
-              className="py-20 px-6 flex flex-col items-center border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="max-w-md w-full">
               <EditableBackground
                 id="bg-rsvp-card"
-                className="bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg"
+                className="bg-white border border-[var(--gold)]/30 rounded-3xl p-10 shadow-lg"
               >
                 <div className="text-center mb-10">
                   <span className="text-lg">
@@ -823,7 +911,7 @@ function WisalTemplateView({
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="اسمك الكريم"
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
+                        className="w-full bg-[#FAF7F2] border border-[var(--gold)]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[var(--gold)]"
                       />
                     </div>
 
@@ -843,9 +931,9 @@ function WisalTemplateView({
                               className={`py-3 rounded-xl text-base font-medium transition ${
                                 isActive
                                   ? "text-white shadow"
-                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
                               }`}
-                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
+                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
                             >
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
@@ -864,7 +952,7 @@ function WisalTemplateView({
                       </label>
                       <EditableBackground
                         id="bg-rsvp-companions-box"
-                        className="flex items-center justify-center gap-6 border border-[#D4AF37]/30 rounded-2xl py-3"
+                        className="flex items-center justify-center gap-6 border border-[var(--gold)]/30 rounded-2xl py-3"
                         style={{ backgroundColor: "#FAF7F2" }}
                       >
                         <EditableButton
@@ -873,7 +961,7 @@ function WisalTemplateView({
                           onClick={() =>
                             setCompanions(Math.max(0, companions - 1))
                           }
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
                           -
@@ -885,7 +973,7 @@ function WisalTemplateView({
                           id="bg-rsvp-counter-btn"
                           type="button"
                           onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
                           +
@@ -904,7 +992,7 @@ function WisalTemplateView({
                         value={guestNote}
                         onChange={(e) => setGuestNote(e.target.value)}
                         placeholder="اكتب تهنئتك للعروسين..."
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
+                        className="w-full bg-[#FAF7F2] border border-[var(--gold)]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[var(--gold)] resize-none"
                       />
                     </div>
 
@@ -912,7 +1000,7 @@ function WisalTemplateView({
                       id="bg-rsvp-submit"
                       type="submit"
                       className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "#B8862F" }}
+                      style={{ backgroundColor: "var(--gold)" }}
                     >
                       <EditableText id="rsvp-submit-button">
                         إرسال التأكيد
@@ -953,11 +1041,11 @@ function WisalTemplateView({
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
           <div
-            className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl"
+            className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl"
             style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[#D4AF37]/30" />
+            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[var(--gold)]/30" />
 
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
@@ -988,19 +1076,25 @@ function WisalTemplateView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
+          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
         </div>
       )}
     </div>
+    </GoldAccentScope>
     </DeselectSurface>
     {editable && <EditPanel />}
     {editable && (
       <BackgroundsMenu
         sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية والعداد التنازلي" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
+          { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
+          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
+          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
+          { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
+          { id: "bg-location-section", label: "خلفية قسم مكان الحفل" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
           { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
@@ -1272,6 +1366,7 @@ function WisalTemplateTwoView({
   }
 
   const completeOpening = () => {
+    audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
       if (!prev) {
         generateGoldenParticles()
@@ -1337,7 +1432,13 @@ function WisalTemplateTwoView({
     }
     setKnockCount(nextKnock)
     setBoxHidden(true)
-    setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
+    // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
+    if (inv.skipIntroVideo) {
+      setTimeout(completeOpening, KNOCK_RIPPLE_MS)
+    } else {
+      setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    }
   }
 
   const handleRSVP = async (e: React.FormEvent) => {
@@ -1366,9 +1467,11 @@ function WisalTemplateTwoView({
       editable={editable}
       initialStyles={inv.textStyles || {}}
       onStylesChange={onStylesChange}
+      onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
     <DeselectSurface>
+    <GoldAccentScope>
     <div
       className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
       dir="rtl"
@@ -1450,12 +1553,9 @@ function WisalTemplateTwoView({
             }
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
-              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
+              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
             </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
+            <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
               <video
                 key={inv.doorBgVideo || "default-door-bg"}
@@ -1468,6 +1568,7 @@ function WisalTemplateTwoView({
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
               />
             )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
 
             <FloatingParticles particles={particles} />
@@ -1478,13 +1579,13 @@ function WisalTemplateTwoView({
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
                   <EditableText id="intro-title">دعوة زفاف</EditableText>
                 </p>
-                <span className="text-[#D4AF37] text-xl mb-4">
+                <span className="text-[var(--gold)] text-xl mb-4">
                   <EditableText id="intro-icon">✿</EditableText>
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
-                <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
+                <span className="text-3xl text-[var(--gold)] my-3 custom-font-ruqaa">
                   <EditableText id="names-separator">و</EditableText>
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
@@ -1506,7 +1607,7 @@ function WisalTemplateTwoView({
                   <EditableText id="scroll-hint">مرر للأسفل</EditableText>
                 </p>
                 <span
-                  className="text-xl text-[#D4AF37]"
+                  className="text-xl text-[var(--gold)]"
                   style={{ animation: "bounceDown 2s ease-in-out infinite" }}
                 >
                   <EditableText id="scroll-arrow">↓</EditableText>
@@ -1584,8 +1685,16 @@ function WisalTemplateTwoView({
                   </EditableText>
                 </p>
               </Reveal>
+            </EditableBackground>
 
-              {/* العداد التنازلي المكبر */}
+            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
+                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
+                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+            <EditableBackground
+              id="bg-countdown-section"
+              className="py-16 px-6 flex flex-col items-center"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
               <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
@@ -1594,7 +1703,7 @@ function WisalTemplateTwoView({
                   className="flex justify-center items-center gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-seconds"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -1605,7 +1714,7 @@ function WisalTemplateTwoView({
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-minutes"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -1616,7 +1725,7 @@ function WisalTemplateTwoView({
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-hours"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -1627,7 +1736,7 @@ function WisalTemplateTwoView({
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-days"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -1642,24 +1751,20 @@ function WisalTemplateTwoView({
               </Reveal>
             </EditableBackground>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-venue-section"
-              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
+                <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                   </div>
                   <div className="text-base md:text-lg text-[#F5EBE0]">
                     <ScheduleTrack
@@ -1669,8 +1774,17 @@ function WisalTemplateTwoView({
                   </div>
                 </Reveal>
               )}
+            </EditableBackground>
 
-              <Reveal className="text-center max-w-lg w-full mb-24">
+            {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
+                قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
+                bg-location-section). */}
+            <EditableBackground
+              id="bg-location-section"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
+              style={{ backgroundColor: "#4E1019" }}
+            >
+              <Reveal className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -1686,7 +1800,7 @@ function WisalTemplateTwoView({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
-                  style={{ backgroundColor: "#B8862F" }}
+                  style={{ backgroundColor: "var(--gold)" }}
                 >
                   <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
                 </EditableLinkBackground>
@@ -1696,13 +1810,13 @@ function WisalTemplateTwoView({
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-rsvp-section"
-              className="py-20 px-6 flex flex-col items-center border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="max-w-md w-full">
               <EditableBackground
                 id="bg-rsvp-card"
-                className="bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg"
+                className="bg-white border border-[var(--gold)]/30 rounded-3xl p-10 shadow-lg"
               >
                 <div className="text-center mb-10">
                   <span className="text-lg">
@@ -1734,7 +1848,7 @@ function WisalTemplateTwoView({
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="اسمك الكريم"
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
+                        className="w-full bg-[#FAF7F2] border border-[var(--gold)]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[var(--gold)]"
                       />
                     </div>
 
@@ -1754,9 +1868,9 @@ function WisalTemplateTwoView({
                               className={`py-3 rounded-xl text-base font-medium transition ${
                                 isActive
                                   ? "text-white shadow"
-                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
                               }`}
-                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
+                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
                             >
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
@@ -1775,7 +1889,7 @@ function WisalTemplateTwoView({
                       </label>
                       <EditableBackground
                         id="bg-rsvp-companions-box"
-                        className="flex items-center justify-center gap-6 border border-[#D4AF37]/30 rounded-2xl py-3"
+                        className="flex items-center justify-center gap-6 border border-[var(--gold)]/30 rounded-2xl py-3"
                         style={{ backgroundColor: "#FAF7F2" }}
                       >
                         <EditableButton
@@ -1784,7 +1898,7 @@ function WisalTemplateTwoView({
                           onClick={() =>
                             setCompanions(Math.max(0, companions - 1))
                           }
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
                           -
@@ -1796,7 +1910,7 @@ function WisalTemplateTwoView({
                           id="bg-rsvp-counter-btn"
                           type="button"
                           onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
                           +
@@ -1815,7 +1929,7 @@ function WisalTemplateTwoView({
                         value={guestNote}
                         onChange={(e) => setGuestNote(e.target.value)}
                         placeholder="اكتب تهنئتك للعروسين..."
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
+                        className="w-full bg-[#FAF7F2] border border-[var(--gold)]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[var(--gold)] resize-none"
                       />
                     </div>
 
@@ -1823,7 +1937,7 @@ function WisalTemplateTwoView({
                       id="bg-rsvp-submit"
                       type="submit"
                       className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "#B8862F" }}
+                      style={{ backgroundColor: "var(--gold)" }}
                     >
                       <EditableText id="rsvp-submit-button">
                         إرسال التأكيد
@@ -1880,13 +1994,13 @@ function WisalTemplateTwoView({
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
               يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
           <div
-            className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl transition-opacity duration-500 ${
+            className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
             style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[#D4AF37]/30" />
+            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[var(--gold)]/30" />
 
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
@@ -1943,19 +2057,25 @@ function WisalTemplateTwoView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
+          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
         </div>
       )}
     </div>
+    </GoldAccentScope>
     </DeselectSurface>
     {editable && <EditPanel />}
     {editable && (
       <BackgroundsMenu
         sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية والعداد التنازلي" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
+          { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
+          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
+          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
+          { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
+          { id: "bg-location-section", label: "خلفية قسم مكان الحفل" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
           { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
@@ -2230,6 +2350,7 @@ function WisalTemplateThreeView({
   }
 
   const completeOpening = () => {
+    audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
       if (!prev) {
         generateGoldenParticles()
@@ -2295,7 +2416,13 @@ function WisalTemplateThreeView({
     }
     setKnockCount(nextKnock)
     setBoxHidden(true)
-    setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
+    // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
+    if (inv.skipIntroVideo) {
+      setTimeout(completeOpening, KNOCK_RIPPLE_MS)
+    } else {
+      setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
+    }
   }
 
   const handleRSVP = async (e: React.FormEvent) => {
@@ -2324,9 +2451,11 @@ function WisalTemplateThreeView({
       editable={editable}
       initialStyles={inv.textStyles || {}}
       onStylesChange={onStylesChange}
+      onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
     <DeselectSurface>
+    <GoldAccentScope>
     <div
       className="relative h-full w-full bg-[#FAF7F2] text-[#3D312A] font-sans overflow-hidden"
       dir="rtl"
@@ -2408,12 +2537,9 @@ function WisalTemplateThreeView({
             }
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
-              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent animate-[goldLine_3s_linear_infinite]" />
+              <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
             </div>
-            <div className="absolute inset-0 opacity-20 pointer-events-none">
-              <div className="absolute w-[500px] h-[500px] rounded-full bg-[#D4AF37] blur-[180px] top-[-150px] right-[-120px]" />
-              <div className="absolute w-[400px] h-[400px] rounded-full bg-[#D4AF37] blur-[180px] bottom-[-180px] left-[-120px]" />
-            </div>
+            <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
               <video
                 key={inv.doorBgVideo || "default-door-bg"}
@@ -2426,6 +2552,7 @@ function WisalTemplateThreeView({
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
               />
             )}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
 
 
             <FloatingParticles particles={particles} />
@@ -2436,13 +2563,13 @@ function WisalTemplateThreeView({
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
                   <EditableText id="intro-title">دعوة زفاف</EditableText>
                 </p>
-                <span className="text-[#D4AF37] text-xl mb-4">
+                <span className="text-[var(--gold)] text-xl mb-4">
                   <EditableText id="intro-icon">✿</EditableText>
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
-                <span className="text-3xl text-[#D4AF37] my-3 custom-font-ruqaa">
+                <span className="text-3xl text-[var(--gold)] my-3 custom-font-ruqaa">
                   <EditableText id="names-separator">و</EditableText>
                 </span>
                 <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
@@ -2464,7 +2591,7 @@ function WisalTemplateThreeView({
                   <EditableText id="scroll-hint">مرر للأسفل</EditableText>
                 </p>
                 <span
-                  className="text-xl text-[#D4AF37]"
+                  className="text-xl text-[var(--gold)]"
                   style={{ animation: "bounceDown 2s ease-in-out infinite" }}
                 >
                   <EditableText id="scroll-arrow">↓</EditableText>
@@ -2542,8 +2669,16 @@ function WisalTemplateThreeView({
                   </EditableText>
                 </p>
               </Reveal>
+            </EditableBackground>
 
-              {/* العداد التنازلي المكبر */}
+            {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
+                وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
+                لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+            <EditableBackground
+              id="bg-countdown-section"
+              className="py-16 px-6 flex flex-col items-center"
+              style={{ backgroundColor: "#FAF7F2" }}
+            >
               <Reveal className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
@@ -2552,7 +2687,7 @@ function WisalTemplateThreeView({
                   className="flex justify-center items-center gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-seconds"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -2563,7 +2698,7 @@ function WisalTemplateThreeView({
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-minutes"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -2574,7 +2709,7 @@ function WisalTemplateThreeView({
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-hours"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -2585,7 +2720,7 @@ function WisalTemplateThreeView({
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[#D4AF37]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
                     <EditableText
                       id="countdown-number-days"
                       className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
@@ -2600,24 +2735,20 @@ function WisalTemplateThreeView({
               </Reveal>
             </EditableBackground>
 
-            {/* برنامج الحفل والمكان — خلفية حمراء مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
+            {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-venue-section"
-              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full mb-24">
+                <Reveal className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
                       <EditableText id="schedule-title">برنامج الحفل</EditableText>
                     </h3>
-                    <span className="text-[#D4AF37] text-base opacity-80">
-                      ❁
-                    </span>
+                    <ScheduleTitleFlower />
                   </div>
                   <div className="text-base md:text-lg text-[#F5EBE0]">
                     <ScheduleTrack
@@ -2627,8 +2758,17 @@ function WisalTemplateThreeView({
                   </div>
                 </Reveal>
               )}
+            </EditableBackground>
 
-              <Reveal className="text-center max-w-lg w-full mb-24">
+            {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
+                قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
+                bg-location-section). */}
+            <EditableBackground
+              id="bg-location-section"
+              className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
+              style={{ backgroundColor: "#4E1019" }}
+            >
+              <Reveal className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -2644,7 +2784,7 @@ function WisalTemplateThreeView({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-bold text-white hover:bg-[#9E7024] shadow-md"
-                  style={{ backgroundColor: "#B8862F" }}
+                  style={{ backgroundColor: "var(--gold)" }}
                 >
                   <EditableText id="map-button-text">الموقع على الخريطة</EditableText>
                 </EditableLinkBackground>
@@ -2654,13 +2794,13 @@ function WisalTemplateThreeView({
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
               id="bg-rsvp-section"
-              className="py-20 px-6 flex flex-col items-center border-t-2 border-[#D4AF37]"
+              className="py-20 px-6 flex flex-col items-center border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="max-w-md w-full">
               <EditableBackground
                 id="bg-rsvp-card"
-                className="bg-white border border-[#B8862F]/30 rounded-3xl p-10 shadow-lg"
+                className="bg-white border border-[var(--gold)]/30 rounded-3xl p-10 shadow-lg"
               >
                 <div className="text-center mb-10">
                   <span className="text-lg">
@@ -2692,7 +2832,7 @@ function WisalTemplateThreeView({
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="اسمك الكريم"
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F]"
+                        className="w-full bg-[#FAF7F2] border border-[var(--gold)]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[var(--gold)]"
                       />
                     </div>
 
@@ -2712,9 +2852,9 @@ function WisalTemplateThreeView({
                               className={`py-3 rounded-xl text-base font-medium transition ${
                                 isActive
                                   ? "text-white shadow"
-                                  : "border border-[#D4AF37]/30 text-[#3D312A]"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
                               }`}
-                              style={{ backgroundColor: isActive ? "#B8862F" : "#FAF7F2" }}
+                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
                             >
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
@@ -2733,7 +2873,7 @@ function WisalTemplateThreeView({
                       </label>
                       <EditableBackground
                         id="bg-rsvp-companions-box"
-                        className="flex items-center justify-center gap-6 border border-[#D4AF37]/30 rounded-2xl py-3"
+                        className="flex items-center justify-center gap-6 border border-[var(--gold)]/30 rounded-2xl py-3"
                         style={{ backgroundColor: "#FAF7F2" }}
                       >
                         <EditableButton
@@ -2742,7 +2882,7 @@ function WisalTemplateThreeView({
                           onClick={() =>
                             setCompanions(Math.max(0, companions - 1))
                           }
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
                           -
@@ -2754,7 +2894,7 @@ function WisalTemplateThreeView({
                           id="bg-rsvp-counter-btn"
                           type="button"
                           onClick={() => setCompanions(companions + 1)}
-                          className="w-10 h-10 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-xl font-bold shadow-sm"
+                          className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
                           +
@@ -2773,7 +2913,7 @@ function WisalTemplateThreeView({
                         value={guestNote}
                         onChange={(e) => setGuestNote(e.target.value)}
                         placeholder="اكتب تهنئتك للعروسين..."
-                        className="w-full bg-[#FAF7F2] border border-[#D4AF37]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[#B8862F] resize-none"
+                        className="w-full bg-[#FAF7F2] border border-[var(--gold)]/30 rounded-2xl px-5 py-3.5 text-base focus:outline-none focus:border-[var(--gold)] resize-none"
                       />
                     </div>
 
@@ -2781,7 +2921,7 @@ function WisalTemplateThreeView({
                       id="bg-rsvp-submit"
                       type="submit"
                       className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "#B8862F" }}
+                      style={{ backgroundColor: "var(--gold)" }}
                     >
                       <EditableText id="rsvp-submit-button">
                         إرسال التأكيد
@@ -2838,13 +2978,13 @@ function WisalTemplateThreeView({
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
               يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
           <div
-            className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[#D4AF37]/40 shadow-2xl transition-opacity duration-500 ${
+            className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
             style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[#D4AF37]/30" />
+            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[var(--gold)]/30" />
 
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
@@ -2901,19 +3041,25 @@ function WisalTemplateThreeView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[#D4AF37] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
+          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
         </div>
       )}
     </div>
+    </GoldAccentScope>
     </DeselectSurface>
     {editable && <EditPanel />}
     {editable && (
       <BackgroundsMenu
         sections={[
-          { id: "bg-verse-section", label: "خلفية قسم الآية والعداد التنازلي" },
-          { id: "bg-venue-section", label: "خلفية قسم البرنامج والموقع" },
+          { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
+          { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
+          { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
+          { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
+          { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
+          { id: "bg-venue-section", label: "خلفية قسم برنامج الحفل" },
+          { id: "bg-location-section", label: "خلفية قسم مكان الحفل" },
           { id: "schedule-bullet-icon", label: "لون نقاط برنامج الحفل" },
           { id: "schedule-flower-icon", label: "أيقونة ولون الوردة المتحركة" },
           { id: "bg-schedule-line", label: "لون الخط الرفيع بين نقاط البرنامج" },
@@ -3072,6 +3218,7 @@ export default function InvitationFullView({
           editable={editable}
           initialStyles={inv.textStyles || {}}
           onStylesChange={onStylesChange}
+          onUploadImage={uploadDesignImage}
           customFonts={customFonts}
         >
         <DeselectSurface>
