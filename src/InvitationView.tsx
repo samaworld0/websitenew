@@ -631,7 +631,7 @@ function WisalTemplateView({
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
+            <div className="absolute inset-0 pointer-events-none z-0" />
 
 
             <FloatingParticles particles={particles} />
@@ -1568,7 +1568,7 @@ function WisalTemplateTwoView({
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
+            <div className="absolute inset-0 pointer-events-none z-0" />
 
 
             <FloatingParticles particles={particles} />
@@ -2552,7 +2552,7 @@ function WisalTemplateThreeView({
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/60 pointer-events-none z-0" />
+            <div className="absolute inset-0 pointer-events-none z-0" />
 
 
             <FloatingParticles particles={particles} />
