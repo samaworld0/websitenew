@@ -60,6 +60,8 @@ export interface Invitation {
   // لمحتوى القسم الأول النهائي. لون hex (مثل "#D4AF37"). لو فاضي، يترجع
   // تلقائياً للون الذهبي الافتراضي.
   flashColor?: string
+  // تفعيل/إطفاء اللمعة بالكامل. الافتراضي: مفعّلة (undefined = مفعّلة).
+  flashEnabled?: boolean
   // حقول خاصة بربط Google Sheets — لو الدعوة عندها sheetId فرسائل تأكيد
   // الحضور (RSVP) تترسل فعلياً لشيتها. بدونه تبقى معاينة محلية فقط.
   sheetId?: string
