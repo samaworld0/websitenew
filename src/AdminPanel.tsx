@@ -803,6 +803,9 @@ function InvitationForm({
   add column if not exists "eventDateTime" text,
   add column if not exists "coverImage" text,
   add column if not exists "hideCoverOverlay" boolean default false,
+  add column if not exists "skipIntroVideo" boolean default false,
+  add column if not exists "flashEnabled" boolean default true,
+  add column if not exists "flashColor" text,
   add column if not exists "schedule" jsonb;`
 
   const set = <K extends keyof Invitation>(key: K, value: Invitation[K]) =>
@@ -1514,6 +1517,50 @@ function InvitationForm({
             </span>
           </span>
         </label>
+
+        <div
+          className={`sm:col-span-2 rounded-lg px-4 py-3 border ${
+            inv.flashEnabled !== false
+              ? "border-[#D4AF37] bg-[#fdf8ee]"
+              : "border-[#e5d9c3]"
+          }`}
+        >
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-[#D4AF37]"
+              checked={inv.flashEnabled !== false}
+              onChange={(e) => set("flashEnabled", e.target.checked)}
+            />
+            <span className="text-sm">
+              <span className="font-bold block">اللمعة عند فتح الدعوة</span>
+              <span className="text-[#8a7561]">
+                وميض ضوئي يظهر لحظة اكتمال فتح الدعوة. شيل التفعيل لإطفائها.
+              </span>
+            </span>
+          </label>
+          {inv.flashEnabled !== false && (
+            <div className="mt-3 flex flex-wrap items-center gap-3 pr-7">
+              <span className="text-sm font-bold">لون اللمعة</span>
+              <input
+                type="color"
+                className="h-9 w-14 cursor-pointer rounded border border-[#e5d9c3] bg-white p-0.5"
+                value={/^#[0-9a-fA-F]{6}$/.test(inv.flashColor || "") ? inv.flashColor : "#D4AF37"}
+                onChange={(e) => set("flashColor", e.target.value)}
+              />
+              <button
+                type="button"
+                className="rounded-lg border border-[#e5d9c3] px-3 py-1.5 text-xs text-[#8a7561] hover:bg-white"
+                onClick={() => set("flashColor", "")}
+              >
+                رجوع للذهبي
+              </button>
+              <span className="text-xs text-[#8a7561]">
+                {inv.flashColor ? inv.flashColor : "ذهبي (الافتراضي)"}
+              </span>
+            </div>
+          )}
+        </div>
 
         <MediaUploadField
           label="المقطع الموسيقى (musicUrl)"
