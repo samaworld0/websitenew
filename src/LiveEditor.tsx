@@ -966,7 +966,37 @@ export function EditPanel() {
 
       {isBackground ? (
         <>
-          {selectedId === "bg-hero-glow" ? (
+          {selectedId === "bg-open-flash" || selectedId === "bg-knock-ripple" ? (
+            <div style={row}>
+              <label style={label}>{selectedId === "bg-knock-ripple" ? "دائرة الدق (ومضة الضغط على شاشة الباب)" : "لمعة لحظة فتح الدعوة"}</label>
+              <button
+                style={{
+                  ...btn,
+                  width: "100%",
+                  borderColor: st.hidden ? "#B8862F" : "#3A2A1E",
+                  background: st.hidden ? "rgba(184,134,47,.18)" : "transparent",
+                }}
+                onClick={() => updateStyle(selectedId, { hidden: !st.hidden })}
+              >
+                {st.hidden ? "🔆 تشغيل" : "🚫 إيقاف"}
+              </button>
+              <label style={{ ...label, marginTop: 12 }}>اللون</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="color"
+                  value={st.bgColor || (selectedId === "bg-knock-ripple" ? "#F1D989" : "#D4AF37")}
+                  onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value })}
+                  style={{ width: 32, height: 28, padding: 0, border: "none", background: "none" }}
+                />
+                <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>
+                  رجوع للذهبي
+                </button>
+              </div>
+              <div style={{ fontSize: 10, color: "#8C7A6B", marginTop: 6 }}>
+                تشوفها بالمعاينة العادية (مو بوضع التعديل).
+              </div>
+            </div>
+          ) : selectedId === "bg-hero-glow" ? (
             <div style={row}>
               <label style={label}>نسبة التوهج ({st.size ?? 20}%)</label>
               <input
@@ -981,6 +1011,21 @@ export function EditPanel() {
               <button style={{ ...btn, marginTop: 6 }} onClick={() => updateStyle(selectedId, { size: undefined })}>
                 افتراضي (20%)
               </button>
+              <button style={{ ...btn, marginTop: 6, marginInlineStart: 6 }} onClick={() => updateStyle(selectedId, { size: 0 })}>
+                إيقاف التوهج
+              </button>
+              <label style={{ ...label, marginTop: 12 }}>لون التوهج</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="color"
+                  value={st.bgColor || "#D4AF37"}
+                  onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value })}
+                  style={{ width: 32, height: 28, padding: 0, border: "none", background: "none" }}
+                />
+                <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>
+                  رجوع للذهبي
+                </button>
+              </div>
             </div>
           ) : (
             <>
