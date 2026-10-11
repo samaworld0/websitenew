@@ -16,6 +16,18 @@ import {
   useEditMode,
 } from "./LiveEditor"
 
+// تدرّج اللمعة: لو ما فيه لون مخصص يرجع للذهبي الأصلي، وإلا يبنيه من اللون المختار.
+function flashBackground(color?: string) {
+  if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) {
+    return "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)"
+  }
+  const r = parseInt(color.slice(1, 3), 16)
+  const g = parseInt(color.slice(3, 5), 16)
+  const bl = parseInt(color.slice(5, 7), 16)
+  return `radial-gradient(circle at center, rgba(${r},${g},${bl},0.6) 0%, rgba(${r},${g},${bl},0.3) 35%, transparent 70%)`
+}
+
+
 // رفع صورة من التصميم المباشر (خلفية قسم، أو أي صورة عنصر) — يستخدم
 // نفس آلية رفع الوسائط الموجودة أصلاً بالمشروع (Supabase Storage)،
 // ويرجّع رابط الصورة النهائي مباشرة كنص كما يتوقعه EditModeProvider
@@ -586,12 +598,11 @@ function WisalTemplateView({
       />
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
+      {showFlash && inv.flashEnabled !== false && (
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            background: flashBackground(inv.flashColor),
             animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
@@ -1523,12 +1534,11 @@ function WisalTemplateTwoView({
       />
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
+      {showFlash && inv.flashEnabled !== false && (
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            background: flashBackground(inv.flashColor),
             animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
@@ -2507,12 +2517,11 @@ function WisalTemplateThreeView({
       />
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && (
+      {showFlash && inv.flashEnabled !== false && (
         <div
           className="fixed inset-0 z-[60] pointer-events-none"
           style={{
-            background:
-              "radial-gradient(circle at center, rgba(255,241,196,0.6) 0%, rgba(212,175,55,0.3) 35%, transparent 70%)",
+            background: flashBackground(inv.flashColor),
             animation: "goldFlash 1300ms ease-in-out forwards",
           }}
         />
