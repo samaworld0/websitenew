@@ -27,6 +27,44 @@ function flashBackground(color?: string) {
   return `radial-gradient(circle at center, rgba(${r},${g},${bl},0.6) 0%, rgba(${r},${g},${bl},0.3) 35%, transparent 70%)`
 }
 
+// لمعة لحظة فتح الدعوة — تُتحكم من التصميم المباشر (bg-open-flash: إخفاء=إيقاف،
+// bgColor=لون) وترجع لإعدادات الدعوة (flashEnabled/flashColor) لو ما انضبط شي.
+function OpenFlash({ inv }: { inv: Invitation }) {
+  const { styles } = useEditMode()
+  const st = styles["bg-open-flash"]
+  if (inv.flashEnabled === false || st?.hidden) return null
+  return (
+    <div
+      className="fixed inset-0 z-[60] pointer-events-none"
+      style={{
+        background: flashBackground(st?.bgColor || inv.flashColor),
+        animation: "goldFlash 1300ms ease-in-out forwards",
+      }}
+    />
+  )
+}
+
+// دائرة الدق (الومضة اللي تطلع بمكان الضغطة على شاشة الباب قبل دخول الدعوة) —
+// لونها وإيقافها من التصميم المباشر عبر bg-knock-ripple.
+function KnockRipple({ x, y }: { x: number; y: number }) {
+  const { styles } = useEditMode()
+  const st = styles["bg-knock-ripple"]
+  if (st?.hidden) return null
+  const color = st?.bgColor || "#F1D989"
+  return (
+    <span
+      className="pointer-events-none absolute rounded-full border-2"
+      style={{
+        left: x,
+        top: y,
+        width: 70,
+        height: 70,
+        borderColor: color,
+        animation: "knockRipple 600ms ease-out forwards",
+      }}
+    />
+  )
+}
 
 // رفع صورة من التصميم المباشر (خلفية قسم، أو أي صورة عنصر) — يستخدم
 // نفس آلية رفع الوسائط الموجودة أصلاً بالمشروع (Supabase Storage)،
@@ -93,10 +131,11 @@ function HeroGlow() {
   const st = styles["bg-hero-glow"]
   if (st?.hidden) return null
   const opacity = (st?.size ?? 20) / 100
+  const bg = st?.bgColor ? { backgroundColor: st.bgColor } : undefined
   return (
     <div className="absolute inset-0 pointer-events-none" style={{ opacity }}>
-      <div className="absolute w-[500px] h-[500px] rounded-full bg-[var(--gold)] blur-[180px] top-[-150px] right-[-120px]" />
-      <div className="absolute w-[400px] h-[400px] rounded-full bg-[var(--gold)] blur-[180px] bottom-[-180px] left-[-120px]" />
+      <div className="absolute w-[500px] h-[500px] rounded-full bg-[var(--gold)] blur-[180px] top-[-150px] right-[-120px]" style={bg} />
+      <div className="absolute w-[400px] h-[400px] rounded-full bg-[var(--gold)] blur-[180px] bottom-[-180px] left-[-120px]" style={bg} />
     </div>
   )
 }
@@ -598,15 +637,7 @@ function WisalTemplateView({
       />
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && inv.flashEnabled !== false && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background: flashBackground(inv.flashColor),
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
+      {showFlash && <OpenFlash inv={inv} />}
 
       <div
         ref={scrollContainerRef}
@@ -1101,6 +1132,7 @@ function WisalTemplateView({
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
           { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
+          { id: "bg-open-flash", label: "✨ لمعة فتح الدعوة (لون / إيقاف)" },
           { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
@@ -1534,15 +1566,7 @@ function WisalTemplateTwoView({
       />
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && inv.flashEnabled !== false && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background: flashBackground(inv.flashColor),
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
+      {showFlash && <OpenFlash inv={inv} />}
 
       <div
         ref={scrollContainerRef}
@@ -1988,17 +2012,7 @@ function WisalTemplateTwoView({
 
           {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
           {knockRipples.map((r) => (
-            <span
-              key={r.id}
-              className="pointer-events-none absolute rounded-full border-2 border-[#F1D989]"
-              style={{
-                left: r.x,
-                top: r.y,
-                width: 70,
-                height: 70,
-                animation: "knockRipple 600ms ease-out forwards",
-              }}
-            />
+            <KnockRipple key={r.id} x={r.x} y={r.y} />
           ))}
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
@@ -2081,6 +2095,8 @@ function WisalTemplateTwoView({
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
           { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
+          { id: "bg-open-flash", label: "✨ لمعة فتح الدعوة (لون / إيقاف)" },
+          { id: "bg-knock-ripple", label: "⭕ دائرة الدق قبل دخول الدعوة (لون / إيقاف)" },
           { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
@@ -2517,15 +2533,7 @@ function WisalTemplateThreeView({
       />
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
-      {showFlash && inv.flashEnabled !== false && (
-        <div
-          className="fixed inset-0 z-[60] pointer-events-none"
-          style={{
-            background: flashBackground(inv.flashColor),
-            animation: "goldFlash 1300ms ease-in-out forwards",
-          }}
-        />
-      )}
+      {showFlash && <OpenFlash inv={inv} />}
 
       <div
         ref={scrollContainerRef}
@@ -2971,17 +2979,7 @@ function WisalTemplateThreeView({
 
           {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
           {knockRipples.map((r) => (
-            <span
-              key={r.id}
-              className="pointer-events-none absolute rounded-full border-2 border-[#F1D989]"
-              style={{
-                left: r.x,
-                top: r.y,
-                width: 70,
-                height: 70,
-                animation: "knockRipple 600ms ease-out forwards",
-              }}
-            />
+            <KnockRipple key={r.id} x={r.x} y={r.y} />
           ))}
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
@@ -3064,6 +3062,8 @@ function WisalTemplateThreeView({
         sections={[
           { id: "bg-invitation-gold", label: "🟡 اللون الذهبي العام (كل الدعوة)" },
           { id: "bg-hero-glow", label: "نسبة توهج الضوء الذهبي بالقسم الأول" },
+          { id: "bg-open-flash", label: "✨ لمعة فتح الدعوة (لون / إيقاف)" },
+          { id: "bg-knock-ripple", label: "⭕ دائرة الدق قبل دخول الدعوة (لون / إيقاف)" },
           { id: "bg-schedule-title-flowers", label: "الوردتان بجانب عنوان برنامج الحفل" },
           { id: "bg-verse-section", label: "خلفية قسم الآية وبطاقة الدعوة" },
           { id: "bg-countdown-section", label: "خلفية قسم العداد التنازلي (باقي على فرحنا)" },
