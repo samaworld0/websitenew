@@ -33,16 +33,6 @@
   --color-warm-800: #2d1a0d;
   --color-warm-700: #4a2e18;
   --color-warm-600: #6b4226;
-
-  /* ألوان أساسية يستخدمها الكود بأسماء عامة (border-border, bg-background...)
-     — بدون تعريفها هنا، Tailwind ما يقدر يحلّها فتطلع الحدود سوداء افتراضياً
-     (currentColor) بدل اللون الكريمي/الذهبي المقصود. */
-  --color-border: #e5d9c3;
-  --color-background: #fefcf8;
-  --color-foreground: #1c0f07;
-  --color-accent: #f9efd8;
-  --color-accent-foreground: #4a2e18;
-  --color-muted-foreground: #8a7561;
 }
 
 * {
