@@ -43,6 +43,12 @@ export interface TextStyle {
   fontUrl?: string // رابط ملف خط مرفوع (اختياري)
   color?: string
   bgColor?: string
+  // لون الخط الفاصل العلوي لأقسام الخلفية (EditableBackground) اللي
+  // بالأصل يرسم خط رفيع ذهبي فوقها (border-t). لو محدد، يحل محل اللون
+  // الافتراضي. يُتجاهل تماماً لو hideBorder مفعّل.
+  borderColor?: string
+  // يخفي الخط الفاصل العلوي نهائياً (بدون ما يأثر على أي حدود ثانية).
+  hideBorder?: boolean
   hidden?: boolean
   text?: string // نص مخصص يحل محل النص الأصلي
   imageUrl?: string // للصور المضافة يدويًا فقط
@@ -820,6 +826,13 @@ export function EditableBackground({
         ...(st.imageUrl && !st.videoUrl
           ? { backgroundImage: `url(${st.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
           : null),
+        // تخصيص/إخفاء الخط الفاصل العلوي (لو القسم أصلاً فيه border-t
+        // بالـ className). الإخفاء له أولوية على تخصيص اللون.
+        ...(st.hideBorder
+          ? { borderTopWidth: 0, borderTopStyle: "none" }
+          : st.borderColor
+            ? { borderTopColor: st.borderColor }
+            : null),
         position,
         overflow: st.videoUrl ? "hidden" : undefined,
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
@@ -1084,6 +1097,45 @@ export function EditPanel() {
                   )}
                 </div>
               )}
+
+              <div style={row}>
+                <label style={label}>الخط الفاصل العلوي</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                  {COLOR_PRESETS.map((c) => (
+                    <button
+                      key={c}
+                      disabled={!!st.hideBorder}
+                      onClick={() => updateStyle(selectedId, { borderColor: c })}
+                      style={{
+                        width: 22, height: 22, borderRadius: "50%", background: c,
+                        border: st.borderColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
+                        cursor: st.hideBorder ? "not-allowed" : "pointer",
+                        opacity: st.hideBorder ? 0.4 : 1,
+                      }}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    disabled={!!st.hideBorder}
+                    value={st.borderColor || "#D4AF37"}
+                    onChange={(e) => updateStyle(selectedId, { borderColor: e.target.value })}
+                    style={{ width: 26, height: 26, padding: 0, border: "none", background: "none", opacity: st.hideBorder ? 0.4 : 1 }}
+                  />
+                  <button
+                    style={btn}
+                    disabled={!!st.hideBorder}
+                    onClick={() => updateStyle(selectedId, { borderColor: undefined })}
+                  >
+                    افتراضي
+                  </button>
+                </div>
+                <button
+                  style={{ ...btn, marginTop: 6 }}
+                  onClick={() => updateStyle(selectedId, { hideBorder: !st.hideBorder })}
+                >
+                  {st.hideBorder ? "إرجاع الخط الفاصل" : "حذف الخط الفاصل"}
+                </button>
+              </div>
             </>
           )}
 
