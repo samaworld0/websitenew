@@ -800,7 +800,7 @@ function WisalTemplateView({
               className="py-16 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center w-full max-w-lg mb-16">
+              <Reveal className="text-center w-full max-w-lg mb-8">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
@@ -1729,7 +1729,7 @@ function WisalTemplateTwoView({
               className="pt-16 pb-8 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center w-full max-w-lg mb-16">
+              <Reveal className="text-center w-full max-w-lg mb-8">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
