@@ -50,6 +50,13 @@ export interface TextStyle {
   // يخفي الخط الفاصل العلوي نهائياً (بدون ما يأثر على أي حدود ثانية).
   hideBorder?: boolean
   hidden?: boolean
+  // --- أحجام الأقسام (EditableBackground) ---
+  // أدنى ارتفاع للقسم كنسبة % من ارتفاع الشاشة (vh). غير محدد = تلقائي.
+  sectionHeight?: number
+  // المسافة الداخلية العلوية والسفلية للقسم بالبكسل. غير محدد = الافتراضي.
+  sectionPadding?: number
+  // تكبير/تصغير القسم كامل بمحتواه (%). غير محدد = 100.
+  sectionScale?: number
   text?: string // نص مخصص يحل محل النص الأصلي
   imageUrl?: string // للصور المضافة يدويًا فقط
   videoUrl?: string // فيديو خلفية قسم (بدل صورة) — لعناصر EditableBackground فقط
@@ -833,6 +840,16 @@ export function EditableBackground({
           : st.borderColor
             ? { borderTopColor: st.borderColor }
             : null),
+        // أحجام القسم من التصميم المباشر
+        ...(st.sectionHeight
+          ? { minHeight: `${st.sectionHeight}vh`, justifyContent: "center" }
+          : null),
+        ...(st.sectionPadding !== undefined
+          ? { paddingTop: st.sectionPadding, paddingBottom: st.sectionPadding }
+          : null),
+        ...(st.sectionScale && st.sectionScale !== 100
+          ? ({ zoom: st.sectionScale / 100 } as React.CSSProperties)
+          : null),
         position,
         overflow: st.videoUrl ? "hidden" : undefined,
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
@@ -1137,6 +1154,67 @@ export function EditPanel() {
                 </button>
               </div>
             </>
+          )}
+
+          {/* حجم القسم: ارتفاع + مسافة داخلية + تكبير/تصغير. نخفيه عن
+              العناصر الخاصة (خط البرنامج، لمعة الفتح، التوهج) لأن حجمها
+              محسوب تلقائياً من مكان ثاني. */}
+          {!["bg-schedule-line", "bg-open-flash", "bg-knock-ripple", "bg-hero-glow"].includes(selectedId) && (
+            <div style={row}>
+              <label style={label}>📐 حجم القسم</label>
+
+              <label style={{ ...label, marginBottom: 2 }}>
+                الارتفاع ({st.sectionHeight ? `${st.sectionHeight}% من الشاشة` : "تلقائي"})
+              </label>
+              <input
+                type="range"
+                min={10}
+                max={200}
+                step={5}
+                value={st.sectionHeight ?? 10}
+                onChange={(e) => updateStyle(selectedId, { sectionHeight: Number(e.target.value) })}
+                style={{ width: "100%" }}
+              />
+
+              <label style={{ ...label, marginBottom: 2, marginTop: 8 }}>
+                المسافة العلوية والسفلية ({st.sectionPadding !== undefined ? `${st.sectionPadding}px` : "افتراضي"})
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={300}
+                step={4}
+                value={st.sectionPadding ?? 80}
+                onChange={(e) => updateStyle(selectedId, { sectionPadding: Number(e.target.value) })}
+                style={{ width: "100%" }}
+              />
+
+              <label style={{ ...label, marginBottom: 2, marginTop: 8 }}>
+                تكبير/تصغير المحتوى ({st.sectionScale ?? 100}%)
+              </label>
+              <input
+                type="range"
+                min={50}
+                max={150}
+                step={5}
+                value={st.sectionScale ?? 100}
+                onChange={(e) => updateStyle(selectedId, { sectionScale: Number(e.target.value) })}
+                style={{ width: "100%" }}
+              />
+
+              <button
+                style={{ ...btn, marginTop: 8, width: "100%" }}
+                onClick={() =>
+                  updateStyle(selectedId, {
+                    sectionHeight: undefined,
+                    sectionPadding: undefined,
+                    sectionScale: undefined,
+                  })
+                }
+              >
+                إرجاع الحجم الافتراضي
+              </button>
+            </div>
           )}
 
           {/* تشغيل/إطفاء القسم بالكامل — يخفي كل محتوى القسم (نصوصه
