@@ -797,7 +797,7 @@ function WisalTemplateView({
                 لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
             <EditableBackground
               id="bg-countdown-section"
-              className="py-16 px-6 flex flex-col items-center"
+              className="pt-16 pb-4 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="text-center w-full max-w-lg mb-8">
@@ -2693,7 +2693,7 @@ function WisalTemplateThreeView({
                 لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
             <EditableBackground
               id="bg-countdown-section"
-              className="py-16 px-6 flex flex-col items-center"
+              className="pt-16 pb-4 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
               <Reveal className="text-center w-full max-w-lg mb-4">
