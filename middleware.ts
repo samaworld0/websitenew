@@ -24,7 +24,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_ghQkvzBNAVphFa5PJMwoHQ_2zIoeBHD"
 // معينة ما عندها صورة غلاف). عدّل هذا الرابط لصورة الشعار/الغلاف العام
 // حقّك إذا تحب.
 const DEFAULT_IMAGE = "https://samainvitation.vercel.app/images/hero-bg.jpg"
-const SITE_NAME = "سما | للدعوات الألكترونية"
+const SITE_NAME = "سما | للدعوات الإلكترونية"
 
 // قائمة الروبوتات (User-Agent) المسؤولة عن توليد معاينة الروابط بمختلف
 // التطبيقات. نتعامل معهم فقط بهذا الميدلوير — أي زائر عادي (متصفح حقيقي)
