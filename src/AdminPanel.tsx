@@ -818,7 +818,7 @@ function InvitationForm({
   // text من التخزين). لو تحتاجين الحقل يضل فاضي فعلاً بالبطاقة (بدون
   // رجوع للنص الافتراضي)، مرري allowEmpty=true — عندها نص فاضي يترحفظ
   // كما هو (مو يتحول undefined).
-  // خيار "حذف الفتح والقسم الأول": يتخزن كعنصر مخفي باسم intro-removed
+  // خيار "حذف الفتح": يتخزن كعنصر مخفي باسم intro-removed
   // داخل textStyles (بدون عمود جديد بالقاعدة).
   const setIntroRemoved = (removed: boolean) =>
     setInv((prev) => {
@@ -1524,11 +1524,11 @@ function InvitationForm({
             onChange={(e) => setIntroRemoved(e.target.checked)}
           />
           <span className="text-sm">
-            <span className="font-bold block">حذف الفتح والقسم الأول</span>
+            <span className="font-bold block">حذف الفتح</span>
             <span className="text-[#8a7561]">
-              تبدأ الدعوة مباشرة من قسم الآية وبطاقة الدعوة، بدون شاشة "اضغط
-              لفتح الدعوة" وبدون القسم الأول (الأسماء والخلفية)، وبدون أي
-              لمعة أو وميض. الموسيقى تشتغل مع أول لمسة من الضيف.
+              تبدأ الدعوة مفتوحة مباشرة على القسم الأول، بدون شاشة "اضغط
+              لفتح الدعوة" وبدون فيديو/حركة الفتح، وبدون أي لمعة أو وميض.
+              الموسيقى تشتغل مع أول لمسة من الضيف.
             </span>
           </span>
         </label>

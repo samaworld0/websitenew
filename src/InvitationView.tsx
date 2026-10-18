@@ -83,10 +83,11 @@ async function uploadDesignImage(file: File): Promise<string> {
   return res.url
 }
 
-// خيار "حذف الفتح والقسم الأول" من لوحة الإدارة. نخزّنه كعنصر مخفي باسم
-// intro-removed داخل textStyles (عمود موجود أصلاً بالقاعدة)، حتى ما نحتاج
-// نضيف عمود جديد. لما يكون مفعّل: ما تنرسم شاشة الفتح ولا القسم الأول
-// أصلاً من أول إطار (مو تظهر وبعدين تختفي)، فما يطلع أي وميض أو لمعة.
+// خيار "حذف الفتح" من لوحة الإدارة. نخزّنه كعنصر مخفي باسم intro-removed
+// داخل textStyles (عمود موجود أصلاً بالقاعدة)، حتى ما نحتاج نضيف عمود
+// جديد. لما يكون مفعّل: ما تنرسم شاشة الفتح ("اضغط لفتح الدعوة" وحركة
+// الفتح) أصلاً من أول إطار — الدعوة تبدأ مفتوحة مباشرة على القسم الأول
+// (مو تظهر الشاشة وبعدين تختفي)، فما يطلع أي وميض أو لمعة.
 function isIntroRemoved(inv: Invitation): boolean {
   return !!inv.textStyles?.["intro-removed"]?.hidden
 }
@@ -675,8 +676,7 @@ function WisalTemplateView({
           {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
-          {!introRemoved && (
-          <section
+          <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
@@ -749,7 +749,6 @@ function WisalTemplateView({
               </div>
             </DoorTextReveal>
           </section>
-          )}
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
@@ -1608,8 +1607,7 @@ function WisalTemplateTwoView({
           {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
-          {!introRemoved && (
-          <section
+          <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
@@ -1682,7 +1680,6 @@ function WisalTemplateTwoView({
               </div>
             </DoorTextReveal>
           </section>
-          )}
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
@@ -2579,8 +2576,7 @@ function WisalTemplateThreeView({
           {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
-          {!introRemoved && (
-          <section
+          <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
@@ -2653,7 +2649,6 @@ function WisalTemplateThreeView({
               </div>
             </DoorTextReveal>
           </section>
-          )}
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
