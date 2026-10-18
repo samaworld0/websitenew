@@ -1385,28 +1385,6 @@ function InvitationForm({
           )}
         </div>
 
-        <MediaUploadField
-          label="صورة بداية الدعوة (introPoster)"
-          hint="تظهر كغلاف ثابت قبل ما يضغط الضيف يشغّل فيديو الفتح"
-          accept="image/*"
-          kind="image"
-          value={inv.introPoster || ""}
-          folder="intro-poster"
-          fallback="/videos/intro-poster.jpg"
-          onChange={(url) => set("introPoster", url)}
-        />
-
-        <MediaUploadField
-          label="فيديو الفتح (introVideo)"
-          hint="الفيديو اللي يشتغل لما الضيف يفتح الدعوة أول مرة"
-          accept="video/*"
-          kind="video"
-          value={inv.introVideo || ""}
-          folder="intro-video"
-          fallback="/videos/intro.mp4"
-          onChange={(url) => set("introVideo", url)}
-        />
-
         <HeroBackgroundField
           heroBg={inv.heroBg || ""}
           doorBgVideo={inv.doorBgVideo || ""}

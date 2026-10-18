@@ -651,7 +651,7 @@ function WisalTemplateView({
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
-                ? undefined
+                ? { backgroundColor: "#000" }
                 : {
                     backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
                   }
@@ -670,7 +670,7 @@ function WisalTemplateView({
                 muted
                 playsInline
                 onError={() => setDoorBgVideoFailed(true)}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
               />
             )}
             <div className="absolute inset-0 pointer-events-none z-0" />
@@ -1580,7 +1580,7 @@ function WisalTemplateTwoView({
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
-                ? undefined
+                ? { backgroundColor: "#000" }
                 : {
                     backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
                   }
@@ -1599,7 +1599,7 @@ function WisalTemplateTwoView({
                 muted
                 playsInline
                 onError={() => setDoorBgVideoFailed(true)}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
               />
             )}
             <div className="absolute inset-0 pointer-events-none z-0" />
@@ -2547,7 +2547,7 @@ function WisalTemplateThreeView({
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
-                ? undefined
+                ? { backgroundColor: "#000" }
                 : {
                     backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
                   }
@@ -2566,7 +2566,7 @@ function WisalTemplateThreeView({
                 muted
                 playsInline
                 onError={() => setDoorBgVideoFailed(true)}
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0 opacity-75"
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
               />
             )}
             <div className="absolute inset-0 pointer-events-none z-0" />
