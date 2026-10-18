@@ -85,29 +85,34 @@ async function uploadDesignImage(file: File): Promise<string> {
 
 // خيار "حذف الفتح" من لوحة الإدارة. نخزّنه كعنصر مخفي باسم intro-removed
 // داخل textStyles (عمود موجود أصلاً بالقاعدة)، حتى ما نحتاج نضيف عمود
-// جديد. لما يكون مفعّل: ما تنرسم شاشة الفتح ("اضغط لفتح الدعوة" وحركة
-// الفتح) أصلاً من أول إطار — الدعوة تبدأ مفتوحة مباشرة على القسم الأول
-// (مو تظهر الشاشة وبعدين تختفي)، فما يطلع أي وميض أو لمعة.
+// جديد. لما يكون مفعّل: ما تنرسم شاشة الباب ولا فيديو/صورة/حركة الفتح
+// ولا اللمعة أصلاً من أول إطار — الدعوة تبدأ مفتوحة مباشرة على القسم
+// الأول، ويظهر فوقها نص "اضغط لفتح الدعوة" (مو تظهر شاشة وبعدين تختفي).
 function isIntroRemoved(inv: Invitation): boolean {
   return !!inv.textStyles?.["intro-removed"]?.hidden
 }
 
-// بدون شاشة الفتح ما يبقى ضغطة تشغّل الموسيقى، والمتصفحات تمنع التشغيل
-// التلقائي بدون تفاعل من الزائر — فنشغّلها مع أول لمسة/ضغطة بأي مكان.
+// بدون شاشة الفتح (خيار "حذف الفتح") الدعوة تبدأ مفتوحة، ونعرض فوقها نص
+// "اضغط لفتح الدعوة". المتصفحات تمنع تشغيل الموسيقى تلقائياً بدون تفاعل،
+// فأول لمسة/ضغطة من الزائر بأي مكان تشغّل الموسيقى وتخفي النص. نرجّع true
+// لما يصير هالتفاعل.
 function useStartMusicOnFirstTouch(
   audioRef: RefObject<HTMLAudioElement | null>,
   enabled: boolean,
-) {
+): boolean {
+  const [started, setStarted] = useState(false)
   useEffect(() => {
     if (!enabled) return
     const events = ["pointerdown", "touchend", "click", "keydown"] as const
     const cleanup = () => events.forEach((e) => window.removeEventListener(e, start))
     function start() {
+      setStarted(true)
       audioRef.current?.play().then(cleanup).catch(() => {})
     }
     events.forEach((e) => window.addEventListener(e, start, { passive: true }))
     return cleanup
   }, [enabled, audioRef])
+  return started
 }
 
 interface GoldenParticle {
@@ -489,7 +494,7 @@ function WisalTemplateView({
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
   const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
-  useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
+  const introTapped = useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -667,6 +672,19 @@ function WisalTemplateView({
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
+
+      {/* نص "اضغط لفتح الدعوة" لخيار "حذف الفتح": الدعوة مفتوحة أصلاً على
+          القسم الأول، والنص يختفي مع أول لمسة (وبنفس اللحظة تشتغل الموسيقى).
+          بوضع التصميم المباشر يظل ظاهر حتى تقدرين تعدّلين نصه. */}
+      {introRemoved && (editable || !introTapped) && (
+        <p
+          className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-30 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse drop-shadow-lg ${
+            editable ? "" : "pointer-events-none"
+          }`}
+        >
+          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
+        </p>
+      )}
 
       <div
         ref={scrollContainerRef}
@@ -1384,7 +1402,7 @@ function WisalTemplateTwoView({
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
   const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
-  useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
+  const introTapped = useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -1598,6 +1616,19 @@ function WisalTemplateTwoView({
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
+
+      {/* نص "اضغط لفتح الدعوة" لخيار "حذف الفتح": الدعوة مفتوحة أصلاً على
+          القسم الأول، والنص يختفي مع أول لمسة (وبنفس اللحظة تشتغل الموسيقى).
+          بوضع التصميم المباشر يظل ظاهر حتى تقدرين تعدّلين نصه. */}
+      {introRemoved && (editable || !introTapped) && (
+        <p
+          className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-30 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse drop-shadow-lg ${
+            editable ? "" : "pointer-events-none"
+          }`}
+        >
+          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
+        </p>
+      )}
 
       <div
         ref={scrollContainerRef}
@@ -2353,7 +2384,7 @@ function WisalTemplateThreeView({
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
   const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
-  useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
+  const introTapped = useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -2567,6 +2598,19 @@ function WisalTemplateThreeView({
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
+
+      {/* نص "اضغط لفتح الدعوة" لخيار "حذف الفتح": الدعوة مفتوحة أصلاً على
+          القسم الأول، والنص يختفي مع أول لمسة (وبنفس اللحظة تشتغل الموسيقى).
+          بوضع التصميم المباشر يظل ظاهر حتى تقدرين تعدّلين نصه. */}
+      {introRemoved && (editable || !introTapped) && (
+        <p
+          className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-30 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse drop-shadow-lg ${
+            editable ? "" : "pointer-events-none"
+          }`}
+        >
+          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
+        </p>
+      )}
 
       <div
         ref={scrollContainerRef}
