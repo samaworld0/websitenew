@@ -85,34 +85,11 @@ async function uploadDesignImage(file: File): Promise<string> {
 
 // خيار "حذف الفتح" من لوحة الإدارة. نخزّنه كعنصر مخفي باسم intro-removed
 // داخل textStyles (عمود موجود أصلاً بالقاعدة)، حتى ما نحتاج نضيف عمود
-// جديد. لما يكون مفعّل: ما تنرسم شاشة الباب ولا فيديو/صورة/حركة الفتح
-// ولا اللمعة أصلاً من أول إطار — الدعوة تبدأ مفتوحة مباشرة على القسم
-// الأول، ويظهر فوقها نص "اضغط لفتح الدعوة" (مو تظهر شاشة وبعدين تختفي).
+// جديد. لما يكون مفعّل: الدعوة تبدأ بشاشة "اضغط لفتح الدعوة"، ولما الضيف
+// يضغط نتخطى المقطع/حركة الفتح ونوصل للقسم الأول مباشرة، بدون لمعة ولا
+// تلاشي (فما يظهر أي تأثير وبعدين يختفي).
 function isIntroRemoved(inv: Invitation): boolean {
   return !!inv.textStyles?.["intro-removed"]?.hidden
-}
-
-// بدون شاشة الفتح (خيار "حذف الفتح") الدعوة تبدأ مفتوحة، ونعرض فوقها نص
-// "اضغط لفتح الدعوة". المتصفحات تمنع تشغيل الموسيقى تلقائياً بدون تفاعل،
-// فأول لمسة/ضغطة من الزائر بأي مكان تشغّل الموسيقى وتخفي النص. نرجّع true
-// لما يصير هالتفاعل.
-function useStartMusicOnFirstTouch(
-  audioRef: RefObject<HTMLAudioElement | null>,
-  enabled: boolean,
-): boolean {
-  const [started, setStarted] = useState(false)
-  useEffect(() => {
-    if (!enabled) return
-    const events = ["pointerdown", "touchend", "click", "keydown"] as const
-    const cleanup = () => events.forEach((e) => window.removeEventListener(e, start))
-    function start() {
-      setStarted(true)
-      audioRef.current?.play().then(cleanup).catch(() => {})
-    }
-    events.forEach((e) => window.addEventListener(e, start, { passive: true }))
-    return cleanup
-  }, [enabled, audioRef])
-  return started
 }
 
 interface GoldenParticle {
@@ -452,7 +429,7 @@ function WisalTemplateView({
   skipIntro?: boolean
 }) {
   const introRemoved = isIntroRemoved(inv)
-  const [isOpen, setIsOpen] = useState(skipIntro || introRemoved)
+  const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -493,8 +470,7 @@ function WisalTemplateView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
-  const introTapped = useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -534,7 +510,7 @@ function WisalTemplateView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro || introRemoved) generateGoldenParticles()
+    if (skipIntro) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -552,14 +528,20 @@ function WisalTemplateView({
   const completeOpening = () => {
     audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
-      if (!prev) {
-        generateGoldenParticles()
-        setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 1300)
-        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
-        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
-        setTimeout(() => setDoorRemoved(true), 1450)
-      }
+      if (!prev) {
+        generateGoldenParticles()
+        if (introRemoved) {
+          // خيار "حذف الفتح": بدون لمعة وبدون تلاشي — نشيل شاشة الباب
+          // فوراً ونوصل للقسم الأول مباشرة.
+          setDoorRemoved(true)
+        } else {
+          setShowFlash(true)
+          setTimeout(() => setShowFlash(false), 1300)
+          // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
+          // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
+          setTimeout(() => setDoorRemoved(true), 1450)
+        }
+      }
       return true
     })
     setIsPlaying(false)
@@ -576,7 +558,7 @@ function WisalTemplateView({
     // "تخطي فيديو الفتح": نبقي شاشة "اضغط لفتح الدعوة" (الخطوة الأولى)
     // زي ما هي، بس لما الضيف يضغط نفتح المحتوى فوراً بدون ما نشغّل
     // فيديو/حركة الفتح.
-    if (inv.skipIntroVideo) {
+    if (inv.skipIntroVideo || introRemoved) {
       completeOpening()
       return
     }
@@ -672,19 +654,6 @@ function WisalTemplateView({
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
-
-      {/* نص "اضغط لفتح الدعوة" لخيار "حذف الفتح": الدعوة مفتوحة أصلاً على
-          القسم الأول، والنص يختفي مع أول لمسة (وبنفس اللحظة تشتغل الموسيقى).
-          بوضع التصميم المباشر يظل ظاهر حتى تقدرين تعدّلين نصه. */}
-      {introRemoved && (editable || !introTapped) && (
-        <p
-          className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-30 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse drop-shadow-lg ${
-            editable ? "" : "pointer-events-none"
-          }`}
-        >
-          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
-        </p>
-      )}
 
       <div
         ref={scrollContainerRef}
@@ -1299,7 +1268,7 @@ function WisalTemplateTwoView({
   skipIntro?: boolean
 }) {
   const introRemoved = isIntroRemoved(inv)
-  const [isOpen, setIsOpen] = useState(skipIntro || introRemoved)
+  const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
@@ -1401,8 +1370,7 @@ function WisalTemplateTwoView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
-  const introTapped = useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -1442,7 +1410,7 @@ function WisalTemplateTwoView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro || introRemoved) generateGoldenParticles()
+    if (skipIntro) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -1460,14 +1428,20 @@ function WisalTemplateTwoView({
   const completeOpening = () => {
     audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
-      if (!prev) {
-        generateGoldenParticles()
-        setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 1300)
-        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
-        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
-        setTimeout(() => setDoorRemoved(true), 1450)
-      }
+      if (!prev) {
+        generateGoldenParticles()
+        if (introRemoved) {
+          // خيار "حذف الفتح": بدون لمعة وبدون تلاشي — نشيل شاشة الباب
+          // فوراً ونوصل للقسم الأول مباشرة.
+          setDoorRemoved(true)
+        } else {
+          setShowFlash(true)
+          setTimeout(() => setShowFlash(false), 1300)
+          // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
+          // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
+          setTimeout(() => setDoorRemoved(true), 1450)
+        }
+      }
       return true
     })
     setIsPlaying(false)
@@ -1526,7 +1500,7 @@ function WisalTemplateTwoView({
     setBoxHidden(true)
     // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
     // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
-    if (inv.skipIntroVideo) {
+    if (inv.skipIntroVideo || introRemoved) {
       setTimeout(completeOpening, KNOCK_RIPPLE_MS)
     } else {
       setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
@@ -1616,19 +1590,6 @@ function WisalTemplateTwoView({
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
-
-      {/* نص "اضغط لفتح الدعوة" لخيار "حذف الفتح": الدعوة مفتوحة أصلاً على
-          القسم الأول، والنص يختفي مع أول لمسة (وبنفس اللحظة تشتغل الموسيقى).
-          بوضع التصميم المباشر يظل ظاهر حتى تقدرين تعدّلين نصه. */}
-      {introRemoved && (editable || !introTapped) && (
-        <p
-          className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-30 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse drop-shadow-lg ${
-            editable ? "" : "pointer-events-none"
-          }`}
-        >
-          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
-        </p>
-      )}
 
       <div
         ref={scrollContainerRef}
@@ -2281,7 +2242,7 @@ function WisalTemplateThreeView({
   skipIntro?: boolean
 }) {
   const introRemoved = isIntroRemoved(inv)
-  const [isOpen, setIsOpen] = useState(skipIntro || introRemoved)
+  const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
@@ -2383,8 +2344,7 @@ function WisalTemplateThreeView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
-  const introTapped = useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -2424,7 +2384,7 @@ function WisalTemplateThreeView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro || introRemoved) generateGoldenParticles()
+    if (skipIntro) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -2442,14 +2402,20 @@ function WisalTemplateThreeView({
   const completeOpening = () => {
     audioRef.current?.play().catch(() => {})
     setIsOpen((prev) => {
-      if (!prev) {
-        generateGoldenParticles()
-        setShowFlash(true)
-        setTimeout(() => setShowFlash(false), 1300)
-        // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
-        // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
-        setTimeout(() => setDoorRemoved(true), 1450)
-      }
+      if (!prev) {
+        generateGoldenParticles()
+        if (introRemoved) {
+          // خيار "حذف الفتح": بدون لمعة وبدون تلاشي — نشيل شاشة الباب
+          // فوراً ونوصل للقسم الأول مباشرة.
+          setDoorRemoved(true)
+        } else {
+          setShowFlash(true)
+          setTimeout(() => setShowFlash(false), 1300)
+          // نفس مدة "transition-opacity duration-[1400ms]" لطبقة الباب، زائد
+          // هامش بسيط، حتى تخلص اللمعة وتلاشي الصورة سوا بدون قفزة بينهم.
+          setTimeout(() => setDoorRemoved(true), 1450)
+        }
+      }
       return true
     })
     setIsPlaying(false)
@@ -2508,7 +2474,7 @@ function WisalTemplateThreeView({
     setBoxHidden(true)
     // "تخطي فيديو الفتح": نخلي الثلاث دقّات (الخطوة الأولى) زي ما هي،
     // بس بعد آخر دقة نفتح المحتوى فوراً بدون تشغيل فيديو/حركة الفتح.
-    if (inv.skipIntroVideo) {
+    if (inv.skipIntroVideo || introRemoved) {
       setTimeout(completeOpening, KNOCK_RIPPLE_MS)
     } else {
       setTimeout(startDoorOpenSequence, KNOCK_RIPPLE_MS)
@@ -2598,19 +2564,6 @@ function WisalTemplateThreeView({
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
-
-      {/* نص "اضغط لفتح الدعوة" لخيار "حذف الفتح": الدعوة مفتوحة أصلاً على
-          القسم الأول، والنص يختفي مع أول لمسة (وبنفس اللحظة تشتغل الموسيقى).
-          بوضع التصميم المباشر يظل ظاهر حتى تقدرين تعدّلين نصه. */}
-      {introRemoved && (editable || !introTapped) && (
-        <p
-          className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-30 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse drop-shadow-lg ${
-            editable ? "" : "pointer-events-none"
-          }`}
-        >
-          <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
-        </p>
-      )}
 
       <div
         ref={scrollContainerRef}
