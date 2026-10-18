@@ -83,6 +83,32 @@ async function uploadDesignImage(file: File): Promise<string> {
   return res.url
 }
 
+// خيار "حذف الفتح والقسم الأول" من لوحة الإدارة. نخزّنه كعنصر مخفي باسم
+// intro-removed داخل textStyles (عمود موجود أصلاً بالقاعدة)، حتى ما نحتاج
+// نضيف عمود جديد. لما يكون مفعّل: ما تنرسم شاشة الفتح ولا القسم الأول
+// أصلاً من أول إطار (مو تظهر وبعدين تختفي)، فما يطلع أي وميض أو لمعة.
+function isIntroRemoved(inv: Invitation): boolean {
+  return !!inv.textStyles?.["intro-removed"]?.hidden
+}
+
+// بدون شاشة الفتح ما يبقى ضغطة تشغّل الموسيقى، والمتصفحات تمنع التشغيل
+// التلقائي بدون تفاعل من الزائر — فنشغّلها مع أول لمسة/ضغطة بأي مكان.
+function useStartMusicOnFirstTouch(
+  audioRef: RefObject<HTMLAudioElement | null>,
+  enabled: boolean,
+) {
+  useEffect(() => {
+    if (!enabled) return
+    const events = ["pointerdown", "touchend", "click", "keydown"] as const
+    const cleanup = () => events.forEach((e) => window.removeEventListener(e, start))
+    function start() {
+      audioRef.current?.play().then(cleanup).catch(() => {})
+    }
+    events.forEach((e) => window.addEventListener(e, start, { passive: true }))
+    return cleanup
+  }, [enabled, audioRef])
+}
+
 interface GoldenParticle {
   id: number
   type: "heart" | "star"
@@ -419,7 +445,8 @@ function WisalTemplateView({
   customFonts?: CustomFont[]
   skipIntro?: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(skipIntro)
+  const introRemoved = isIntroRemoved(inv)
+  const [isOpen, setIsOpen] = useState(skipIntro || introRemoved)
   const [isPlaying, setIsPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -460,7 +487,8 @@ function WisalTemplateView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
+  useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -500,7 +528,7 @@ function WisalTemplateView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
+    if (skipIntro || introRemoved) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -647,7 +675,8 @@ function WisalTemplateView({
           {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
-          <section
+          {!introRemoved && (
+          <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
@@ -720,6 +749,7 @@ function WisalTemplateView({
               </div>
             </DoorTextReveal>
           </section>
+          )}
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
@@ -1251,7 +1281,8 @@ function WisalTemplateTwoView({
   customFonts?: CustomFont[]
   skipIntro?: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(skipIntro)
+  const introRemoved = isIntroRemoved(inv)
+  const [isOpen, setIsOpen] = useState(skipIntro || introRemoved)
   const [isPlaying, setIsPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
@@ -1353,7 +1384,8 @@ function WisalTemplateTwoView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
+  useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -1393,7 +1425,7 @@ function WisalTemplateTwoView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
+    if (skipIntro || introRemoved) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -1576,7 +1608,8 @@ function WisalTemplateTwoView({
           {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
-          <section
+          {!introRemoved && (
+          <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
@@ -1649,6 +1682,7 @@ function WisalTemplateTwoView({
               </div>
             </DoorTextReveal>
           </section>
+          )}
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
@@ -2218,7 +2252,8 @@ function WisalTemplateThreeView({
   customFonts?: CustomFont[]
   skipIntro?: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(skipIntro)
+  const introRemoved = isIntroRemoved(inv)
+  const [isOpen, setIsOpen] = useState(skipIntro || introRemoved)
   const [isPlaying, setIsPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
@@ -2320,7 +2355,8 @@ function WisalTemplateThreeView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
+  const [doorRemoved, setDoorRemoved] = useState(skipIntro || introRemoved)
+  useStartMusicOnFirstTouch(audioRef, introRemoved && !editable)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -2360,7 +2396,7 @@ function WisalTemplateThreeView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
+    if (skipIntro || introRemoved) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -2543,7 +2579,8 @@ function WisalTemplateThreeView({
           {/* القسم الأول مع الخلفية والزهور — إما صورة أو مقطع فيديو
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
-          <section
+          {!introRemoved && (
+          <section
             className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
@@ -2616,6 +2653,7 @@ function WisalTemplateThreeView({
               </div>
             </DoorTextReveal>
           </section>
+          )}
 
           {/* الأقسام السفلية (مكبرة بنسبة 20%) */}
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
