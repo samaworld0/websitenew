@@ -92,6 +92,32 @@ function isIntroRemoved(inv: Invitation): boolean {
   return !!inv.textStyles?.["intro-removed"]?.hidden
 }
 
+// خلفية شاشة "اضغط لفتح الدعوة" (صورة أو مقطع) من لوحة الإدارة — محفوظة
+// بعنصر door-screen-bg داخل textStyles. تظهر فوق صورة/فيديو الفتح
+// الافتراضيين، وتختفي لما يبدأ فيديو الفتح يشتغل فعلاً (بدل ما تختفي لحظة
+// الضغط، حتى ما تطلع صورة ثانية بالنص).
+function DoorStartBackground({ inv, hidden }: { inv: Invitation; hidden: boolean }) {
+  const bg = inv.textStyles?.["door-screen-bg"]
+  if (hidden || (!bg?.videoUrl && !bg?.imageUrl)) return null
+  return bg.videoUrl ? (
+    <video
+      key={bg.videoUrl}
+      src={bg.videoUrl}
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+    />
+  ) : (
+    <img
+      src={bg.imageUrl}
+      alt=""
+      className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+    />
+  )
+}
+
 interface GoldenParticle {
   id: number
   type: "heart" | "star"
@@ -431,6 +457,7 @@ function WisalTemplateView({
   const introRemoved = isIntroRemoved(inv)
   const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [introVideoPlaying, setIntroVideoPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -1093,9 +1120,11 @@ function WisalTemplateView({
             playsInline
             preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
+            onPlaying={() => setIntroVideoPlaying(true)}
+            onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
           <div
@@ -1131,9 +1160,11 @@ function WisalTemplateView({
             playsInline
             preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
+            onPlaying={() => setIntroVideoPlaying(true)}
+            onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
           <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
@@ -1270,6 +1301,7 @@ function WisalTemplateTwoView({
   const introRemoved = isIntroRemoved(inv)
   const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [introVideoPlaying, setIntroVideoPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
   const [knockCount, setKnockCount] = useState(0)
@@ -2029,9 +2061,11 @@ function WisalTemplateTwoView({
             playsInline
             preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
+            onPlaying={() => setIntroVideoPlaying(true)}
+            onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
 
           {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
           {knockRipples.map((r) => (
@@ -2101,9 +2135,11 @@ function WisalTemplateTwoView({
             playsInline
             preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
+            onPlaying={() => setIntroVideoPlaying(true)}
+            onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
           <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
@@ -2244,6 +2280,7 @@ function WisalTemplateThreeView({
   const introRemoved = isIntroRemoved(inv)
   const [isOpen, setIsOpen] = useState(skipIntro)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [introVideoPlaying, setIntroVideoPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
   // وحدة — هذا العداد يتابع كم دقة صارت لحد الآن.
   const [knockCount, setKnockCount] = useState(0)
@@ -3003,9 +3040,11 @@ function WisalTemplateThreeView({
             playsInline
             preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
+            onPlaying={() => setIntroVideoPlaying(true)}
+            onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
 
           {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
           {knockRipples.map((r) => (
@@ -3075,9 +3114,11 @@ function WisalTemplateThreeView({
             playsInline
             preload="none"
             poster={inv.introPoster || "/videos/intro-poster.jpg"}
-            onEnded={completeOpening}
+            onPlaying={() => setIntroVideoPlaying(true)}
+            onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
           <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>

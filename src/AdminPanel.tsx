@@ -537,11 +537,25 @@ function HeroBackgroundField({
   doorBgVideo,
   onChangeHeroBg,
   onChangeDoorBgVideo,
+  label = "خلفية القسم الأول — صورة أو فيديو",
+  hint = "صورة ثابتة أو فيديو متحرك للخلفية الرئيسية بأول الدعوة — ارفع أي وحدة منهم وبتنحط تلقائياً بالمكان الصح",
+  inputId = "upload-hero-section-media",
+  fallback = "/images/hero-bg.jpg",
+  imageFolder = "hero-bg",
+  videoFolder = "door-bg-video",
 }: {
   heroBg: string
   doorBgVideo: string
   onChangeHeroBg: (url: string) => void
   onChangeDoorBgVideo: (url: string) => void
+  // نفس الحقل نستخدمه لخلفية القسم الأول ولخلفية شاشة "اضغط لفتح الدعوة"،
+  // وهذي الخصائص تغيّر نصوصه ومكان رفع الملفات وصورته الافتراضية.
+  label?: string
+  hint?: string
+  inputId?: string
+  fallback?: string
+  imageFolder?: string
+  videoFolder?: string
 }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
@@ -549,11 +563,9 @@ function HeroBackgroundField({
   const [mode, setMode] = useState<"upload" | "link">("upload")
   const [linkDraft, setLinkDraft] = useState("")
   const [replacing, setReplacing] = useState(false)
-  const inputId = "upload-hero-section-media"
 
   const value = doorBgVideo || heroBg
   const kind: "image" | "video" = doorBgVideo ? "video" : "image"
-  const fallback = "/images/hero-bg.jpg"
 
   const applyResult = (url: string, isVideo: boolean) => {
     setReplacing(false)
@@ -572,7 +584,7 @@ function HeroBackgroundField({
     setUploading(true)
     setError("")
     setBucketMissing(false)
-    const result = await uploadMedia(file, isVideo ? "door-bg-video" : "hero-bg")
+    const result = await uploadMedia(file, isVideo ? videoFolder : imageFolder)
     setUploading(false)
     if (!result.success || !result.url) {
       if (result.bucketMissing) {
@@ -599,9 +611,7 @@ function HeroBackgroundField({
 
   return (
     <div className="flex flex-col gap-1.5 text-sm">
-      <span className="font-bold text-[#2C1810]">
-        خلفية القسم الأول — صورة أو فيديو
-      </span>
+      <span className="font-bold text-[#2C1810]">{label}</span>
 
       {value ? (
         <div className="flex items-center gap-2.5 bg-[#fdf8ee] border border-[#e5d9c3] rounded-lg px-2.5 py-2">
@@ -745,10 +755,7 @@ function HeroBackgroundField({
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
 
-      <span className="text-xs text-[#8a7561]">
-        صورة ثابتة أو فيديو متحرك للخلفية الرئيسية بأول الدعوة — ارفع أي
-        وحدة منهم وبتنحط تلقائياً بالمكان الصح
-      </span>
+      <span className="text-xs text-[#8a7561]">{hint}</span>
       {error && <span className="text-xs text-red-600">{error}</span>}
       {bucketMissing && (
         <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -818,6 +825,21 @@ function InvitationForm({
   // text من التخزين). لو تحتاجين الحقل يضل فاضي فعلاً بالبطاقة (بدون
   // رجوع للنص الافتراضي)، مرري allowEmpty=true — عندها نص فاضي يترحفظ
   // كما هو (مو يتحول undefined).
+  // صورة/مقطع شاشة "اضغط لفتح الدعوة": يتخزن داخل textStyles بعنصر باسم
+  // door-screen-bg (imageUrl أو videoUrl)، بدون عمود جديد بالقاعدة.
+  const setDoorScreenBg = (partial: { imageUrl?: string; videoUrl?: string }) =>
+    setInv((prev) => {
+      const prevStyles = prev.textStyles || {}
+      const prevEntry = prevStyles["door-screen-bg"] || {}
+      return {
+        ...prev,
+        textStyles: {
+          ...prevStyles,
+          "door-screen-bg": { ...prevEntry, ...partial },
+        },
+      }
+    })
+
   // خيار "حذف الفتح": يتخزن كعنصر مخفي باسم intro-removed
   // داخل textStyles (بدون عمود جديد بالقاعدة).
   const setIntroRemoved = (removed: boolean) =>
@@ -1399,6 +1421,19 @@ function InvitationForm({
             />
           )}
         </div>
+
+        <HeroBackgroundField
+          label='صورة أو مقطع شاشة "اضغط لفتح الدعوة"'
+          hint='الصورة أو المقطع اللي يظهر بالبداية خلف "اضغط لفتح الدعوة" قبل ما يضغط الضيف — ارفع أي وحدة منهم وبتنحط تلقائياً'
+          inputId="upload-door-start-media"
+          fallback="/videos/intro-poster.jpg"
+          imageFolder="door-start-image"
+          videoFolder="door-start-video"
+          heroBg={inv.textStyles?.["door-screen-bg"]?.imageUrl || ""}
+          doorBgVideo={inv.textStyles?.["door-screen-bg"]?.videoUrl || ""}
+          onChangeHeroBg={(url) => setDoorScreenBg({ imageUrl: url || undefined })}
+          onChangeDoorBgVideo={(url) => setDoorScreenBg({ videoUrl: url || undefined })}
+        />
 
         <HeroBackgroundField
           heroBg={inv.heroBg || ""}
