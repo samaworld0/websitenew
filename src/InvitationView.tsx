@@ -92,6 +92,34 @@ function isIntroRemoved(inv: Invitation): boolean {
   return !!inv.textStyles?.["intro-removed"]?.hidden
 }
 
+// خيار "حذف شاشة البداية" من لوحة الإدارة (مستقل عن "حذف الفتح"). نخزّنه
+// كعنصر مخفي باسم start-screen-removed داخل textStyles (بدون عمود جديد).
+// لما يكون مفعّل: ما تظهر شاشة "اضغط لفتح الدعوة" (ولا الدقّات الثلاث
+// بالقالبين 2 و3) — فيديو الفتح يشتغل تلقائياً أول ما تنفتح الدعوة. ولو
+// "حذف الفتح" مفعّل معه، تبدأ الدعوة مباشرة على القسم الأول.
+function isStartScreenRemoved(inv: Invitation): boolean {
+  return !!inv.textStyles?.["start-screen-removed"]?.hidden
+}
+
+// بدون ضغطة على شاشة البداية ما يبقى تفاعل من الزائر يشغّل الموسيقى،
+// والمتصفحات تمنع التشغيل التلقائي للصوت — فنشغّلها مع أول لمسة/ضغطة
+// بأي مكان بالصفحة.
+function useStartMusicOnFirstTouch(
+  audioRef: RefObject<HTMLAudioElement | null>,
+  enabled: boolean,
+) {
+  useEffect(() => {
+    if (!enabled) return
+    const events = ["pointerdown", "touchend", "click", "keydown"] as const
+    const cleanup = () => events.forEach((e) => window.removeEventListener(e, start))
+    function start() {
+      audioRef.current?.play().then(cleanup).catch(() => {})
+    }
+    events.forEach((e) => window.addEventListener(e, start, { passive: true }))
+    return cleanup
+  }, [enabled, audioRef])
+}
+
 // خلفية شاشة "اضغط لفتح الدعوة" (صورة أو مقطع) من لوحة الإدارة — محفوظة
 // بعنصر door-screen-bg داخل textStyles. تظهر فوق صورة/فيديو الفتح
 // الافتراضيين، وتختفي لما يبدأ فيديو الفتح يشتغل فعلاً (بدل ما تختفي لحظة
@@ -455,7 +483,12 @@ function WisalTemplateView({
   skipIntro?: boolean
 }) {
   const introRemoved = isIntroRemoved(inv)
-  const [isOpen, setIsOpen] = useState(skipIntro)
+  const startRemoved = isStartScreenRemoved(inv)
+  // بوضع "التصميم المباشر" نعرض شاشة البداية دايماً (المصمم يحتاج يشوفها
+  // ويعدّلها)، والتخطي يطبّق بس عند الزوّار.
+  const hideStartUi = startRemoved && !editable
+  const startsOpened = skipIntro || (startRemoved && introRemoved && !editable)
+  const [isOpen, setIsOpen] = useState(startsOpened)
   const [isPlaying, setIsPlaying] = useState(false)
   const [introVideoPlaying, setIntroVideoPlaying] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -497,7 +530,7 @@ function WisalTemplateView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
+  const [doorRemoved, setDoorRemoved] = useState(startsOpened)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -537,9 +570,21 @@ function WisalTemplateView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
+    if (startsOpened) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // "حذف شاشة البداية": نشغّل فيديو الفتح تلقائياً أول ما تنفتح الدعوة بدل
+  // ما نستنى ضغطة الزائر. لو المتصفح منع التشغيل التلقائي، التشغيل يفشل
+  // وننتقل للمحتوى مباشرة (catch) فما يعلق الزائر.
+  const autoStartedRef = useRef(false)
+  useEffect(() => {
+    if (!hideStartUi || introRemoved || skipIntro || autoStartedRef.current) return
+    autoStartedRef.current = true
+    handleDoorTap()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useStartMusicOnFirstTouch(audioRef, hideStartUi)
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -1124,10 +1169,11 @@ function WisalTemplateView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
-          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying || hideStartUi} />
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
-          <div
+          {!hideStartUi && (
+<div
             className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl"
             style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
@@ -1141,6 +1187,7 @@ function WisalTemplateView({
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
           </div>
+)}
         </div>
       )}
 
@@ -1164,10 +1211,12 @@ function WisalTemplateView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
-          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying || hideStartUi} />
+          {!hideStartUi && (
+<p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
+)}
         </div>
       )}
     </div>
@@ -1299,7 +1348,12 @@ function WisalTemplateTwoView({
   skipIntro?: boolean
 }) {
   const introRemoved = isIntroRemoved(inv)
-  const [isOpen, setIsOpen] = useState(skipIntro)
+  const startRemoved = isStartScreenRemoved(inv)
+  // بوضع "التصميم المباشر" نعرض شاشة البداية دايماً (المصمم يحتاج يشوفها
+  // ويعدّلها)، والتخطي يطبّق بس عند الزوّار.
+  const hideStartUi = startRemoved && !editable
+  const startsOpened = skipIntro || (startRemoved && introRemoved && !editable)
+  const [isOpen, setIsOpen] = useState(startsOpened)
   const [isPlaying, setIsPlaying] = useState(false)
   const [introVideoPlaying, setIntroVideoPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
@@ -1402,7 +1456,7 @@ function WisalTemplateTwoView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
+  const [doorRemoved, setDoorRemoved] = useState(startsOpened)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -1442,9 +1496,22 @@ function WisalTemplateTwoView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
+    if (startsOpened) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // "حذف شاشة البداية": نشغّل فيديو الفتح تلقائياً أول ما تنفتح الدعوة بدل
+  // ما نستنى ضغطة الزائر. لو المتصفح منع التشغيل التلقائي، التشغيل يفشل
+  // وننتقل للمحتوى مباشرة (catch) فما يعلق الزائر.
+  const autoStartedRef = useRef(false)
+  useEffect(() => {
+    if (!hideStartUi || introRemoved || skipIntro || autoStartedRef.current) return
+    autoStartedRef.current = true
+    if (inv.skipIntroVideo) completeOpening()
+    else startDoorOpenSequence()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useStartMusicOnFirstTouch(audioRef, hideStartUi)
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -2065,7 +2132,7 @@ function WisalTemplateTwoView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
-          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying || hideStartUi} />
 
           {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
           {knockRipples.map((r) => (
@@ -2074,7 +2141,8 @@ function WisalTemplateTwoView({
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
               يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
-          <div
+          {!hideStartUi && (
+<div
             className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
@@ -2090,10 +2158,12 @@ function WisalTemplateTwoView({
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
           </div>
+)}
 
           {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً.
               نفس فكرة الاختفاء قبل الفيديو. */}
-          <div
+          {!hideStartUi && (
+<div
             className={`relative z-10 flex flex-col items-center text-center mt-4 transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
@@ -2116,6 +2186,7 @@ function WisalTemplateTwoView({
               ))}
             </div>
           </div>
+)}
         </div>
       )}
 
@@ -2139,10 +2210,12 @@ function WisalTemplateTwoView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
-          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying || hideStartUi} />
+          {!hideStartUi && (
+<p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
+)}
         </div>
       )}
     </div>
@@ -2278,7 +2351,12 @@ function WisalTemplateThreeView({
   skipIntro?: boolean
 }) {
   const introRemoved = isIntroRemoved(inv)
-  const [isOpen, setIsOpen] = useState(skipIntro)
+  const startRemoved = isStartScreenRemoved(inv)
+  // بوضع "التصميم المباشر" نعرض شاشة البداية دايماً (المصمم يحتاج يشوفها
+  // ويعدّلها)، والتخطي يطبّق بس عند الزوّار.
+  const hideStartUi = startRemoved && !editable
+  const startsOpened = skipIntro || (startRemoved && introRemoved && !editable)
+  const [isOpen, setIsOpen] = useState(startsOpened)
   const [isPlaying, setIsPlaying] = useState(false)
   const [introVideoPlaying, setIntroVideoPlaying] = useState(false)
   // القالب 2: الباب ما ينفتح إلا بعد ٣ "دقّات" (ضغطات) متتالية بدل ضغطة
@@ -2381,7 +2459,7 @@ function WisalTemplateThreeView({
   // اكتشاف اللمس. الحل الأضمن: نشيل طبقة "اضغط لفتح الدعوة" كلياً من
   // الشجرة (unmount) بعد ما تخلص حركة التلاشي (نفس مدة duration-[1400ms])،
   // بدل الاعتماد على opacity/pointer-events فقط.
-  const [doorRemoved, setDoorRemoved] = useState(skipIntro)
+  const [doorRemoved, setDoorRemoved] = useState(startsOpened)
   const [doorBgVideoFailed, setDoorBgVideoFailed] = useState(false)
   // بوضع "التصميم المباشر" ما نتخطى شاشة الباب أبداً — تظهر وتتصرف
   // بالضبط زي ما يشوفها الضيف (تُضغط لتنتقل لحركة الفتح ثم لمحتوى
@@ -2421,9 +2499,22 @@ function WisalTemplateThreeView({
   // بدؤوا true من الأساس، نولّد الورد المتطاير مرة وحدة فقط أول ما
   // تفتح الصفحة، حتى يطلع نفس تأثير لحظة اكتمال الفتح العادية.
   useEffect(() => {
-    if (skipIntro) generateGoldenParticles()
+    if (startsOpened) generateGoldenParticles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // "حذف شاشة البداية": نشغّل فيديو الفتح تلقائياً أول ما تنفتح الدعوة بدل
+  // ما نستنى ضغطة الزائر. لو المتصفح منع التشغيل التلقائي، التشغيل يفشل
+  // وننتقل للمحتوى مباشرة (catch) فما يعلق الزائر.
+  const autoStartedRef = useRef(false)
+  useEffect(() => {
+    if (!hideStartUi || introRemoved || skipIntro || autoStartedRef.current) return
+    autoStartedRef.current = true
+    if (inv.skipIntroVideo) completeOpening()
+    else startDoorOpenSequence()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useStartMusicOnFirstTouch(audioRef, hideStartUi)
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -3044,7 +3135,7 @@ function WisalTemplateThreeView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
-          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying || hideStartUi} />
 
           {/* دوائر الدق — توّلد بمكان الضغطة بالضبط وتكبر وتختفي */}
           {knockRipples.map((r) => (
@@ -3053,7 +3144,8 @@ function WisalTemplateThreeView({
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
               يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
-          <div
+          {!hideStartUi && (
+<div
             className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
@@ -3069,10 +3161,12 @@ function WisalTemplateThreeView({
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
           </div>
+)}
 
           {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً.
               نفس فكرة الاختفاء قبل الفيديو. */}
-          <div
+          {!hideStartUi && (
+<div
             className={`relative z-10 flex flex-col items-center text-center mt-4 transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
@@ -3095,6 +3189,7 @@ function WisalTemplateThreeView({
               ))}
             </div>
           </div>
+)}
         </div>
       )}
 
@@ -3118,10 +3213,12 @@ function WisalTemplateThreeView({
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
           />
-          <DoorStartBackground inv={inv} hidden={introVideoPlaying} />
-          <p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
+          <DoorStartBackground inv={inv} hidden={introVideoPlaying || hideStartUi} />
+          {!hideStartUi && (
+<p className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 text-[var(--gold)] text-sm md:text-base tracking-widest custom-font-amiri animate-pulse">
             <EditableText id="door-tap-hint">اضغط لفتح الدعوة</EditableText>
           </p>
+)}
         </div>
       )}
     </div>

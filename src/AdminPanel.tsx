@@ -840,6 +840,21 @@ function InvitationForm({
       }
     })
 
+  // خيار "حذف شاشة البداية": يتخزن كعنصر مخفي باسم start-screen-removed
+  // داخل textStyles (بدون عمود جديد بالقاعدة).
+  const setStartScreenRemoved = (removed: boolean) =>
+    setInv((prev) => {
+      const prevStyles = prev.textStyles || {}
+      const prevEntry = prevStyles["start-screen-removed"] || {}
+      return {
+        ...prev,
+        textStyles: {
+          ...prevStyles,
+          "start-screen-removed": { ...prevEntry, hidden: removed },
+        },
+      }
+    })
+
   // خيار "حذف الفتح": يتخزن كعنصر مخفي باسم intro-removed
   // داخل textStyles (بدون عمود جديد بالقاعدة).
   const setIntroRemoved = (removed: boolean) =>
@@ -1522,6 +1537,29 @@ function InvitationForm({
             </div>
           )}
         </div>
+
+        <label
+          className={`sm:col-span-2 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
+            inv.textStyles?.["start-screen-removed"]?.hidden
+              ? "border-[#D4AF37] bg-[#fdf8ee]"
+              : "border-[#e5d9c3]"
+          }`}
+        >
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[#D4AF37]"
+            checked={!!inv.textStyles?.["start-screen-removed"]?.hidden}
+            onChange={(e) => setStartScreenRemoved(e.target.checked)}
+          />
+          <span className="text-sm">
+            <span className="font-bold block">حذف شاشة البداية</span>
+            <span className="text-[#8a7561]">
+              ما تظهر شاشة "اضغط لفتح الدعوة" (ولا الدقّات الثلاث بالقالبين 2
+              و3)، وفيديو الفتح يشتغل تلقائياً أول ما تنفتح الدعوة. ولو فعّلتي
+              معها «حذف الفتح» تبدأ الدعوة مباشرة على القسم الأول.
+            </span>
+          </span>
+        </label>
 
         <label
           className={`sm:col-span-2 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
