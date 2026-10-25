@@ -115,6 +115,9 @@ function useStartMusicOnFirstTouch(
     function start() {
       audioRef.current?.play().then(cleanup).catch(() => {})
     }
+    // محاولة تشغيل تلقائي فوراً (تنجح بالمتصفحات/الحالات اللي تسمح بها)،
+    // وإذا انمنعت يبقى التشغيل مع أول لمسة.
+    start()
     events.forEach((e) => window.addEventListener(e, start, { passive: true }))
     return cleanup
   }, [enabled, audioRef])
@@ -584,7 +587,7 @@ function WisalTemplateView({
     handleDoorTap()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useStartMusicOnFirstTouch(audioRef, hideStartUi)
+  useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -1511,7 +1514,7 @@ function WisalTemplateTwoView({
     else startDoorOpenSequence()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useStartMusicOnFirstTouch(audioRef, hideStartUi)
+  useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -2514,7 +2517,7 @@ function WisalTemplateThreeView({
     else startDoorOpenSequence()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useStartMusicOnFirstTouch(audioRef, hideStartUi)
+  useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
