@@ -219,57 +219,10 @@ function ScheduleTitleFlower() {
   )
 }
 
-// عنصر جزيئات الخلفية المتطايرة — قابل للتحديد بوضع التعديل مثل أي عنصر
-// ثاني، ويقرأ شكله (الرمز) ولونه من TextStyle الخاص بمعرّفه بدل ما يكون
-// مثبّت على "✿" دايماً.
-function FloatingParticles({ particles }: { particles: GoldenParticle[] }) {
-  const { editable, styles, selectedId, setSelectedId } = useEditMode()
-  const style = styles[PARTICLES_THEME_ID] || {}
-  const glyph = style.text || "✿"
-  const color = style.color || "#F1D989"
-  const isSelected = editable && selectedId === PARTICLES_THEME_ID
-
-  return (
-    <div
-      data-editable-id={PARTICLES_THEME_ID}
-      className="absolute inset-0 z-10 overflow-hidden"
-      style={{
-        pointerEvents: editable ? "auto" : "none",
-        outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
-        outlineOffset: -2,
-        cursor: editable ? "pointer" : undefined,
-      }}
-      onClick={(e) => {
-        if (!editable) return
-        e.stopPropagation()
-        setSelectedId(PARTICLES_THEME_ID)
-      }}
-    >
-      {editable && (
-        <span
-          className="absolute top-3 inset-inline-end-3 z-30 px-2.5 py-1 rounded-full text-[10px] font-bold"
-          style={{ background: "#1A1210", border: "1px solid #B8862F", color: "#F1D989" }}
-        >
-          🌸 ثيم الورد المتطاير — اضغط هنا وعدّل «النص» أو «اللون» بلوحة اليمين
-        </span>
-      )}
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute bottom-0 opacity-70 pointer-events-none"
-          style={{
-            left: `${p.left}%`,
-            fontSize: `${style.size ?? p.size}px`,
-            color,
-            animation: `goldenParticle ${p.duration}s linear infinite`,
-            animationDelay: `-${p.delay}s`,
-          }}
-        >
-          {glyph}
-        </div>
-      ))}
-    </div>
-  )
+// الورود/الجزيئات المتطايرة بالخلفية محذوفة بطلب المستخدم — نخلي العنصر
+// فاضي (ما يرسم شي) حتى ما نكسر الاستدعاءات بالقوالب الثلاثة.
+function FloatingParticles(_props: { particles: GoldenParticle[] }) {
+  return null
 }
 
 // حاوية نصوص وعناصر القسم الأول (اسم العريس/العروسة، التاريخ، رسالة
