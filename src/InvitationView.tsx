@@ -645,8 +645,8 @@ function WisalTemplateView({
 100%{transform:translateX(350%)}
 }
 @keyframes fadeInUp{
-0%{opacity:0;transform:translateY(60px)}
-100%{opacity:1;transform:translateY(0)}
+0%{opacity:0}
+100%{opacity:1}
 }
         @keyframes bounceDown {
           0%, 100% { transform: translateY(0); }
@@ -1604,8 +1604,8 @@ function WisalTemplateTwoView({
 100%{transform:translateX(350%)}
 }
 @keyframes fadeInUp{
-0%{opacity:0;transform:translateY(60px)}
-100%{opacity:1;transform:translateY(0)}
+0%{opacity:0}
+100%{opacity:1}
 }
         @keyframes bounceDown {
           0%, 100% { transform: translateY(0); }
@@ -2607,8 +2607,8 @@ function WisalTemplateThreeView({
 100%{transform:translateX(350%)}
 }
 @keyframes fadeInUp{
-0%{opacity:0;transform:translateY(60px)}
-100%{opacity:1;transform:translateY(0)}
+0%{opacity:0}
+100%{opacity:1}
 }
         @keyframes bounceDown {
           0%, 100% { transform: translateY(0); }
