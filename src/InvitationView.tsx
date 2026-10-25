@@ -683,14 +683,14 @@ function WisalTemplateView({
       dir="rtl"
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
-        @keyframes goldenParticle {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-          15% { opacity: 0.6; }
-          85% { opacity: 0.6; }
-          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes goldLine{
+        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
+        @keyframes goldenParticle {
+          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+          15% { opacity: 0.6; }
+          85% { opacity: 0.6; }
+          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes goldLine{
 0%{transform:translateX(-120%)}
 100%{transform:translateX(350%)}
 }
@@ -698,25 +698,25 @@ function WisalTemplateView({
 0%{opacity:0;transform:translateY(60px)}
 100%{opacity:1;transform:translateY(0)}
 }
-        @keyframes bounceDown {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
-        @keyframes goldFlash {
-          0% { opacity: 0; }
-          45% { opacity: 0.85; }
-          100% { opacity: 0; }
-        }
-        .royal-scroll::-webkit-scrollbar { display: none; }
-        .royal-scroll {
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: contain;
-          touch-action: pan-y;
-        }
-        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
-        .custom-font-amiri { font-family: 'Amiri', serif; }
-        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
-      `}</style>
+        @keyframes bounceDown {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(8px); }
+        }
+        @keyframes goldFlash {
+          0% { opacity: 0; }
+          45% { opacity: 0.85; }
+          100% { opacity: 0; }
+        }
+        .royal-scroll::-webkit-scrollbar { display: none; }
+        .royal-scroll {
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-y: contain;
+          touch-action: pan-y;
+        }
+        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
+        .custom-font-amiri { font-family: 'Amiri', serif; }
+        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
+      `}</style>
 
       <audio
         ref={audioRef}
@@ -1642,14 +1642,14 @@ function WisalTemplateTwoView({
       dir="rtl"
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
-        @keyframes goldenParticle {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-          15% { opacity: 0.6; }
-          85% { opacity: 0.6; }
-          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes goldLine{
+        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
+        @keyframes goldenParticle {
+          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+          15% { opacity: 0.6; }
+          85% { opacity: 0.6; }
+          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes goldLine{
 0%{transform:translateX(-120%)}
 100%{transform:translateX(350%)}
 }
@@ -1657,29 +1657,29 @@ function WisalTemplateTwoView({
 0%{opacity:0;transform:translateY(60px)}
 100%{opacity:1;transform:translateY(0)}
 }
-        @keyframes bounceDown {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
-        @keyframes goldFlash {
-          0% { opacity: 0; }
-          45% { opacity: 0.85; }
-          100% { opacity: 0; }
-        }
-        @keyframes knockRipple {
-          0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.65; }
-          100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
-        }
-        .royal-scroll::-webkit-scrollbar { display: none; }
-        .royal-scroll {
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: contain;
-          touch-action: pan-y;
-        }
-        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
-        .custom-font-amiri { font-family: 'Amiri', serif; }
-        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
-      `}</style>
+        @keyframes bounceDown {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(8px); }
+        }
+        @keyframes goldFlash {
+          0% { opacity: 0; }
+          45% { opacity: 0.85; }
+          100% { opacity: 0; }
+        }
+        @keyframes knockRipple {
+          0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.65; }
+          100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+        }
+        .royal-scroll::-webkit-scrollbar { display: none; }
+        .royal-scroll {
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-y: contain;
+          touch-action: pan-y;
+        }
+        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
+        .custom-font-amiri { font-family: 'Amiri', serif; }
+        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
+      `}</style>
 
       <audio
         ref={audioRef}
@@ -2645,14 +2645,14 @@ function WisalTemplateThreeView({
       dir="rtl"
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
-        @keyframes goldenParticle {
-          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
-          15% { opacity: 0.6; }
-          85% { opacity: 0.6; }
-          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
-        }
-        @keyframes goldLine{
+        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap');
+        @keyframes goldenParticle {
+          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+          15% { opacity: 0.6; }
+          85% { opacity: 0.6; }
+          100% { transform: translate3d(15px, -110vh, 0) rotate(360deg); opacity: 0; }
+        }
+        @keyframes goldLine{
 0%{transform:translateX(-120%)}
 100%{transform:translateX(350%)}
 }
@@ -2660,29 +2660,29 @@ function WisalTemplateThreeView({
 0%{opacity:0;transform:translateY(60px)}
 100%{opacity:1;transform:translateY(0)}
 }
-        @keyframes bounceDown {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
-        }
-        @keyframes goldFlash {
-          0% { opacity: 0; }
-          45% { opacity: 0.85; }
-          100% { opacity: 0; }
-        }
-        @keyframes knockRipple {
-          0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.65; }
-          100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
-        }
-        .royal-scroll::-webkit-scrollbar { display: none; }
-        .royal-scroll {
-          -webkit-overflow-scrolling: touch;
-          overscroll-behavior-y: contain;
-          touch-action: pan-y;
-        }
-        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
-        .custom-font-amiri { font-family: 'Amiri', serif; }
-        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
-      `}</style>
+        @keyframes bounceDown {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(8px); }
+        }
+        @keyframes goldFlash {
+          0% { opacity: 0; }
+          45% { opacity: 0.85; }
+          100% { opacity: 0; }
+        }
+        @keyframes knockRipple {
+          0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.65; }
+          100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+        }
+        .royal-scroll::-webkit-scrollbar { display: none; }
+        .royal-scroll {
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-y: contain;
+          touch-action: pan-y;
+        }
+        .custom-font-ruqaa { font-family: 'Aref Ruqaa', serif; }
+        .custom-font-amiri { font-family: 'Amiri', serif; }
+        .custom-font-tajawal { font-family: 'Tajawal', sans-serif; }
+      `}</style>
 
       <audio
         ref={audioRef}
