@@ -210,13 +210,7 @@ function HeroGlow() {
 // اللون الذهبي العام (بطلب مستخدم)، وله عنصر تحكم خاص فيه لحاله بقائمة
 // الخلفيات (bg-schedule-title-flowers).
 function ScheduleTitleFlower() {
-  const { styles } = useEditMode()
-  const color = styles["bg-schedule-title-flowers"]?.bgColor || "#D4AF37"
-  return (
-    <span className="text-base opacity-80" style={{ color }}>
-      ❁
-    </span>
-  )
+  return null
 }
 
 // الورود/الجزيئات المتطايرة بالخلفية محذوفة بطلب المستخدم — نخلي العنصر
