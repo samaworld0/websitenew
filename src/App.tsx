@@ -156,7 +156,7 @@ export default function App() {
       >
         <div
           style={{
-            height: "100dvh",
+            height: "min(100dvh, 932px)",
             width: 430,
             maxWidth: "100%",
             overflow: "hidden",
