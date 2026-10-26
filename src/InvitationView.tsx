@@ -219,6 +219,29 @@ function FloatingParticles(_props: { particles: GoldenParticle[] }) {
   return null
 }
 
+// ارتفاع حاوية التمرير الفعلي (بالبكسل) — القسم الأول يتمدد ليملأ الشاشة
+// بالضبط بغض النظر عن وحدات vh/dvh اللي تختلف بين المتصفحات والأجهزة
+// (خصوصاً الشاشات العمودية والتابلت).
+function useContainerHeight(ref: RefObject<HTMLElement | null>) {
+  const [h, setH] = useState<number | undefined>(undefined)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => setH(el.clientHeight || undefined)
+    update()
+    window.addEventListener("resize", update)
+    window.addEventListener("orientationchange", update)
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null
+    ro?.observe(el)
+    return () => {
+      window.removeEventListener("resize", update)
+      window.removeEventListener("orientationchange", update)
+      ro?.disconnect()
+    }
+  }, [ref])
+  return h
+}
+
 // حاوية نصوص وعناصر القسم الأول (اسم العريس/العروسة، التاريخ، رسالة
 // الترحيب...) — تتلاشى للظهور بعد ما يختفي الباب/الفيديو بالكامل
 // (doorRemoved)، مو بنفس لحظته. مدة وسرعة هذا التلاشي قابلة للتحكم من
@@ -226,9 +249,11 @@ function FloatingParticles(_props: { particles: GoldenParticle[] }) {
 // بدل ما تكون مثبّتة بالكود.
 function DoorTextReveal({
   doorRemoved,
+  minHeight,
   children,
 }: {
   doorRemoved: boolean
+  minHeight?: number
   children: ReactNode
 }) {
   const { styles } = useEditMode()
@@ -240,6 +265,7 @@ function DoorTextReveal({
     <div
       className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-dvh"
       style={{
+        minHeight,
         opacity: doorRemoved ? 1 : 0,
         // الإخفاء فوري (بدون transition) — التلاشي المقصود اتجاه واحد بس:
         // الظهور بعد اختفاء الباب. هذا كمان يخلي إعادة التشغيل (زر "جرّب
@@ -445,6 +471,7 @@ function WisalTemplateView({
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const fullH = useContainerHeight(scrollContainerRef)
   const [particles, setParticles] = useState<GoldenParticle[]>([])
 
   // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
@@ -687,13 +714,14 @@ function WisalTemplateView({
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
             className="relative min-h-dvh w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={
-              inv.doorBgVideo && !doorBgVideoFailed
+            style={{
+              minHeight: fullH,
+              ...(inv.doorBgVideo && !doorBgVideoFailed
                 ? { backgroundColor: "#000" }
                 : {
                     backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-                  }
-            }
+                  }),
+            }}
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
@@ -716,7 +744,7 @@ function WisalTemplateView({
 
             <FloatingParticles particles={particles} />
 
-            <DoorTextReveal doorRemoved={doorRemoved}>
+            <DoorTextReveal doorRemoved={doorRemoved} minHeight={fullH}>
               <div />
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
@@ -1371,6 +1399,7 @@ function WisalTemplateTwoView({
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const fullH = useContainerHeight(scrollContainerRef)
   const [particles, setParticles] = useState<GoldenParticle[]>([])
 
   // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
@@ -1650,13 +1679,14 @@ function WisalTemplateTwoView({
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
             className="relative min-h-dvh w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={
-              inv.doorBgVideo && !doorBgVideoFailed
+            style={{
+              minHeight: fullH,
+              ...(inv.doorBgVideo && !doorBgVideoFailed
                 ? { backgroundColor: "#000" }
                 : {
                     backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-                  }
-            }
+                  }),
+            }}
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
@@ -1679,7 +1709,7 @@ function WisalTemplateTwoView({
 
             <FloatingParticles particles={particles} />
 
-            <DoorTextReveal doorRemoved={doorRemoved}>
+            <DoorTextReveal doorRemoved={doorRemoved} minHeight={fullH}>
               <div />
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
@@ -2374,6 +2404,7 @@ function WisalTemplateThreeView({
   const audioRef = useRef<HTMLAudioElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const fullH = useContainerHeight(scrollContainerRef)
   const [particles, setParticles] = useState<GoldenParticle[]>([])
 
   // نحسب الوقت المتبقي فعلياً بالاعتماد على موعد المناسبة (eventDateTime).
@@ -2653,13 +2684,14 @@ function WisalTemplateThreeView({
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
             className="relative min-h-dvh w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
-            style={
-              inv.doorBgVideo && !doorBgVideoFailed
+            style={{
+              minHeight: fullH,
+              ...(inv.doorBgVideo && !doorBgVideoFailed
                 ? { backgroundColor: "#000" }
                 : {
                     backgroundImage: `url("${inv.heroBg || "/images/hero-bg.jpg"}")`,
-                  }
-            }
+                  }),
+            }}
           >
             <div className="absolute top-0 left-0 w-full h-[3px] overflow-hidden z-50">
               <div className="h-full w-[35%] bg-gradient-to-r from-transparent via-[var(--gold)] to-transparent animate-[goldLine_3s_linear_infinite]" />
@@ -2682,7 +2714,7 @@ function WisalTemplateThreeView({
 
             <FloatingParticles particles={particles} />
 
-            <DoorTextReveal doorRemoved={doorRemoved}>
+            <DoorTextReveal doorRemoved={doorRemoved} minHeight={fullH}>
               <div />
               <div className="my-auto flex flex-col items-center text-center">
                 <p className="text-base md:text-lg tracking-widest text-[#E8DCC4] mb-2 custom-font-amiri">
