@@ -10,7 +10,7 @@ import InvitationFullView from "./InvitationView"
 // 1) لوحة التحكم (?admin=1)
 // 2) عرض دعوة كاملة (?preview=ID)
 // 3) الواجهة الرئيسية (HomePage) — بملفها المستقل src/HomePage.tsx
-export default function App() {
+function AppInner() {
   // نبدأ بـ null (مو seedInvitations) حتى ما نعرض بيانات وهمية/تجريبية
   // ولو للحظة وحدة قبل ما توصل بيانات Supabase الحقيقية — بدل الفلاش
   // (ظهور بيانات مختلفة ثم استبدالها ببياناتك الفعلية). null = لسه
@@ -113,4 +113,72 @@ export default function App() {
       onPreview={handlePreview}
     />
   )
+}
+
+// على شاشات الكمبيوتر نعرض معاينة الدعوة داخل إطار بمقاس الآيفون (iframe)،
+// عشان تظهر بالضبط مثل ما تظهر على الجوال (نفس الـ viewport والـ fixed
+// والـ vh). الـ iframe يفتح نفس الرابط مع embed=1 عشان ما يتكرر الإطار.
+function usePhoneFrameNeeded() {
+  const compute = () => {
+    const p = new URLSearchParams(window.location.search)
+    return (
+      !!p.get("preview") &&
+      p.get("admin") !== "1" &&
+      p.get("embed") !== "1" &&
+      window.innerWidth >= 768
+    )
+  }
+  const [needed, setNeeded] = useState(compute)
+  useEffect(() => {
+    const onResize = () => setNeeded(compute())
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+  return needed
+}
+
+export default function App() {
+  const needFrame = usePhoneFrameNeeded()
+
+  if (needFrame) {
+    const p = new URLSearchParams(window.location.search)
+    p.set("embed", "1")
+    const src = `${window.location.pathname}?${p.toString()}`
+    return (
+      <div
+        style={{
+          minHeight: "100dvh",
+          background: "#14110f",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            height: "min(844px, calc(100dvh - 48px))",
+            aspectRatio: "390 / 844",
+            borderRadius: 48,
+            border: "10px solid #2a2522",
+            boxShadow:
+              "0 0 0 2px #4a423c, 0 30px 80px rgba(0,0,0,0.6)",
+            overflow: "hidden",
+            background: "#000",
+            position: "relative",
+          }}
+        >
+          <iframe
+            src={src}
+            title="معاينة الدعوة"
+            allow="autoplay; fullscreen"
+            style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  return <AppInner />
 }
