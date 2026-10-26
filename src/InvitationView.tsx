@@ -238,7 +238,7 @@ function DoorTextReveal({
 
   return (
     <div
-      className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-screen"
+      className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-dvh"
       style={{
         opacity: doorRemoved ? 1 : 0,
         // الإخفاء فوري (بدون transition) — التلاشي المقصود اتجاه واحد بس:
@@ -686,7 +686,7 @@ function WisalTemplateView({
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
+            className="relative min-h-dvh w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
                 ? { backgroundColor: "#000" }
@@ -725,13 +725,13 @@ function WisalTemplateView({
                 <span className="text-[var(--gold)] text-xl mb-4">
                   <EditableText id="intro-icon">✿</EditableText>
                 </span>
-                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-5xl min-[380px]:text-6xl min-[440px]:text-7xl md:text-9xl max-w-full break-words text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
                 <span className="text-3xl text-[var(--gold)] my-3 custom-font-ruqaa">
                   <EditableText id="names-separator">و</EditableText>
                 </span>
-                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-5xl min-[380px]:text-6xl min-[440px]:text-7xl md:text-9xl max-w-full break-words text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="bride">{inv.bride}</EditableText>
                 </h1>
                 <div className="mt-8 space-y-2">
@@ -843,13 +843,13 @@ function WisalTemplateView({
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
                 <div
-                  className="flex justify-center items-center gap-4"
+                  className="flex justify-center items-center gap-2 sm:gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </EditableText>
@@ -857,10 +857,10 @@ function WisalTemplateView({
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </EditableText>
@@ -868,10 +868,10 @@ function WisalTemplateView({
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.hours).padStart(2, "0")}
                     </EditableText>
@@ -879,10 +879,10 @@ function WisalTemplateView({
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {timeLeft.days}
                     </EditableText>
@@ -1649,7 +1649,7 @@ function WisalTemplateTwoView({
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
+            className="relative min-h-dvh w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
                 ? { backgroundColor: "#000" }
@@ -1688,13 +1688,13 @@ function WisalTemplateTwoView({
                 <span className="text-[var(--gold)] text-xl mb-4">
                   <EditableText id="intro-icon">✿</EditableText>
                 </span>
-                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-5xl min-[380px]:text-6xl min-[440px]:text-7xl md:text-9xl max-w-full break-words text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
                 <span className="text-3xl text-[var(--gold)] my-3 custom-font-ruqaa">
                   <EditableText id="names-separator">و</EditableText>
                 </span>
-                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-5xl min-[380px]:text-6xl min-[440px]:text-7xl md:text-9xl max-w-full break-words text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="bride">{inv.bride}</EditableText>
                 </h1>
                 <div className="mt-8 space-y-2">
@@ -1806,13 +1806,13 @@ function WisalTemplateTwoView({
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
                 <div
-                  className="flex justify-center items-center gap-4"
+                  className="flex justify-center items-center gap-2 sm:gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </EditableText>
@@ -1820,10 +1820,10 @@ function WisalTemplateTwoView({
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </EditableText>
@@ -1831,10 +1831,10 @@ function WisalTemplateTwoView({
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.hours).padStart(2, "0")}
                     </EditableText>
@@ -1842,10 +1842,10 @@ function WisalTemplateTwoView({
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {timeLeft.days}
                     </EditableText>
@@ -2652,7 +2652,7 @@ function WisalTemplateThreeView({
               (لو المستخدم ما اختار وحدة منهم، نرجع للافتراضي: صورة + فيديو
               خفيف فوقها، بنفس الشكل الأصلي) */}
           <section
-            className="relative min-h-screen w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
+            className="relative min-h-dvh w-full flex flex-col justify-between overflow-hidden text-[#FDFBF7] animate-[fadeInUp_1s] bg-cover bg-center"
             style={
               inv.doorBgVideo && !doorBgVideoFailed
                 ? { backgroundColor: "#000" }
@@ -2691,13 +2691,13 @@ function WisalTemplateThreeView({
                 <span className="text-[var(--gold)] text-xl mb-4">
                   <EditableText id="intro-icon">✿</EditableText>
                 </span>
-                <h1 className="text-7xl md:text-9xl text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-5xl min-[380px]:text-6xl min-[440px]:text-7xl md:text-9xl max-w-full break-words text-white mb-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="groom">{inv.groom}</EditableText>
                 </h1>
                 <span className="text-3xl text-[var(--gold)] my-3 custom-font-ruqaa">
                   <EditableText id="names-separator">و</EditableText>
                 </span>
-                <h1 className="text-7xl md:text-9xl text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
+                <h1 className="text-5xl min-[380px]:text-6xl min-[440px]:text-7xl md:text-9xl max-w-full break-words text-white mt-1 leading-none custom-font-ruqaa drop-shadow-2xl">
                   <EditableText id="bride">{inv.bride}</EditableText>
                 </h1>
                 <div className="mt-8 space-y-2">
@@ -2809,13 +2809,13 @@ function WisalTemplateThreeView({
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
                 <div
-                  className="flex justify-center items-center gap-4"
+                  className="flex justify-center items-center gap-2 sm:gap-4"
                   dir="ltr"
                 >
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-seconds"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.seconds).padStart(2, "0")}
                     </EditableText>
@@ -2823,10 +2823,10 @@ function WisalTemplateThreeView({
                       <EditableText id="countdown-label-seconds">ثانية</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-minutes"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.minutes).padStart(2, "0")}
                     </EditableText>
@@ -2834,10 +2834,10 @@ function WisalTemplateThreeView({
                       <EditableText id="countdown-label-minutes">دقيقة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-hours"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {String(timeLeft.hours).padStart(2, "0")}
                     </EditableText>
@@ -2845,10 +2845,10 @@ function WisalTemplateThreeView({
                       <EditableText id="countdown-label-hours">ساعة</EditableText>
                     </span>
                   </div>
-                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-5 py-4 shadow-sm min-w-[85px]">
+                  <div className="flex flex-col items-center bg-white border border-[var(--gold)]/30 rounded-2xl px-1 sm:px-5 py-3 sm:py-4 shadow-sm min-w-0 flex-1 sm:flex-none sm:min-w-[85px] md:min-w-[110px]">
                     <EditableText
                       id="countdown-number-days"
-                      className="text-3xl font-bold text-[#4A3B2C] custom-font-amiri"
+                      className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#4A3B2C] custom-font-amiri"
                     >
                       {timeLeft.days}
                     </EditableText>
