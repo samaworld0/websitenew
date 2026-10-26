@@ -125,7 +125,7 @@ function usePhoneFrameNeeded() {
       !!p.get("preview") &&
       p.get("admin") !== "1" &&
       p.get("embed") !== "1" &&
-      window.innerWidth >= 768
+      window.innerWidth >= 500
     )
   }
   const [needed, setNeeded] = useState(compute)
