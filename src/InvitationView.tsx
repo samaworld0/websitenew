@@ -279,8 +279,45 @@ function DoorTextReveal({
       ? minHeight / DOOR_DESIGN_HEIGHT
       : 1
 
+  // حماية من التداخل بالمعاينة المكبّرة: لو أي عنصر بالكتلة الوسطى (التاريخ
+  // مثلاً، بعد إزاحته من التصميم المباشر) لمس "مرر للأسفل" نرفع الكتلة
+  // للأعلى بالقدر اللازم بس. ما يمسّ شي لو ما فيه تداخل.
+  const rootRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!embedded) return
+    const root = rootRef.current
+    if (!root) return
+    const run = () => {
+      const n = root.children.length
+      const blk = root.children[n - 2] as HTMLElement | undefined
+      const hint = root.children[n - 1] as HTMLElement | undefined
+      if (!blk || !hint) return
+      blk.style.transform = ""
+      let hintTop = hint.getBoundingClientRect().top
+      hint.querySelectorAll("*").forEach((n) => {
+        const r = n.getBoundingClientRect()
+        if (r.width > 0 && r.height > 0) hintTop = Math.min(hintTop, r.top)
+      })
+      let maxBottom = -Infinity
+      blk.querySelectorAll("*").forEach((n) => {
+        const r = n.getBoundingClientRect()
+        if (r.width > 0 && r.height > 0) maxBottom = Math.max(maxBottom, r.bottom)
+      })
+      const over = maxBottom - (hintTop - 10)
+      if (over > 0) blk.style.transform = `translateY(${-over / zoom}px)`
+    }
+    run()
+    const timers = [200, 700, 1500, 3000].map((t) => window.setTimeout(run, t))
+    window.addEventListener("resize", run)
+    return () => {
+      timers.forEach(clearTimeout)
+      window.removeEventListener("resize", run)
+    }
+  }, [embedded, zoom, minHeight, doorRemoved, children])
+
   return (
     <div
+      ref={rootRef}
       className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-dvh"
       style={{
         minHeight,
