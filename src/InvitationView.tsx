@@ -248,7 +248,7 @@ function useContainerHeight(ref: RefObject<HTMLElement | null>) {
 // لوحة "⏱️ الانتقالات" بوضع التصميم المباشر (شوف TransitionsMenu)
 // بدل ما تكون مثبّتة بالكود.
 const DOOR_DESIGN_WIDTH = 430
-const DOOR_DESIGN_HEIGHT = 800
+const DOOR_DESIGN_HEIGHT = 920
 
 function DoorTextReveal({
   doorRemoved,
