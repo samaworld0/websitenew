@@ -118,86 +118,89 @@ function AppInner() {
 // على شاشات الكمبيوتر نعرض معاينة الدعوة داخل إطار بمقاس الآيفون (iframe)،
 // عشان تظهر بالضبط مثل ما تظهر على الجوال (نفس الـ viewport والـ fixed
 // والـ vh). الـ iframe يفتح نفس الرابط مع embed=1 عشان ما يتكرر الإطار.
-function usePhoneFrameNeeded() {
-  const compute = () => {
-    const p = new URLSearchParams(window.location.search)
-    return (
-      !!p.get("preview") &&
-      p.get("admin") !== "1" &&
-      p.get("embed") !== "1" &&
-      window.innerWidth >= 500
-    )
-  }
-  const [needed, setNeeded] = useState(compute)
+function useViewport() {
+  const get = () => ({ w: window.innerWidth, h: window.innerHeight })
+  const [vp, setVp] = useState(get)
   useEffect(() => {
-    const onResize = () => setNeeded(compute())
+    const onResize = () => setVp(get())
     window.addEventListener("resize", onResize)
-    return () => window.removeEventListener("resize", onResize)
+    window.addEventListener("orientationchange", onResize)
+    return () => {
+      window.removeEventListener("resize", onResize)
+      window.removeEventListener("orientationchange", onResize)
+    }
   }, [])
-  return needed
+  return vp
 }
 
-export default function App() {
-  const needFrame = usePhoneFrameNeeded()
-  // صورة خلفية الجوانب: نفس صورة غلاف الدعوة (مموّهة) بدل اللون الأسود
-  const [sideBg, setSideBg] = useState("/images/hero-bg.jpg")
-  useEffect(() => {
-    if (!needFrame) return
-    const id = new URLSearchParams(window.location.search).get("preview")
-    loadInvitations().then((list) => {
-      const inv = list.find((i) => i.id.toString() === id)
-      if (inv?.heroBg) setSideBg(inv.heroBg)
-    })
-  }, [needFrame])
+const PHONE_W = 430
 
-  if (needFrame) {
-    const p = new URLSearchParams(window.location.search)
-    p.set("embed", "1")
-    const src = `${window.location.pathname}?${p.toString()}`
+export default function App() {
+  const { w, h } = useViewport()
+  const p = new URLSearchParams(window.location.search)
+  const needFrame =
+    !!p.get("preview") &&
+    p.get("admin") !== "1" &&
+    p.get("embed") !== "1" &&
+    w >= 500
+
+  if (!needFrame) return <AppInner />
+
+  p.set("embed", "1")
+  const src = `${window.location.pathname}?${p.toString()}`
+
+  // شاشة عمودية: نعرض نسخة الجوال مكبّرة لتملأ عرض الشاشة كاملاً (بدون جوانب)
+  if (h > w) {
+    const scale = w / PHONE_W
     return (
       <div
-        style={{
-          height: "100dvh",
-          backgroundColor: "#2a1a1a",
-          position: "relative",
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        dir="ltr"
+        style={{ width: "100vw", height: "100dvh", overflow: "hidden", background: "#000" }}
       >
-        <div
-          aria-hidden
+        <iframe
+          src={src}
+          title="معاينة الدعوة"
+          allow="autoplay; fullscreen"
           style={{
-            position: "absolute",
-            inset: -40,
-            backgroundImage: `linear-gradient(rgba(20,10,10,0.35), rgba(20,10,10,0.35)), url("${sideBg}")`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "blur(28px)",
+            width: PHONE_W,
+            height: h / scale,
+            border: 0,
+            display: "block",
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
           }}
         />
-        <div
-          style={{
-            height: "min(100dvh, 932px)",
-            width: 430,
-            maxWidth: "100%",
-            overflow: "hidden",
-            background: "#000",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <iframe
-            src={src}
-            title="معاينة الدعوة"
-            allow="autoplay; fullscreen"
-            style={{ width: "100%", height: "100%", border: 0, display: "block" }}
-          />
-        </div>
       </div>
     )
   }
 
-  return <AppInner />
+  // شاشة أفقية: عمود بعرض الجوال بالوسط
+  return (
+    <div
+      style={{
+        height: "100dvh",
+        background: "#14110f",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          height: "min(100dvh, 932px)",
+          width: PHONE_W,
+          maxWidth: "100%",
+          overflow: "hidden",
+          background: "#000",
+        }}
+      >
+        <iframe
+          src={src}
+          title="معاينة الدعوة"
+          allow="autoplay; fullscreen"
+          style={{ width: "100%", height: "100%", border: 0, display: "block" }}
+        />
+      </div>
+    </div>
+  )
 }
