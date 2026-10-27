@@ -271,6 +271,9 @@ function DoorTextReveal({
   const embedded =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("embed") === "1"
+  const debug =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("debug") === "1"
   const zoom =
     embedded && minHeight && minHeight < DOOR_DESIGN_HEIGHT
       ? minHeight / DOOR_DESIGN_HEIGHT
@@ -296,6 +299,23 @@ function DoorTextReveal({
         transition: doorRemoved ? `opacity ${duration}ms ${easing}` : "none",
       }}
     >
+      {debug && (
+        <div
+          style={{
+            position: "fixed",
+            top: 4,
+            left: 4,
+            zIndex: 9999,
+            background: "rgba(0,0,0,.75)",
+            color: "#0f0",
+            font: "12px monospace",
+            padding: "2px 6px",
+            direction: "ltr",
+          }}
+        >
+          embed={String(embedded)} fullH={String(minHeight)} zoom={zoom.toFixed(2)} vw={window.innerWidth} vh={window.innerHeight}
+        </div>
+      )}
       {children}
     </div>
   )
