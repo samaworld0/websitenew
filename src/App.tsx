@@ -139,6 +139,16 @@ function usePhoneFrameNeeded() {
 
 export default function App() {
   const needFrame = usePhoneFrameNeeded()
+  // صورة خلفية الجوانب: نفس صورة غلاف الدعوة (مموّهة) بدل اللون الأسود
+  const [sideBg, setSideBg] = useState("/images/hero-bg.jpg")
+  useEffect(() => {
+    if (!needFrame) return
+    const id = new URLSearchParams(window.location.search).get("preview")
+    loadInvitations().then((list) => {
+      const inv = list.find((i) => i.id.toString() === id)
+      if (inv?.heroBg) setSideBg(inv.heroBg)
+    })
+  }, [needFrame])
 
   if (needFrame) {
     const p = new URLSearchParams(window.location.search)
@@ -148,12 +158,25 @@ export default function App() {
       <div
         style={{
           height: "100dvh",
-          background: "#14110f",
+          backgroundColor: "#2a1a1a",
+          position: "relative",
+          overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: -40,
+            backgroundImage: `linear-gradient(rgba(20,10,10,0.35), rgba(20,10,10,0.35)), url("${sideBg}")`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            filter: "blur(28px)",
+          }}
+        />
         <div
           style={{
             height: "min(100dvh, 932px)",
@@ -162,6 +185,7 @@ export default function App() {
             overflow: "hidden",
             background: "#000",
             position: "relative",
+            zIndex: 1,
           }}
         >
           <iframe
