@@ -247,36 +247,58 @@ function useContainerHeight(ref: RefObject<HTMLElement | null>) {
 // (doorRemoved)، مو بنفس لحظته. مدة وسرعة هذا التلاشي قابلة للتحكم من
 // لوحة "⏱️ الانتقالات" بوضع التصميم المباشر (شوف TransitionsMenu)
 // بدل ما تكون مثبّتة بالكود.
-function DoorTextReveal({
-  doorRemoved,
-  minHeight,
-  children,
-}: {
-  doorRemoved: boolean
-  minHeight?: number
-  children: ReactNode
-}) {
-  const { styles } = useEditMode()
-  const st = styles[DOOR_TEXT_TRANSITION_ID] || {}
-  const duration = st.duration ?? 1000
-  const easing = st.easing || "ease"
+const DOOR_DESIGN_WIDTH = 430
+const DOOR_DESIGN_HEIGHT = 800
 
-  return (
-    <div
-      className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-dvh"
-      style={{
-        minHeight,
-        opacity: doorRemoved ? 1 : 0,
-        // الإخفاء فوري (بدون transition) — التلاشي المقصود اتجاه واحد بس:
-        // الظهور بعد اختفاء الباب. هذا كمان يخلي إعادة التشغيل (زر "جرّب
-        // الآن") تشتغل صح: تختفي النصوص فوراً ثم تتلاشى للظهور من جديد
-        // بنفس المدة/السرعة، بدل ما يتصادم اتجاهي الحركة مع بعض.
-        transition: doorRemoved ? `opacity ${duration}ms ${easing}` : "none",
-      }}
-    >
-      {children}
-    </div>
-  )
+function DoorTextReveal({
+  doorRemoved,
+  minHeight,
+  children,
+}: {
+  doorRemoved: boolean
+  minHeight?: number
+  children: ReactNode
+}) {
+  const { styles } = useEditMode()
+  const st = styles[DOOR_TEXT_TRANSITION_ID] || {}
+  const duration = st.duration ?? 1000
+  const easing = st.easing || "ease"
+
+  // معاينة اللابتوب/الشاشة العمودية (embed=1): ارتفاع الشاشة هنا أقصر من
+  // ارتفاع الجوال اللي انصمم عليه القسم الأول، فتتداخل العناصر (التاريخ
+  // و"مرر للأسفل"...). نرتّب المحتوى على ارتفاع جوال كامل ثم نصغّره بنسبة
+  // بسيطة (zoom) ليتسع بالضبط بارتفاع الشاشة، والخلفية تبقى بعرض كامل.
+  const embedded =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("embed") === "1"
+  const zoom =
+    embedded && minHeight && minHeight < DOOR_DESIGN_HEIGHT
+      ? minHeight / DOOR_DESIGN_HEIGHT
+      : 1
+
+  return (
+    <div
+      className="relative z-20 w-full max-w-3xl mx-auto px-5 py-6 flex flex-col justify-between h-full min-h-dvh"
+      style={{
+        minHeight,
+        ...(zoom < 1
+          ? {
+              zoom,
+              width: DOOR_DESIGN_WIDTH,
+              maxWidth: "none",
+              height: DOOR_DESIGN_HEIGHT,
+              minHeight: DOOR_DESIGN_HEIGHT,
+            }
+          : null),
+        opacity: doorRemoved ? 1 : 0,
+        // الإخفاء فوري (بدون transition) — التلاشي المقصود اتجاه واحد بس:
+        // الظهور بعد اختفاء الباب.
+        transition: doorRemoved ? `opacity ${duration}ms ${easing}` : "none",
+      }}
+    >
+      {children}
+    </div>
+  )
 }
 
 // رابط الموقع اللي يحطه المشرف بلوحة التحكم أحياناً يكون ناقص البروتوكول
