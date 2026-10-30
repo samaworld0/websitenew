@@ -693,12 +693,27 @@ function WisalTemplateView({
     setIsPlaying(true)
     audioRef.current?.play().catch(() => {})
     if (videoRef.current) {
-      videoRef.current.play().catch(() => completeOpening())
-      timeoutRef.current = setTimeout(() => {
-        if (videoRef.current) videoRef.current.pause()
-        completeOpening()
-      }, 5000)
-    } else {
+      const v = videoRef.current
+      v.play().catch(() => completeOpening())
+      // الحد الأقصى 5 ثواني يُحسب من لحظة ما يبدأ الفيديو فعلياً يشتغل (مو من
+      // طلب التشغيل)، عشان لو الفيديو تأخر بالتحميل ما نقطعه قبل ما يبان.
+      // ولو ما بدأ أبداً خلال 12 ثانية نكمل للمحتوى.
+      v.addEventListener(
+        "playing",
+        () => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current)
+          timeoutRef.current = setTimeout(() => {
+            v.pause()
+            completeOpening()
+          }, 5000)
+        },
+        { once: true },
+      )
+      timeoutRef.current = setTimeout(() => {
+        v.pause()
+        completeOpening()
+      }, 12000)
+    } else {
       completeOpening()
     }
   }
@@ -1614,12 +1629,27 @@ function WisalTemplateTwoView({
     setIsPlaying(true)
     audioRef.current?.play().catch(() => {})
     if (videoRef.current) {
-      videoRef.current.play().catch(() => completeOpening())
-      timeoutRef.current = setTimeout(() => {
-        if (videoRef.current) videoRef.current.pause()
-        completeOpening()
-      }, 5000)
-    } else {
+      const v = videoRef.current
+      v.play().catch(() => completeOpening())
+      // الحد الأقصى 5 ثواني يُحسب من لحظة ما يبدأ الفيديو فعلياً يشتغل (مو من
+      // طلب التشغيل)، عشان لو الفيديو تأخر بالتحميل ما نقطعه قبل ما يبان.
+      // ولو ما بدأ أبداً خلال 12 ثانية نكمل للمحتوى.
+      v.addEventListener(
+        "playing",
+        () => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current)
+          timeoutRef.current = setTimeout(() => {
+            v.pause()
+            completeOpening()
+          }, 5000)
+        },
+        { once: true },
+      )
+      timeoutRef.current = setTimeout(() => {
+        v.pause()
+        completeOpening()
+      }, 12000)
+    } else {
       completeOpening()
     }
   }
@@ -2619,12 +2649,27 @@ function WisalTemplateThreeView({
     setIsPlaying(true)
     audioRef.current?.play().catch(() => {})
     if (videoRef.current) {
-      videoRef.current.play().catch(() => completeOpening())
-      timeoutRef.current = setTimeout(() => {
-        if (videoRef.current) videoRef.current.pause()
-        completeOpening()
-      }, 5000)
-    } else {
+      const v = videoRef.current
+      v.play().catch(() => completeOpening())
+      // الحد الأقصى 5 ثواني يُحسب من لحظة ما يبدأ الفيديو فعلياً يشتغل (مو من
+      // طلب التشغيل)، عشان لو الفيديو تأخر بالتحميل ما نقطعه قبل ما يبان.
+      // ولو ما بدأ أبداً خلال 12 ثانية نكمل للمحتوى.
+      v.addEventListener(
+        "playing",
+        () => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current)
+          timeoutRef.current = setTimeout(() => {
+            v.pause()
+            completeOpening()
+          }, 5000)
+        },
+        { once: true },
+      )
+      timeoutRef.current = setTimeout(() => {
+        v.pause()
+        completeOpening()
+      }, 12000)
+    } else {
       completeOpening()
     }
   }
