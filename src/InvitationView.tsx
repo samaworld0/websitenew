@@ -3470,8 +3470,40 @@ export default function InvitationFullView({
     }
   }, [])
 
+  const debugInfo =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("debug") === "1"
+  const tail = (u?: string) => (u ? "…" + u.slice(-28) : "—")
+  const ts = inv.textStyles || {}
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col w-full h-full bg-[#0D0706]">
+      {debugInfo && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 4,
+            left: 4,
+            right: 4,
+            zIndex: 9999,
+            background: "rgba(0,0,0,.8)",
+            color: "#0f0",
+            font: "10px/1.35 monospace",
+            padding: "4px 6px",
+            direction: "ltr",
+            textAlign: "left",
+            pointerEvents: "none",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-all",
+          }}
+        >
+          {`tpl=${inv.templateType} startRemoved=${!!ts["start-screen-removed"]?.hidden} introRemoved=${!!ts["intro-removed"]?.hidden} skipIntroVideo=${!!inv.skipIntroVideo} doorStyle=${inv.doorStyle}
+introVideo=${tail(inv.introVideo)}
+introPoster=${tail(inv.introPoster)}
+doorScreenBg img=${tail(ts["door-screen-bg"]?.imageUrl)} vid=${tail(ts["door-screen-bg"]?.videoUrl)}
+heroBg=${tail(inv.heroBg)} doorBgVideo=${tail(inv.doorBgVideo)}`}
+        </div>
+      )}
       {inv.templateType === "wisal" ? (
         <WisalTemplateView
           inv={inv}
