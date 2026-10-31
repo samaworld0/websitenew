@@ -1448,17 +1448,6 @@ function InvitationForm({
           onChange={(url) => set("introVideo", url)}
         />
 
-        <MediaUploadField
-          label="صورة غلاف فيديو الفتح (introPoster)"
-          hint="الصورة اللي تظهر لحظة بداية الفتح قبل ما يشتغل الفيديو (وتظهر لو تأخر الفيديو). لو حذفتها يرجع الغلاف الافتراضي"
-          accept="image/*"
-          kind="image"
-          value={inv.introPoster || ""}
-          folder="intro-poster"
-          fallback="/videos/intro-poster.jpg"
-          onChange={(url) => set("introPoster", url)}
-        />
-
         <HeroBackgroundField
           label='صورة أو مقطع شاشة "اضغط لفتح الدعوة"'
           hint='الصورة أو المقطع اللي يظهر بالبداية خلف "اضغط لفتح الدعوة" قبل ما يضغط الضيف — ارفع أي وحدة منهم وبتنحط تلقائياً'
