@@ -108,19 +108,59 @@ function useStartMusicOnFirstTouch(
   audioRef: RefObject<HTMLAudioElement | null>,
   enabled: boolean,
 ) {
+  const [blocked, setBlocked] = useState(false)
   useEffect(() => {
     if (!enabled) return
     const events = ["pointerdown", "touchend", "click", "keydown"] as const
     const cleanup = () => events.forEach((e) => window.removeEventListener(e, start))
     function start() {
-      audioRef.current?.play().then(cleanup).catch(() => {})
+      audioRef.current
+        ?.play()
+        .then(() => {
+          setBlocked(false)
+          cleanup()
+        })
+        .catch(() => setBlocked(true))
     }
     // محاولة تشغيل تلقائي فوراً (تنجح بالمتصفحات/الحالات اللي تسمح بها)،
-    // وإذا انمنعت يبقى التشغيل مع أول لمسة.
+    // وإذا انمنعت يبقى التشغيل مع أول لمسة، ونظهر للزائر زر "اضغط لتشغيل
+    // الصوت" (المتصفح يمنع الصوت قبل أي تفاعل، وما فيه طريقة لتجاوزه).
     start()
     events.forEach((e) => window.addEventListener(e, start, { passive: true }))
     return cleanup
   }, [enabled, audioRef])
+
+  if (!enabled || !blocked) return null
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        audioRef.current
+          ?.play()
+          .then(() => setBlocked(false))
+          .catch(() => {})
+      }}
+      style={{
+        position: "fixed",
+        bottom: 16,
+        insetInlineEnd: 16,
+        zIndex: 60,
+        padding: "8px 14px",
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,.35)",
+        background: "rgba(0,0,0,.55)",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: 700,
+        cursor: "pointer",
+        boxShadow: "0 4px 14px rgba(0,0,0,.35)",
+      }}
+    >
+      🔊 اضغط لتشغيل الصوت
+    </button>
+  )
 }
 
 // خلفية شاشة "اضغط لفتح الدعوة" (صورة أو مقطع) من لوحة الإدارة — محفوظة
@@ -640,7 +680,7 @@ function WisalTemplateView({
     handleDoorTap()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
+  const musicHint = useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -794,6 +834,7 @@ function WisalTemplateView({
         src={inv.musicUrl || "/music/background.mp3"}
         loop
       />
+      {musicHint}
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
@@ -1584,7 +1625,7 @@ function WisalTemplateTwoView({
     else startDoorOpenSequence()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
+  const musicHint = useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -1774,6 +1815,7 @@ function WisalTemplateTwoView({
         src={inv.musicUrl || "/music/background.mp3"}
         loop
       />
+      {musicHint}
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
@@ -2604,7 +2646,7 @@ function WisalTemplateThreeView({
     else startDoorOpenSequence()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
+  const musicHint = useStartMusicOnFirstTouch(audioRef, hideStartUi || (startsOpened && !editable))
 
   // إعادة تشغيل تلاشي نصوص القسم الأول عند الطلب (زر "▶ جرّب الآن" بلوحة
   // الانتقالات) — نخفي النصوص فوراً (بدون أي انتقال مرئي لهالخطوة نفسها)
@@ -2794,6 +2836,7 @@ function WisalTemplateThreeView({
         src={inv.musicUrl || "/music/background.mp3"}
         loop
       />
+      {musicHint}
 
       {/* لمعة ذهبية لحظة فتح الدعوة */}
       {showFlash && <OpenFlash inv={inv} />}
