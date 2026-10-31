@@ -1277,7 +1277,6 @@ function WisalTemplateView({
             muted
             playsInline
             preload="none"
-            poster={hideStartUi ? undefined : inv.introPoster || "/videos/intro-poster.jpg"}
             onPlaying={() => setIntroVideoPlaying(true)}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
@@ -1319,7 +1318,6 @@ function WisalTemplateView({
             muted
             playsInline
             preload="none"
-            poster={hideStartUi ? undefined : inv.introPoster || "/videos/intro-poster.jpg"}
             onPlaying={() => setIntroVideoPlaying(true)}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
@@ -2258,7 +2256,6 @@ function WisalTemplateTwoView({
             muted
             playsInline
             preload="none"
-            poster={hideStartUi ? undefined : inv.introPoster || "/videos/intro-poster.jpg"}
             onPlaying={() => setIntroVideoPlaying(true)}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
@@ -2336,7 +2333,6 @@ function WisalTemplateTwoView({
             muted
             playsInline
             preload="none"
-            poster={hideStartUi ? undefined : inv.introPoster || "/videos/intro-poster.jpg"}
             onPlaying={() => setIntroVideoPlaying(true)}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
@@ -3279,7 +3275,6 @@ function WisalTemplateThreeView({
             muted
             playsInline
             preload="none"
-            poster={hideStartUi ? undefined : inv.introPoster || "/videos/intro-poster.jpg"}
             onPlaying={() => setIntroVideoPlaying(true)}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
@@ -3357,7 +3352,6 @@ function WisalTemplateThreeView({
             muted
             playsInline
             preload="none"
-            poster={hideStartUi ? undefined : inv.introPoster || "/videos/intro-poster.jpg"}
             onPlaying={() => setIntroVideoPlaying(true)}
             onEnded={completeOpening}
             className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none"
