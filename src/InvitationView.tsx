@@ -1265,7 +1265,7 @@ function WisalTemplateView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
+          className={`fixed inset-0 z-50 bg-white flex items-end justify-center pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
           style={{ height: "100dvh" }}
@@ -1306,7 +1306,7 @@ function WisalTemplateView({
       {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-white ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
           style={{ height: "100dvh" }}
@@ -2244,7 +2244,7 @@ function WisalTemplateTwoView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
+          className={`fixed inset-0 z-50 bg-white flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
           style={{ height: "100dvh" }}
@@ -2321,7 +2321,7 @@ function WisalTemplateTwoView({
       {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-white ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
           style={{ height: "100dvh" }}
@@ -3263,7 +3263,7 @@ function WisalTemplateThreeView({
       {doorCardVisible && inv.doorStyle === "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
+          className={`fixed inset-0 z-50 bg-white flex flex-col items-center justify-end pb-14 sm:pb-20 transition-opacity duration-[1400ms] ${
             editable ? "cursor-default opacity-100" : `cursor-pointer ${isOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`
           }`}
           style={{ height: "100dvh" }}
@@ -3340,7 +3340,7 @@ function WisalTemplateThreeView({
       {!doorRemoved && inv.doorStyle !== "card" && (
         <div
           onClick={handleDoorTap}
-          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-black ${
+          className={`fixed inset-0 z-50 flex items-center justify-center cursor-pointer transition-opacity duration-[1400ms] bg-white ${
             isOpen ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
           style={{ height: "100dvh" }}
