@@ -81,7 +81,7 @@ export default async function middleware(request: Request) {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/invitations?id=eq.${encodeURIComponent(
         previewId,
-      )}&select=title,subtitle,groom,bride,dateGreg,time,venue,coverImage,heroBg,introPoster`,
+      )}&select=title,subtitle,groom,bride,dateGreg,time,venue,coverImage,heroBg,introPoster,textStyles`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -116,7 +116,11 @@ export default async function middleware(request: Request) {
       "أنت مدعو لحضور مناسبتنا"
 
     const image = toWhatsappSafeImage(
-      inv.introPoster || inv.heroBg || inv.coverImage || DEFAULT_IMAGE,
+      inv.textStyles?.["share-image"]?.imageUrl ||
+        inv.introPoster ||
+        inv.heroBg ||
+        inv.coverImage ||
+        DEFAULT_IMAGE,
     )
 
     const html = buildHtml({

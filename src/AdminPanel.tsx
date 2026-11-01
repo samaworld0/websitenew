@@ -840,6 +840,21 @@ function InvitationForm({
       }
     })
 
+  // صورة رابط الواتساب (معاينة الرابط عند المشاركة): تتخزن داخل textStyles
+  // بعنصر باسم share-image (imageUrl) بدون عمود جديد بالقاعدة. يقرأها
+  // middleware.ts ويحطها بـ og:image قبل أي صورة ثانية.
+  const setShareImage = (url: string) =>
+    setInv((prev) => {
+      const prevStyles = prev.textStyles || {}
+      return {
+        ...prev,
+        textStyles: {
+          ...prevStyles,
+          "share-image": { ...(prevStyles["share-image"] || {}), imageUrl: url || undefined },
+        },
+      }
+    })
+
   // خيار "حذف شاشة البداية": يتخزن كعنصر مخفي باسم start-screen-removed
   // داخل textStyles (بدون عمود جديد بالقاعدة).
   const setStartScreenRemoved = (removed: boolean) =>
@@ -1343,6 +1358,16 @@ function InvitationForm({
           value={inv.coverImage || ""}
           folder="cover-image"
           onChange={(url) => set("coverImage", url)}
+        />
+
+        <MediaUploadField
+          label="صورة رابط الواتساب (1200×630)"
+          hint="الصورة اللي تظهر لما ترسلين رابط الدعوة بواتساب أو أي تطبيق. ارفعيها بمقاس 1200×630 بكسل (عرض × ارتفاع). لو تركتيها فاضية، يستخدم الموقع صورة ثانية تلقائياً. بعد التغيير، لو الرابط انرسل قبل، أضيفي &v=2 بآخره أو حدّثي المعاينة من أداة فيسبوك (Scrape Again)."
+          accept="image/*"
+          kind="image"
+          value={inv.textStyles?.["share-image"]?.imageUrl || ""}
+          folder="share-image"
+          onChange={(url) => setShareImage(url)}
         />
       </fieldset>
 
