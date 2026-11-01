@@ -2358,7 +2358,12 @@ function InvitationRow({
           onClick={async () => {
             // رقم جديد بكل نسخة: واتساب يخزّن معاينة كل رابط، فالرقم المختلف
             // يخليه يقرأ الصورة والعنوان الحاليين من جديد بدل النسخة القديمة.
-            const link = `${window.location.origin}/?preview=${inv.id}&v=${Date.now().toString(36)}`
+            // لو دخلتي من عنوان vercel.app المشترك نستخدم دومين الموقع الرسمي،
+            // لأن معاينة واتساب تشتغل عليه أضمن.
+            const base = window.location.hostname.endsWith(".vercel.app")
+              ? "https://www.samainvite.com"
+              : window.location.origin
+            const link = `${base}/?preview=${inv.id}&v=${Date.now().toString(36)}`
             try {
               await navigator.clipboard.writeText(link)
               alert("تم نسخ رابط المشاركة ✓\n\n" + link)
