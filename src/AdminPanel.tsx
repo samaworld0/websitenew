@@ -2353,6 +2353,24 @@ function InvitationRow({
         >
           معاينة
         </a>
+        <button
+          type="button"
+          onClick={async () => {
+            // رقم جديد بكل نسخة: واتساب يخزّن معاينة كل رابط، فالرقم المختلف
+            // يخليه يقرأ الصورة والعنوان الحاليين من جديد بدل النسخة القديمة.
+            const link = `${window.location.origin}/?preview=${inv.id}&v=${Date.now().toString(36)}`
+            try {
+              await navigator.clipboard.writeText(link)
+              alert("تم نسخ رابط المشاركة ✓\n\n" + link)
+            } catch {
+              window.prompt("انسخي رابط المشاركة:", link)
+            }
+          }}
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#25D366]/40 bg-[#eafaf1] text-[#1a7f4b]"
+          title="ينسخ رابط الدعوة برقم جديد حتى تظهر معاينة واتساب بأحدث صورة"
+        >
+          نسخ رابط المشاركة
+        </button>
         {resolveSheetLink(inv) ? (
           <a
             href={resolveSheetLink(inv)!}
