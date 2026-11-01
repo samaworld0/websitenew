@@ -21,9 +21,14 @@ function escapeHtml(str: string): string {
     .replace(/"/g, "&quot;")
 }
 
-// واتساب يرفض الصور الكبيرة (~300KB+) — نمرّرها بخدمة تصغير بجودة مناسبة.
-function toWhatsappSafeImage(originalUrl: string): string {
+// واتساب يرفض الصور الكبيرة (~300KB+). صور Supabase نمرّرها بخدمة تصغير
+// الصور الخاصة بـ Vercel من دومين الموقع نفسه (بدون خدمة خارجية)، وأي رابط
+// ثاني يمرّ بخدمة wsrv.nl كاحتياط.
+function toWhatsappSafeImage(originalUrl: string, host: string): string {
   if (!originalUrl) return originalUrl
+  if (/^https:\/\/yybdncbgradywuiomyik\.supabase\.co\/storage\/v1\/object\/public\//.test(originalUrl)) {
+    return `https://${host}/_vercel/image?url=${encodeURIComponent(originalUrl)}&w=1200&q=60`
+  }
   const encoded = encodeURIComponent(originalUrl.replace(/^https?:\/\//, ""))
   return `https://wsrv.nl/?url=${encoded}&w=1200&h=630&fit=cover&output=jpg&q=60`
 }
@@ -97,7 +102,7 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  const body = Buffer.from(buildHtml({ title, description, image: toWhatsappSafeImage(image), pageUrl }), "utf-8")
+  const body = Buffer.from(buildHtml({ title, description, image: toWhatsappSafeImage(image, host), pageUrl }), "utf-8")
   res.statusCode = 200
   res.setHeader("Content-Type", "text/html; charset=utf-8")
   res.setHeader("Content-Length", String(body.length))

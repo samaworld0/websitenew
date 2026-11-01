@@ -11,5 +11,20 @@
       ],
       "destination": "/api/og"
     }
-  ]
+  ],
+  "images": {
+    "sizes": [
+      1200
+    ],
+    "qualities": [
+      60
+    ],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "yybdncbgradywuiomyik.supabase.co",
+        "pathname": "/storage/v1/object/public/**"
+      }
+    ]
+  }
 }
