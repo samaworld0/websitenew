@@ -1,17 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": ".*(WhatsApp|facebookexternalhit|Facebot|TelegramBot|Twitterbot|LinkedInBot|Slackbot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Embedly|Googlebot|bingbot).*"
-        }
-      ],
-      "destination": "/api/og"
-    }
-  ],
   "images": {
     "sizes": [
       1200
@@ -26,5 +13,31 @@
         "pathname": "/storage/v1/object/public/**"
       }
     ]
-  }
+  },
+  "routes": [
+    {
+      "src": "^/$",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|TelegramBot|Twitterbot|LinkedInBot|Slackbot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Embedly|Googlebot|bingbot).*"
+        }
+      ],
+      "dest": "/api/og"
+    },
+    {
+      "src": "^/$",
+      "has": [
+        {
+          "type": "query",
+          "key": "og"
+        }
+      ],
+      "dest": "/api/og"
+    },
+    {
+      "handle": "filesystem"
+    }
+  ]
 }
