@@ -12,7 +12,6 @@ import {
 } from "./backend"
 import DesignPanel from "./DesignPanel"
 import HomePageDesignPanel from "./HomePageDesignPanel"
-import WhatsAppSender from "./WhatsAppSender"
 import { DEFAULT_SCHEDULE } from "./InvitationView"
 
 const categories = [
@@ -2476,7 +2475,7 @@ export default function AdminPanel({
   const [checkingSession, setCheckingSession] = useState(true)
   const [authed, setAuthed] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "invitations" | "private" | "settings" | "whatsapp"
+    "invitations" | "private" | "settings"
   >("invitations")
   const [editing, setEditing] = useState<Invitation | null>(null)
   const [editingIsNew, setEditingIsNew] = useState(false)
@@ -2620,19 +2619,6 @@ export default function AdminPanel({
           <button
             onClick={() => {
               closeForm()
-              setActiveTab("whatsapp")
-            }}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-              activeTab === "whatsapp"
-                ? "bg-[#D4AF37] text-[#2C1810]"
-                : "text-[#8a7561]"
-            }`}
-          >
-            إرسال واتساب
-          </button>
-          <button
-            onClick={() => {
-              closeForm()
               setActiveTab("settings")
             }}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
@@ -2653,8 +2639,6 @@ export default function AdminPanel({
       </div>
 
       <div className="max-w-5xl mx-auto px-5 py-8 space-y-6">
-        {activeTab === "whatsapp" && <WhatsAppSender invitations={invitations} />}
-
         {activeTab === "settings" && (
           <>
             <div className="flex items-center justify-between rounded-2xl border border-[#e5d9c3] bg-white p-5 sm:p-7">
