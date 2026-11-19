@@ -2302,38 +2302,38 @@ function SiteSettingsForm({
 }
 
 
-// تاريخ الدعوة للترتيب: موعد المناسبة (eventDateTime) إن وجد، وإلا بدون تاريخ.
-function invitationTime(inv: Invitation): number | null {
-  if (!inv.eventDateTime) return null
-  const t = new Date(inv.eventDateTime).getTime()
-  return Number.isNaN(t) ? null : t
+// تاريخ إنشاء الدعوة: رقم الدعوة (id) يتولّد من وقت الإنشاء بالميلي ثانية.
+// الدعوات القديمة بأرقام صغيرة (1، 2...) ما لها تاريخ إنشاء معروف.
+function createdTime(inv: Invitation): number | null {
+  return inv.id > 1e12 && inv.id < 4e12 ? inv.id : null
 }
 
 const MONTH_FMT = new Intl.DateTimeFormat("ar-IQ-u-nu-arab", {
   month: "long",
   year: "numeric",
 })
-const DAY_FMT = new Intl.DateTimeFormat("ar-IQ-u-nu-arab", {
-  weekday: "long",
+const CREATED_FMT = new Intl.DateTimeFormat("ar-IQ-u-nu-arab", {
   day: "numeric",
   month: "long",
   year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
 })
 
-// يرتّب الدعوات حسب التاريخ (الأحدث أولاً) ويجمّعها بأشهر.
+// يرتّب الدعوات حسب تاريخ الإنشاء (الأحدث أولاً) ويجمّعها بأشهر.
 function groupByMonth(list: Invitation[]) {
-  const sorted = [...list].sort((a, b) => {
-    const ta = invitationTime(a)
-    const tb = invitationTime(b)
-    if (ta === null && tb === null) return b.id - a.id
+  const sorted = [...list].sort((x, y) => {
+    const ta = createdTime(x)
+    const tb = createdTime(y)
+    if (ta === null && tb === null) return y.id - x.id
     if (ta === null) return 1
     if (tb === null) return -1
     return tb - ta
   })
   const groups: { label: string; items: Invitation[] }[] = []
   for (const inv of sorted) {
-    const t = invitationTime(inv)
-    const label = t === null ? "بدون تاريخ محدد" : MONTH_FMT.format(new Date(t))
+    const t = createdTime(inv)
+    const label = t === null ? "دعوات قديمة" : MONTH_FMT.format(new Date(t))
     const last = groups[groups.length - 1]
     if (last && last.label === label) last.items.push(inv)
     else groups.push({ label, items: [inv] })
@@ -2360,127 +2360,175 @@ function InvitationRow({
   onCopyAsPrivate: (inv: Invitation, nextId: number) => void
   onDesignEdit: (inv: Invitation) => void
 }) {
+  const [moreOpen, setMoreOpen] = useState(false)
+  const created = createdTime(inv)
+  const sheetLink = resolveSheetLink(inv)
+  const cover = inv.coverImage || inv.heroBg || inv.introPoster
+  const gradient =
+    inv.gradient && inv.gradient.length >= 2
+      ? `linear-gradient(135deg, ${inv.gradient.join(", ")})`
+      : `linear-gradient(135deg, ${inv.accentColor || "#D4AF37"}, #2C1810)`
+
+  const copyShareLink = async () => {
+    // رقم جديد بكل نسخة: واتساب يخزّن معاينة كل رابط، فالرقم المختلف
+    // يخليه يقرأ الصورة والعنوان الحاليين من جديد بدل النسخة القديمة.
+    // لو دخلتي من عنوان vercel.app المشترك نستخدم دومين الموقع الرسمي،
+    // لأن معاينة واتساب تشتغل عليه أضمن.
+    const base = window.location.hostname.endsWith(".vercel.app")
+      ? "https://www.samainvite.com"
+      : window.location.origin
+    const link = `${base}/?preview=${inv.id}&v=${Date.now().toString(36)}`
+    try {
+      await navigator.clipboard.writeText(link)
+      alert("تم نسخ رابط المشاركة ✓\n\n" + link)
+    } catch {
+      window.prompt("انسخي رابط المشاركة:", link)
+    }
+  }
+
+  const linkBtn =
+    "px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3] bg-white hover:bg-[#fbf7ee] transition-colors"
+
   return (
-    <div className="bg-white rounded-xl border border-[#e5d9c3] p-4 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3 min-w-0">
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: inv.accentColor }}
-        />
-        <div className="min-w-0">
-          <p className="font-bold text-sm truncate flex items-center gap-2">
-            <span>
-              #{inv.id} — {inv.title || "بدون عنوان"}
+    <div className="bg-white rounded-2xl border border-[#e5d9c3] overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+      <div
+        className="relative h-32 bg-cover bg-center"
+        style={{
+          background: cover
+            ? `center / cover no-repeat url("${cover}")`
+            : gradient,
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        <div className="absolute top-2 right-2 flex gap-1.5">
+          {inv.isPrivate && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2C1810] text-[#D4AF37]">
+              🔒 خاصة
             </span>
-            {inv.isPrivate && (
-              <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2C1810] text-[#D4AF37]">
-                خاصة
-              </span>
-            )}
-          </p>
-          <p className="text-xs text-[#8a7561] truncate">
-            {inv.groom} × {inv.bride} · {inv.venue || "بدون قاعة"}
-            {inv.sheetId ? " · مربوطة بشيت RSVP" : " · معاينة فقط"}
-          </p>
-          <p className="text-xs text-[#B8862F] font-bold mt-0.5">
-            📅{" "}
-            {invitationTime(inv) !== null
-              ? DAY_FMT.format(new Date(invitationTime(inv) as number))
-              : "بدون تاريخ محدد"}
+          )}
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              inv.sheetId || sheetLink
+                ? "bg-[#eafaf1] text-[#1a7f4b]"
+                : "bg-white/85 text-[#8a7561]"
+            }`}
+          >
+            {inv.sheetId || sheetLink ? "RSVP مربوط" : "معاينة فقط"}
+          </span>
+        </div>
+        <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/85 text-[#4A2B32]">
+          #{inv.id}
+        </span>
+        <div className="absolute bottom-2 right-3 left-3 text-white">
+          <p className="font-bold text-sm truncate drop-shadow">
+            {inv.title || "بدون عنوان"}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <a
-          href={`?preview=${inv.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-        >
-          معاينة
-        </a>
-        <button
-          type="button"
-          onClick={async () => {
-            // رقم جديد بكل نسخة: واتساب يخزّن معاينة كل رابط، فالرقم المختلف
-            // يخليه يقرأ الصورة والعنوان الحاليين من جديد بدل النسخة القديمة.
-            // لو دخلتي من عنوان vercel.app المشترك نستخدم دومين الموقع الرسمي،
-            // لأن معاينة واتساب تشتغل عليه أضمن.
-            const base = window.location.hostname.endsWith(".vercel.app")
-              ? "https://www.samainvite.com"
-              : window.location.origin
-            const link = `${base}/?preview=${inv.id}&v=${Date.now().toString(36)}`
-            try {
-              await navigator.clipboard.writeText(link)
-              alert("تم نسخ رابط المشاركة ✓\n\n" + link)
-            } catch {
-              window.prompt("انسخي رابط المشاركة:", link)
-            }
-          }}
-          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#25D366]/40 bg-[#eafaf1] text-[#1a7f4b]"
-          title="ينسخ رابط الدعوة برقم جديد حتى تظهر معاينة واتساب بأحدث صورة"
-        >
-          نسخ رابط المشاركة
-        </button>
-        {resolveSheetLink(inv) ? (
+
+      <div className="p-4 flex-1 flex flex-col gap-3">
+        <div className="space-y-1 min-w-0">
+          <p className="text-sm font-bold truncate">
+            {inv.groom} × {inv.bride}
+          </p>
+          <p className="text-xs text-[#8a7561] truncate">
+            📍 {inv.venue || "بدون قاعة"}
+          </p>
+          <p className="text-xs text-[#B8862F] font-bold">
+            🕒 أُنشئت:{" "}
+            {created !== null
+              ? CREATED_FMT.format(new Date(created))
+              : "تاريخ غير معروف"}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-auto">
+          <button
+            onClick={() => onDesignEdit(inv)}
+            className="flex-1 min-w-[140px] px-3 py-2 rounded-full text-xs font-bold bg-[#4A2B32] text-white hover:bg-[#3a2027] transition-colors"
+          >
+            🎨 تعديل التصميم مباشر
+          </button>
           <a
-            href={resolveSheetLink(inv)!}
+            href={`?preview=${inv.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#1a7f4b]/30 bg-[#eafaf1] text-[#1a7f4b] flex items-center gap-1"
-            title="فتح شيت تأكيدات الحضور بجوجل شيت"
+            className={linkBtn}
           >
-            📊 شيت الحضور
+            معاينة
           </a>
-        ) : (
-          <span
-            className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3] text-[#c7b89a] cursor-not-allowed"
-            title="ما أكو sheetId أو sheetUrl مضاف لهذي الدعوة بعد"
-          >
-            📊 شيت الحضور
-          </span>
-        )}
-        <button
-          onClick={() => onEdit(inv)}
-          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-        >
-          تعديل
-        </button>
-        <button
-          onClick={() => onDesignEdit(inv)}
-          className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#4A2B32] text-white"
-        >
-          🎨 تعديل التصميم مباشر
-        </button>
-        <button
-          onClick={() => onCopyAsPrivate(inv, nextId)}
-          className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-          title="ينشئ دعوة جديدة خاصة بنفس التصميم — لا تظهر بالصفحة الرئيسية"
-        >
-          نسخ كدعوة خاصة
-        </button>
-        {deletingId === inv.id ? (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => onDelete(inv.id)}
-              className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-600 text-white"
-            >
-              تأكيد الحذف
-            </button>
-            <button
-              onClick={() => setDeletingId(null)}
-              className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3]"
-            >
-              تراجع
-            </button>
-          </div>
-        ) : (
           <button
-            onClick={() => setDeletingId(inv.id)}
-            className="px-3 py-1.5 rounded-full text-xs font-bold border border-red-200 text-red-600"
+            type="button"
+            onClick={copyShareLink}
+            className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#25D366]/40 bg-[#eafaf1] text-[#1a7f4b]"
+            title="ينسخ رابط الدعوة برقم جديد حتى تظهر معاينة واتساب بأحدث صورة"
           >
-            حذف
+            نسخ الرابط
           </button>
+          <button
+            type="button"
+            onClick={() => setMoreOpen((v) => !v)}
+            className={linkBtn}
+            aria-expanded={moreOpen}
+          >
+            {moreOpen ? "إخفاء ▲" : "المزيد ▼"}
+          </button>
+        </div>
+
+        {moreOpen && (
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-[#efe6d3]">
+            <button onClick={() => onEdit(inv)} className={linkBtn}>
+              ✏️ تعديل البيانات
+            </button>
+            {sheetLink ? (
+              <a
+                href={sheetLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#1a7f4b]/30 bg-[#eafaf1] text-[#1a7f4b]"
+                title="فتح شيت تأكيدات الحضور بجوجل شيت"
+              >
+                📊 شيت الحضور
+              </a>
+            ) : (
+              <span
+                className="px-3 py-1.5 rounded-full text-xs font-bold border border-[#e5d9c3] text-[#c7b89a] cursor-not-allowed"
+                title="ما أكو sheetId أو sheetUrl مضاف لهذي الدعوة بعد"
+              >
+                📊 شيت الحضور
+              </span>
+            )}
+            <button
+              onClick={() => onCopyAsPrivate(inv, nextId)}
+              className={linkBtn}
+              title="ينشئ دعوة جديدة خاصة بنفس التصميم — لا تظهر بالصفحة الرئيسية"
+            >
+              نسخ كدعوة خاصة
+            </button>
+            {deletingId === inv.id ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onDelete(inv.id)}
+                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-600 text-white"
+                >
+                  تأكيد الحذف
+                </button>
+                <button
+                  onClick={() => setDeletingId(null)}
+                  className={linkBtn}
+                >
+                  تراجع
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setDeletingId(inv.id)}
+                className="px-3 py-1.5 rounded-full text-xs font-bold border border-red-200 text-red-600"
+              >
+                🗑 حذف
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -2791,7 +2839,7 @@ export default function AdminPanel({
                   <h3 className="text-sm font-bold text-[#8a7561] pt-2 border-b border-[#e5d9c3] pb-1">
                     {g.label} <span className="font-normal">({g.items.length})</span>
                   </h3>
-                  {g.items.map((inv) => (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{g.items.map((inv) => (
                     <InvitationRow
                     key={inv.id}
                     inv={inv}
@@ -2803,7 +2851,7 @@ export default function AdminPanel({
                     onCopyAsPrivate={startCopyAsPrivate}
                     onDesignEdit={setDesignEditingInv}
                   />
-                  ))}
+                  ))}</div>
                 </div>
               ))}
             </div>
@@ -2844,7 +2892,7 @@ export default function AdminPanel({
                   <h3 className="text-sm font-bold text-[#8a7561] pt-2 border-b border-[#e5d9c3] pb-1">
                     {g.label} <span className="font-normal">({g.items.length})</span>
                   </h3>
-                  {g.items.map((inv) => (
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{g.items.map((inv) => (
                     <InvitationRow
                     key={inv.id}
                     inv={inv}
@@ -2856,7 +2904,7 @@ export default function AdminPanel({
                     onCopyAsPrivate={startCopyAsPrivate}
                     onDesignEdit={setDesignEditingInv}
                   />
-                  ))}
+                  ))}</div>
                 </div>
               ))}
             </div>
