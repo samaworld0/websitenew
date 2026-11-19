@@ -2301,6 +2301,46 @@ function SiteSettingsForm({
   )
 }
 
+
+// تاريخ الدعوة للترتيب: موعد المناسبة (eventDateTime) إن وجد، وإلا بدون تاريخ.
+function invitationTime(inv: Invitation): number | null {
+  if (!inv.eventDateTime) return null
+  const t = new Date(inv.eventDateTime).getTime()
+  return Number.isNaN(t) ? null : t
+}
+
+const MONTH_FMT = new Intl.DateTimeFormat("ar-IQ-u-nu-arab", {
+  month: "long",
+  year: "numeric",
+})
+const DAY_FMT = new Intl.DateTimeFormat("ar-IQ-u-nu-arab", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+})
+
+// يرتّب الدعوات حسب التاريخ (الأحدث أولاً) ويجمّعها بأشهر.
+function groupByMonth(list: Invitation[]) {
+  const sorted = [...list].sort((a, b) => {
+    const ta = invitationTime(a)
+    const tb = invitationTime(b)
+    if (ta === null && tb === null) return b.id - a.id
+    if (ta === null) return 1
+    if (tb === null) return -1
+    return tb - ta
+  })
+  const groups: { label: string; items: Invitation[] }[] = []
+  for (const inv of sorted) {
+    const t = invitationTime(inv)
+    const label = t === null ? "بدون تاريخ محدد" : MONTH_FMT.format(new Date(t))
+    const last = groups[groups.length - 1]
+    if (last && last.label === label) last.items.push(inv)
+    else groups.push({ label, items: [inv] })
+  }
+  return groups
+}
+
 function InvitationRow({
   inv,
   nextId,
@@ -2341,6 +2381,12 @@ function InvitationRow({
           <p className="text-xs text-[#8a7561] truncate">
             {inv.groom} × {inv.bride} · {inv.venue || "بدون قاعة"}
             {inv.sheetId ? " · مربوطة بشيت RSVP" : " · معاينة فقط"}
+          </p>
+          <p className="text-xs text-[#B8862F] font-bold mt-0.5">
+            📅{" "}
+            {invitationTime(inv) !== null
+              ? DAY_FMT.format(new Date(invitationTime(inv) as number))
+              : "بدون تاريخ محدد"}
           </p>
         </div>
       </div>
@@ -2740,18 +2786,25 @@ export default function AdminPanel({
                   ما أكو دعوات عامة بعد.
                 </p>
               )}
-              {publicInvitations.map((inv) => (
-                <InvitationRow
-                  key={inv.id}
-                  inv={inv}
-                  nextId={nextId}
-                  deletingId={deletingId}
-                  setDeletingId={setDeletingId}
-                  onDelete={handleDelete}
-                  onEdit={startEdit}
-                  onCopyAsPrivate={startCopyAsPrivate}
-                  onDesignEdit={setDesignEditingInv}
-                />
+              {groupByMonth(publicInvitations).map((g) => (
+                <div key={g.label} className="space-y-3">
+                  <h3 className="text-sm font-bold text-[#8a7561] pt-2 border-b border-[#e5d9c3] pb-1">
+                    {g.label} <span className="font-normal">({g.items.length})</span>
+                  </h3>
+                  {g.items.map((inv) => (
+                    <InvitationRow
+                    key={inv.id}
+                    inv={inv}
+                    nextId={nextId}
+                    deletingId={deletingId}
+                    setDeletingId={setDeletingId}
+                    onDelete={handleDelete}
+                    onEdit={startEdit}
+                    onCopyAsPrivate={startCopyAsPrivate}
+                    onDesignEdit={setDesignEditingInv}
+                  />
+                  ))}
+                </div>
               ))}
             </div>
           </>
@@ -2786,18 +2839,25 @@ export default function AdminPanel({
                   خيار "دعوة خاصة" بنموذج تعديل أي دعوة عامة.
                 </p>
               )}
-              {privateInvitations.map((inv) => (
-                <InvitationRow
-                  key={inv.id}
-                  inv={inv}
-                  nextId={nextId}
-                  deletingId={deletingId}
-                  setDeletingId={setDeletingId}
-                  onDelete={handleDelete}
-                  onEdit={startEdit}
-                  onCopyAsPrivate={startCopyAsPrivate}
-                  onDesignEdit={setDesignEditingInv}
-                />
+              {groupByMonth(privateInvitations).map((g) => (
+                <div key={g.label} className="space-y-3">
+                  <h3 className="text-sm font-bold text-[#8a7561] pt-2 border-b border-[#e5d9c3] pb-1">
+                    {g.label} <span className="font-normal">({g.items.length})</span>
+                  </h3>
+                  {g.items.map((inv) => (
+                    <InvitationRow
+                    key={inv.id}
+                    inv={inv}
+                    nextId={nextId}
+                    deletingId={deletingId}
+                    setDeletingId={setDeletingId}
+                    onDelete={handleDelete}
+                    onEdit={startEdit}
+                    onCopyAsPrivate={startCopyAsPrivate}
+                    onDesignEdit={setDesignEditingInv}
+                  />
+                  ))}
+                </div>
               ))}
             </div>
           </>
