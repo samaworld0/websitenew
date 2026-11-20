@@ -50,6 +50,9 @@ export interface TextStyle {
   // يخفي الخط الفاصل العلوي نهائياً (بدون ما يأثر على أي حدود ثانية).
   hideBorder?: boolean
   hidden?: boolean
+  // إطفاء محتويات القسم فقط (EditableBackground): كل ما داخل القسم من نصوص
+  // وصور وبطاقات يختفي، وتبقى خلفية القسم (لون/صورة/فيديو) وحجمه فاضيين.
+  hideContents?: boolean
   // --- أحجام الأقسام (EditableBackground) ---
   // أدنى ارتفاع للقسم كنسبة % من ارتفاع الشاشة (vh). غير محدد = تلقائي.
   sectionHeight?: number
@@ -883,6 +886,30 @@ export function EditableBackground({
           }}
         />
       )}
+      {editable && st.hideContents && !st.hidden && (
+        <div
+          contentEditable={false}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            top: 8,
+            insetInlineStart: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 60,
+            background: "#1A1210",
+            border: "1px solid #B8862F",
+            color: "#F1D989",
+            fontSize: 11,
+            fontFamily: "system-ui, sans-serif",
+            padding: "4px 12px",
+            borderRadius: 999,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+          }}
+        >
+          🧹 محتويات هذا القسم مطفية عن الزوار
+        </div>
+      )}
       {editable && st.hidden && (
         <div
           contentEditable={false}
@@ -907,7 +934,22 @@ export function EditableBackground({
           🚫 هذا القسم مخفي عن الزوار
         </div>
       )}
-      {st.videoUrl ? (
+      {st.hideContents ? (
+        // نبقي المحتوى بمكانه (حتى يبقى ارتفاع القسم نفسه) لكن غير مرئي
+        // للزوار؛ بوضع التصميم نعرضه باهتاً حتى تقدرين ترجعينه.
+        <div
+          aria-hidden={!editable}
+          style={{
+            position: "relative",
+            zIndex: 1,
+            visibility: editable ? "visible" : "hidden",
+            opacity: editable ? 0.15 : undefined,
+            pointerEvents: editable ? undefined : "none",
+          }}
+        >
+          {children}
+        </div>
+      ) : st.videoUrl ? (
         <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
       ) : (
         children
@@ -1216,6 +1258,25 @@ export function EditPanel() {
               </button>
             </div>
           )}
+
+          {/* إطفاء محتويات القسم فقط: يشيل كل شي بالقسم ويبقي الخلفية فاضية */}
+          <div style={row}>
+            <button
+              style={{
+                ...btn,
+                width: "100%",
+                fontWeight: 700,
+                borderColor: st.hideContents ? "#B8862F" : "#3A2A1E",
+                background: st.hideContents ? "rgba(184,134,47,.18)" : "transparent",
+              }}
+              onClick={() => updateStyle(selectedId, { hideContents: !st.hideContents })}
+            >
+              {st.hideContents ? "🧹 إرجاع محتويات القسم" : "🧹 إطفاء محتويات القسم"}
+            </button>
+            <p style={{ fontSize: 10, opacity: 0.6, margin: "4px 0 0" }}>
+              يشيل كل شي بالقسم ويترك الخلفية فاضية.
+            </p>
+          </div>
 
           {/* تشغيل/إطفاء القسم بالكامل — يخفي كل محتوى القسم (نصوصه
               وصوره وبطاقاته) عن الزوار دفعة وحدة، مو بس لونه/صورته. */}
