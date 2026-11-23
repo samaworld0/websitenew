@@ -931,7 +931,7 @@ function WisalTemplateView({
               className="py-24 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center max-w-xl mb-20">
+              <Reveal write className="text-center max-w-xl mb-20">
                 <p
                   className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
                   style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
@@ -943,7 +943,7 @@ function WisalTemplateView({
               {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
                   (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
                   ولونه من التصميم المباشر لكل دعوة على حدة) */}
-              <Reveal className="text-center max-w-lg mb-20">
+              <Reveal write className="text-center max-w-lg mb-20">
                 <p className="text-base text-[#8C7A6B] mb-6 custom-font-amiri">
                   <EditableText id="invite-line-1">
                     اللهم بارك لهما وبارك عليهما واجمع بينهما في خير
@@ -1001,7 +1001,7 @@ function WisalTemplateView({
               className="py-16 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center w-full max-w-lg mb-16">
+              <Reveal write className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
@@ -1064,7 +1064,7 @@ function WisalTemplateView({
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full">
+                <Reveal write className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
                     <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
@@ -1090,7 +1090,7 @@ function WisalTemplateView({
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#4E1019" }}
             >
-              <Reveal className="text-center max-w-lg w-full">
+              <Reveal write className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -1119,7 +1119,7 @@ function WisalTemplateView({
               className="py-20 px-6 flex flex-col items-center border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="max-w-md w-full">
+              <Reveal write className="max-w-md w-full">
               <EditableBackground
                 id="bg-rsvp-card"
                 className="bg-white border border-[var(--gold)]/30 rounded-3xl p-10 shadow-lg"
@@ -1910,7 +1910,7 @@ function WisalTemplateTwoView({
               className="py-24 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center max-w-xl mb-20">
+              <Reveal write className="text-center max-w-xl mb-20">
                 <p
                   className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
                   style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
@@ -1922,7 +1922,7 @@ function WisalTemplateTwoView({
               {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
                   (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
                   ولونه من التصميم المباشر لكل دعوة على حدة) */}
-              <Reveal className="text-center max-w-lg mb-20">
+              <Reveal write className="text-center max-w-lg mb-20">
                 <p className="text-base text-[#8C7A6B] mb-6 custom-font-amiri">
                   <EditableText id="invite-line-1">
                     اللهم بارك لهما وبارك عليهما واجمع بينهما في خير
@@ -1980,7 +1980,7 @@ function WisalTemplateTwoView({
               className="py-16 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center w-full max-w-lg mb-16">
+              <Reveal write className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
@@ -2043,7 +2043,7 @@ function WisalTemplateTwoView({
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full">
+                <Reveal write className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
                     <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
@@ -2069,7 +2069,7 @@ function WisalTemplateTwoView({
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#4E1019" }}
             >
-              <Reveal className="text-center max-w-lg w-full">
+              <Reveal write className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -2098,7 +2098,7 @@ function WisalTemplateTwoView({
               className="py-20 px-6 flex flex-col items-center border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="max-w-md w-full">
+              <Reveal write className="max-w-md w-full">
               <EditableBackground
                 id="bg-rsvp-card"
                 className="bg-white border border-[var(--gold)]/30 rounded-3xl p-10 shadow-lg"
@@ -2929,7 +2929,7 @@ function WisalTemplateThreeView({
               className="py-24 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center max-w-xl mb-20">
+              <Reveal write className="text-center max-w-xl mb-20">
                 <p
                   className="whitespace-pre-line leading-loose text-[#5A4A3C] custom-font-amiri break-keep"
                   style={{ fontSize: "clamp(1rem, 4.2vw, 1.5rem)" }}
@@ -2941,7 +2941,7 @@ function WisalTemplateThreeView({
               {/* بطاقة الدعوة التقليدية — نص تقليدي مكوّن من 9 أسطر منفصلة
                   (كل سطر EditableText مستقل، قابل للتعديل والتحكم بحجمه
                   ولونه من التصميم المباشر لكل دعوة على حدة) */}
-              <Reveal className="text-center max-w-lg mb-20">
+              <Reveal write className="text-center max-w-lg mb-20">
                 <p className="text-base text-[#8C7A6B] mb-6 custom-font-amiri">
                   <EditableText id="invite-line-1">
                     اللهم بارك لهما وبارك عليهما واجمع بينهما في خير
@@ -2999,7 +2999,7 @@ function WisalTemplateThreeView({
               className="py-16 px-6 flex flex-col items-center"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="text-center w-full max-w-lg mb-16">
+              <Reveal write className="text-center w-full max-w-lg mb-16">
                 <h4 className="text-2xl md:text-3xl font-bold text-[#4A3B2C] mb-10 custom-font-amiri">
                   <EditableText id="countdown-title">باقي على فرحنا</EditableText>
                 </h4>
@@ -3062,7 +3062,7 @@ function WisalTemplateThreeView({
               style={{ backgroundColor: "#4E1019" }}
             >
               {inv.schedule && inv.schedule.length > 0 && (
-                <Reveal className="text-center max-w-lg w-full">
+                <Reveal write className="text-center max-w-lg w-full">
                   <div className="flex items-center justify-center gap-3 mb-10">
                     <ScheduleTitleFlower />
                     <h3 className="text-3xl font-bold text-[#F1D989] custom-font-amiri">
@@ -3088,7 +3088,7 @@ function WisalTemplateThreeView({
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#4E1019" }}
             >
-              <Reveal className="text-center max-w-lg w-full">
+              <Reveal write className="text-center max-w-lg w-full">
                 <h3 className="text-3xl font-bold text-[#F1D989] mb-7 custom-font-amiri">
                   <EditableText id="venue-title">مكان الحفل</EditableText>
                 </h3>
@@ -3117,7 +3117,7 @@ function WisalTemplateThreeView({
               className="py-20 px-6 flex flex-col items-center border-t-2 border-[var(--gold)]"
               style={{ backgroundColor: "#FAF7F2" }}
             >
-              <Reveal className="max-w-md w-full">
+              <Reveal write className="max-w-md w-full">
               <EditableBackground
                 id="bg-rsvp-card"
                 className="bg-white border border-[var(--gold)]/30 rounded-3xl p-10 shadow-lg"
@@ -3584,7 +3584,7 @@ heroBg=${tail(inv.heroBg)} doorBgVideo=${tail(inv.doorBgVideo)}`}
             touchAction: "pan-y",
           }}
         >
-          <Reveal>
+          <Reveal write>
             <EditableText
               id="title"
               as="h1"
