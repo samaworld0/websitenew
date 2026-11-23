@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type RefObject, type ReactNode } from "rea
 import { Invitation, TextStyle, CustomFont } from "./types"
 import { submitRSVP, uploadMedia } from "./backend"
 import Reveal from "./Reveal"
+import { TextRevealGateContext } from "./LiveEditor"
 import { RoseIcon } from "./icons"
 import {
   EditModeProvider,
@@ -290,7 +291,21 @@ function useContainerHeight(ref: RefObject<HTMLElement | null>) {
 const DOOR_DESIGN_WIDTH = 430
 const DOOR_DESIGN_HEIGHT = 920
 
-function DoorTextReveal({
+// يغلّف نصوص الواجهة الأولى ببوابة: حركة ظهور النصوص (نمط الظهور من التصميم
+// المباشر) ما تبدأ إلا بعد ما يختفي الباب.
+function DoorTextReveal(props: {
+  doorRemoved: boolean
+  minHeight?: number
+  children: ReactNode
+}) {
+  return (
+    <TextRevealGateContext.Provider value={props.doorRemoved}>
+      <DoorTextRevealInner {...props} />
+    </TextRevealGateContext.Provider>
+  )
+}
+
+function DoorTextRevealInner({
   doorRemoved,
   minHeight,
   children,

@@ -79,6 +79,12 @@ export interface TextStyle {
   revealSpeed?: number
 }
 
+// بوابة بدء أنميشن ظهور النصوص: نصوص الواجهة الأولى (الأسماء، العناوين...)
+// تكون موجودة خلف الباب/الفيديو من لحظة التحميل، فلازم ما نبدأ حركتها إلا بعد
+// ما يختفي الباب، وإلا تخلص الحركة وهي مخفية والزائر ما يشوفها.
+// الافتراضي true (بدون بوابة)، ومكوّن DoorTextReveal يمرّر doorRemoved.
+export const TextRevealGateContext = createContext<boolean>(true)
+
 export type TextRevealStyle =
   | "none"
   | "rise"
@@ -561,10 +567,11 @@ export function EditableText({
   const reducedMotion =
     typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
   const revealActive = !editable && !!revealStyle && revealStyle !== "none" && !reducedMotion
+  const revealGateOpen = useContext(TextRevealGateContext)
   const [revealWaiting, setRevealWaiting] = useState(true)
   useEffect(() => {
     const el = ref.current
-    if (!revealActive || !el) return
+    if (!revealActive || !el || !revealGateOpen) return
     if (typeof IntersectionObserver === "undefined") {
       setRevealWaiting(false)
       return
@@ -586,7 +593,7 @@ export function EditableText({
       io.disconnect()
       anim?.cancel()
     }
-  }, [revealActive, revealStyle, revealSpeed])
+  }, [revealActive, revealStyle, revealSpeed, revealGateOpen])
   const revealAttrs = revealStyle
     ? {
         "data-reveal-style": revealStyle,
