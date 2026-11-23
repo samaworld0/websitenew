@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Invitation } from "./types"
-import { defaultSiteSettings } from "./data"
+import { defaultSiteSettings, sealDemoInvitation } from "./data"
 import { loadInvitations, loadSiteSettings } from "./backend"
 import AdminPanel from "./AdminPanel"
 import HomePage from "./HomePage"
@@ -52,9 +52,19 @@ function AppInner() {
 
   const urlParams = new URLSearchParams(window.location.search)
   const previewId = urlParams.get("preview")
-  const previewInv = allInvitations?.find(
-    (inv) => inv.id.toString() === previewId,
-  )
+  // ?demo=seal: دعوة تجريبية للقالب الرابع بدون قاعدة بيانات (للتجربة)
+  const demoInv =
+    urlParams.get("demo") === "seal"
+      ? {
+          ...sealDemoInvitation,
+          // نسمح بتجربة وقت مخصص: ?demo=seal&t=2027-01-01T20:00
+          eventDateTime:
+            urlParams.get("t") || sealDemoInvitation.eventDateTime,
+        }
+      : undefined
+  const previewInv =
+    demoInv ??
+    allInvitations?.find((inv) => inv.id.toString() === previewId)
   const skipIntro = urlParams.get("skipIntro") === "1"
   const isAdmin = urlParams.get("admin") === "1"
 
@@ -139,7 +149,7 @@ export default function App() {
   const { w, h } = useViewport()
   const p = new URLSearchParams(window.location.search)
   const needFrame =
-    !!p.get("preview") &&
+    (!!p.get("preview") || p.get("demo") === "seal") &&
     p.get("admin") !== "1" &&
     p.get("embed") !== "1" &&
     w >= 500
