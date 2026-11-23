@@ -1302,10 +1302,10 @@ function WisalTemplateView({
           {!hideStartUi && (
 <EditableText id="door-card-box" as="div"
             className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl"
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
+            style={{ display: "flex", justifyContent: "center", borderRadius: 16, backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[var(--gold)]/30" />
+            <div className="pointer-events-none absolute inset-[6px] border border-[var(--gold)]/30" style={{ borderRadius: "max(calc(var(--box-r, 18px) - 6px), 0px)" }} />
 
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
@@ -2289,10 +2289,10 @@ function WisalTemplateTwoView({
             className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
+            style={{ display: "flex", justifyContent: "center", borderRadius: 16, backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[var(--gold)]/30" />
+            <div className="pointer-events-none absolute inset-[6px] border border-[var(--gold)]/30" style={{ borderRadius: "max(calc(var(--box-r, 18px) - 6px), 0px)" }} />
 
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>
@@ -3308,10 +3308,10 @@ function WisalTemplateThreeView({
             className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
-            style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
+            style={{ display: "flex", justifyContent: "center", borderRadius: 16, backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
             {/* الحد الداخلي الرفيع */}
-            <div className="pointer-events-none absolute inset-[6px] rounded-xl border border-[var(--gold)]/30" />
+            <div className="pointer-events-none absolute inset-[6px] border border-[var(--gold)]/30" style={{ borderRadius: "max(calc(var(--box-r, 18px) - 6px), 0px)" }} />
 
             <p className="text-[11px] tracking-[0.3em] text-[#E8DCC4] mb-3 custom-font-amiri">
               <EditableText id="door-card-title">دعوة زفاف</EditableText>

@@ -78,6 +78,12 @@ export interface TextStyle {
   // ضبابية خلفية العنصر (backdrop-filter: blur) بالبكسل — للمربعات الزجاجية
   // مثل مربع "اطرق لفتح الباب". غير محدد = القيمة الافتراضية للعنصر.
   blur?: number
+  // حجم وحدود "البوكس" (px): العرض/الارتفاع، انحناء الزوايا، سماكة ولون الحد.
+  // غير محدد = القيمة الافتراضية للعنصر.
+  boxWidth?: number
+  boxHeight?: number
+  radius?: number
+  borderWidth?: number
   // سرعة الظهور: 0.5 (أبطأ) … 2 (أسرع). الافتراضي 1.
   revealSpeed?: number
 }
@@ -106,6 +112,25 @@ export const TEXT_REVEAL_OPTIONS: { id: TextRevealStyle; label: string }[] = [
   { id: "type", label: "⌨️ كتابة فورية ناعمة" },
   { id: "none", label: "🚫 بدون حركة" },
 ]
+
+function boxStyleFrom(st: TextStyle): React.CSSProperties {
+  const o: any = {}
+  if (st.boxWidth !== undefined) {
+    o.width = st.boxWidth
+    o.maxWidth = "none"
+  }
+  if (st.boxHeight !== undefined) o.height = st.boxHeight
+  if (st.radius !== undefined) {
+    o.borderRadius = st.radius
+    o["--box-r"] = `${st.radius}px`
+  }
+  if (st.borderWidth !== undefined || st.borderColor) {
+    o.borderStyle = "solid"
+    if (st.borderWidth !== undefined) o.borderWidth = st.borderWidth
+    if (st.borderColor) o.borderColor = st.borderColor
+  }
+  return o
+}
 
 // يشغّل أنميشن ظهور النص على عنصر DOM (Web Animations API) — نستخدم خصائص
 // ما تتعارض مع تحريك/تدوير العنصر بالتصميم (translate المستقلة، opacity،
@@ -668,9 +693,10 @@ export function EditableText({
             ...(saved.blur !== undefined
               ? { backdropFilter: `blur(${saved.blur}px)`, WebkitBackdropFilter: `blur(${saved.blur}px)` }
               : null),
+            ...boxStyleFrom(saved),
             transform: `translate(${x}px, ${y}px)`,
             ...(saved.rotation ? { rotate: `${saved.rotation}deg` } : null),
-            display: "inline-block",
+            display: (style?.display as any) ?? "inline-block",
             position: "relative",
             ...(revealActive && revealWaiting ? { opacity: 0 } : null),
           }}
@@ -769,15 +795,16 @@ export function EditableText({
         ...(st.blur !== undefined
           ? { backdropFilter: `blur(${st.blur}px)`, WebkitBackdropFilter: `blur(${st.blur}px)` }
           : null),
+        ...boxStyleFrom(st),
         transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)`,
         ...(rotation ? { rotate: `${rotation}deg` } : null),
-        display: "inline-block",
+        display: (style?.display as any) ?? "inline-block",
         position: "relative",
         cursor: "pointer",
         opacity: isHidden ? 0.35 : 1,
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
         outlineOffset: 4,
-        borderRadius: (style?.borderRadius as any) ?? 4,
+        borderRadius: st.radius ?? (style?.borderRadius as any) ?? 4,
         transition: "outline-color .15s ease, opacity .15s ease",
         zIndex: isSelected ? 350 : offX || offY ? 40 : undefined,
       }}
@@ -1601,6 +1628,63 @@ export function EditPanel() {
             <button style={{ ...btn, marginTop: 6 }} onClick={() => updateStyle(selectedId, { blur: undefined })}>
               رجوع للافتراضي
             </button>
+          </div>
+
+          <div style={row}>
+            <label style={label}>📦 حجم البوكس وحدوده</label>
+            {(
+              [
+                { key: "boxWidth", text: "العرض", min: 100, max: 420, def: 240 },
+                { key: "boxHeight", text: "الارتفاع", min: 40, max: 420, def: 110 },
+                { key: "radius", text: "انحناء الزوايا", min: 0, max: 60, def: 16 },
+                { key: "borderWidth", text: "سماكة الحد", min: 0, max: 8, def: 1 },
+              ] as const
+            ).map((f) => {
+              const v = st[f.key]
+              return (
+                <div key={f.key} style={{ marginBottom: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, opacity: 0.8 }}>
+                    <span>
+                      {f.text}: {v === undefined ? "تلقائي" : `${v}px`}
+                    </span>
+                    {v !== undefined && (
+                      <span
+                        style={{ textDecoration: "underline", cursor: "pointer" }}
+                        onClick={() => updateStyle(selectedId, { [f.key]: undefined })}
+                      >
+                        تلقائي
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="range"
+                    min={f.min}
+                    max={f.max}
+                    step={1}
+                    value={v ?? f.def}
+                    onChange={(e) => updateStyle(selectedId, { [f.key]: Number(e.target.value) })}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              )
+            })}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+              <span>لون الحد</span>
+              <input
+                type="color"
+                value={st.borderColor || "#d4af37"}
+                onChange={(e) => updateStyle(selectedId, { borderColor: e.target.value })}
+                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+              />
+              {st.borderColor && (
+                <span
+                  style={{ textDecoration: "underline", cursor: "pointer" }}
+                  onClick={() => updateStyle(selectedId, { borderColor: undefined })}
+                >
+                  تلقائي
+                </span>
+              )}
+            </div>
           </div>
 
           {onUploadImage && (
