@@ -2640,7 +2640,7 @@ export default function AdminPanel({
   const [checkingSession, setCheckingSession] = useState(true)
   const [authed, setAuthed] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "invitations" | "private" | "settings"
+    "invitations" | "private" | "favorites" | "settings"
   >("invitations")
   const [editing, setEditing] = useState<Invitation | null>(null)
   const [editingIsNew, setEditingIsNew] = useState(false)
@@ -2685,6 +2685,9 @@ export default function AdminPanel({
 
   const publicInvitations = invitations.filter((inv) => !inv.isPrivate)
   const privateInvitations = invitations.filter((inv) => inv.isPrivate)
+  const favoriteInvitations = groupByMonth(invitations.filter(isFavorite)).flatMap(
+    (g) => g.items,
+  )
 
   const handleDelete = async (id: number) => {
     setDeleteError("")
@@ -2804,6 +2807,19 @@ export default function AdminPanel({
           <button
             onClick={() => {
               closeForm()
+              setActiveTab("favorites")
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              activeTab === "favorites"
+                ? "bg-[#D4AF37] text-[#2C1810]"
+                : "text-[#8a7561]"
+            }`}
+          >
+            ⭐ المفضلة{favoriteInvitations.length > 0 ? ` (${favoriteInvitations.length})` : ""}
+          </button>
+          <button
+            onClick={() => {
+              closeForm()
               setActiveTab("settings")
             }}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
@@ -2893,11 +2909,53 @@ export default function AdminPanel({
                     onEdit={startEdit}
                     onCopyAsPrivate={startCopyAsPrivate}
                     onDesignEdit={setDesignEditingInv}
+                  onToggleFavorite={handleToggleFavorite}
                   />
                   ))}</div>
                 </div>
               ))}
             </div>
+          </>
+        )}
+
+        {activeTab === "favorites" && !editing && !creating && (
+          <>
+            <div>
+              <h2 className="text-base font-bold">⭐ المفضلة</h2>
+              <p className="text-sm text-[#8a7561] mt-1">
+                الدعوات الي ضغطتي على نجمتها (عامة وخاصة) تجمعت هنا.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                {deleteError}
+              </div>
+            )}
+
+            {favoriteInvitations.length === 0 ? (
+              <p className="text-sm text-[#8a7561] text-center py-10">
+                ما أكو دعوات مفضلة بعد. اضغطي على النجمة ☆ بأي دعوة بتبويب
+                الدعوات أو الدعوات الخاصة حتى تظهر هنا.
+              </p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {favoriteInvitations.map((inv) => (
+                  <InvitationRow
+                    key={inv.id}
+                    inv={inv}
+                    nextId={nextId}
+                    deletingId={deletingId}
+                    setDeletingId={setDeletingId}
+                    onDelete={handleDelete}
+                    onEdit={startEdit}
+                    onCopyAsPrivate={startCopyAsPrivate}
+                    onDesignEdit={setDesignEditingInv}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -2930,36 +2988,7 @@ export default function AdminPanel({
                   خيار "دعوة خاصة" بنموذج تعديل أي دعوة عامة.
                 </p>
               )}
-              {privateInvitations.some(isFavorite) && (
-                <div className="space-y-3 rounded-2xl bg-[#fdf8ee] border border-[#D4AF37]/40 p-4">
-                  <h3 className="text-sm font-bold text-[#B8862F]">
-                    ⭐ المفضلة{" "}
-                    <span className="font-normal">
-                      ({privateInvitations.filter(isFavorite).length})
-                    </span>
-                  </h3>
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {groupByMonth(privateInvitations.filter(isFavorite)).flatMap(
-                      (g) =>
-                        g.items.map((inv) => (
-                          <InvitationRow
-                            key={inv.id}
-                            inv={inv}
-                            nextId={nextId}
-                            deletingId={deletingId}
-                            setDeletingId={setDeletingId}
-                            onDelete={handleDelete}
-                            onEdit={startEdit}
-                            onCopyAsPrivate={startCopyAsPrivate}
-                            onDesignEdit={setDesignEditingInv}
-                            onToggleFavorite={handleToggleFavorite}
-                          />
-                        )),
-                    )}
-                  </div>
-                </div>
-              )}
-              {groupByMonth(privateInvitations.filter((i) => !isFavorite(i))).map((g) => (
+              {groupByMonth(privateInvitations).map((g) => (
                 <div key={g.label} className="space-y-3">
                   <h3 className="text-sm font-bold text-[#8a7561] pt-2 border-b border-[#e5d9c3] pb-1">
                     {g.label} <span className="font-normal">({g.items.length})</span>
