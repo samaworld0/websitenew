@@ -81,6 +81,8 @@ export default function Reveal({
       (t) =>
         (t.textContent || "").trim().length > 0 &&
         !t.querySelector("input,textarea,button,select,form") &&
+        !t.querySelector("[data-reveal-style]") &&
+        !t.hasAttribute("data-reveal-style") &&
         !t.closest("form"),
     )
     targetsRef.current = found

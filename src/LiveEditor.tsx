@@ -72,6 +72,123 @@ export interface TextStyle {
   duration?: number
   // نوع منحنى الحركة (سرعة الانتقال) — CSS transition-timing-function.
   easing?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"
+  // نمط ظهور النص عند وصول الزائر له بالتمرير (شوف TEXT_REVEAL_OPTIONS).
+  // غير محدد = يتبع النمط العام (text-reveal-all) أو الافتراضي الحالي.
+  reveal?: TextRevealStyle
+  // سرعة الظهور: 0.5 (أبطأ) … 2 (أسرع). الافتراضي 1.
+  revealSpeed?: number
+}
+
+export type TextRevealStyle =
+  | "none"
+  | "rise"
+  | "blur"
+  | "rise-blur"
+  | "fade"
+  | "write"
+  | "type"
+
+export const TEXT_REVEAL_OPTIONS: { id: TextRevealStyle; label: string }[] = [
+  { id: "rise", label: "⬆️ صعود سلس" },
+  { id: "blur", label: "🌫 ضبابية تنجلي" },
+  { id: "rise-blur", label: "✨ صعود + ضبابية" },
+  { id: "fade", label: "🌙 تلاشي ناعم" },
+  { id: "write", label: "✍️ كتابة سلسة" },
+  { id: "type", label: "⌨️ كتابة فورية ناعمة" },
+  { id: "none", label: "🚫 بدون حركة" },
+]
+
+// يشغّل أنميشن ظهور النص على عنصر DOM (Web Animations API) — نستخدم خصائص
+// ما تتعارض مع تحريك/تدوير العنصر بالتصميم (translate المستقلة، opacity،
+// filter، mask، clip-path). يرجّع الأنميشن حتى نقدر نلغيه.
+export function playTextReveal(
+  el: HTMLElement,
+  style: TextRevealStyle,
+  speed = 1,
+  delay = 0,
+): Animation | null {
+  if (style === "none" || typeof el.animate !== "function") return null
+  const sp = Math.min(2, Math.max(0.5, speed || 1))
+  const len = Math.max(1, (el.textContent || "").trim().length)
+  const soft = "cubic-bezier(.22,.7,.25,1)"
+  const opt = (duration: number, easing = soft): KeyframeAnimationOptions => ({
+    duration: duration / sp,
+    delay,
+    easing,
+    fill: "both",
+  })
+  let anim: Animation
+  switch (style) {
+    case "rise":
+      anim = el.animate(
+        [
+          { opacity: 0, translate: "0 22px" },
+          { opacity: 1, translate: "0 0" },
+        ],
+        opt(1100),
+      )
+      break
+    case "blur":
+      anim = el.animate(
+        [
+          { opacity: 0, filter: "blur(10px)" },
+          { opacity: 1, filter: "blur(0px)" },
+        ],
+        opt(1300),
+      )
+      break
+    case "rise-blur":
+      anim = el.animate(
+        [
+          { opacity: 0, filter: "blur(10px)", translate: "0 20px" },
+          { opacity: 1, filter: "blur(0px)", translate: "0 0" },
+        ],
+        opt(1300),
+      )
+      break
+    case "fade":
+      anim = el.animate([{ opacity: 0 }, { opacity: 1 }], opt(1400, "ease-out"))
+      break
+    case "write": {
+      // مسح ناعم بحافة متدرجة من اليمين لليسار (كأن الحبر ينتشر)
+      const grad = "linear-gradient(to left, #000 0%, #000 35%, transparent 60%)"
+      const e = el.style as any
+      e.maskImage = e.webkitMaskImage = grad
+      e.maskSize = e.webkitMaskSize = "300% 100%"
+      e.maskRepeat = e.webkitMaskRepeat = "no-repeat"
+      anim = el.animate(
+        [
+          { maskPosition: "0% 0%", webkitMaskPosition: "0% 0%" },
+          { maskPosition: "100% 0%", webkitMaskPosition: "100% 0%" },
+        ] as Keyframe[],
+        opt(Math.min(3200, Math.max(1100, len * 80)), "cubic-bezier(.45,.1,.3,1)"),
+      )
+      const clean = () => {
+        e.maskImage = e.webkitMaskImage = ""
+        e.maskSize = e.webkitMaskSize = ""
+        e.maskRepeat = e.webkitMaskRepeat = ""
+      }
+      anim.onfinish = clean
+      anim.oncancel = clean
+      return anim
+    }
+    case "type":
+      anim = el.animate(
+        [
+          { clipPath: "inset(0 0 0 100%)", filter: "blur(3px)", opacity: 0.4 },
+          { clipPath: "inset(0 0 0 0)", filter: "blur(0px)", opacity: 1 },
+        ],
+        opt(
+          Math.min(2200, Math.max(600, len * 38)),
+          `steps(${Math.min(80, Math.max(10, len * 2))}, end)`,
+        ),
+      )
+      break
+    default:
+      return null
+  }
+  anim.onfinish = () => anim.cancel()
+  return anim
 }
 
 export type SidebarTab = "text" | "background" | "properties" | "insert"
@@ -438,6 +555,51 @@ export function EditableText({
   const Tag = as as any
   const displayChildren = currentStyle?.text !== undefined ? currentStyle.text : children
 
+  // نمط ظهور النص بالتمرير: نمط العنصر نفسه، وإلا النمط العام (text-reveal-all)
+  const revealStyle = currentStyle?.reveal ?? styles["text-reveal-all"]?.reveal
+  const revealSpeed = currentStyle?.revealSpeed ?? styles["text-reveal-all"]?.revealSpeed ?? 1
+  const reducedMotion =
+    typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  const revealActive = !editable && !!revealStyle && revealStyle !== "none" && !reducedMotion
+  const [revealWaiting, setRevealWaiting] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!revealActive || !el) return
+    if (typeof IntersectionObserver === "undefined") {
+      setRevealWaiting(false)
+      return
+    }
+    let anim: Animation | null = null
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((en) => en.isIntersecting)) return
+        io.disconnect()
+        anim = playTextReveal(el, revealStyle as TextRevealStyle, revealSpeed, 120)
+        // الأنميشن (fill: both) يمسك أول إطار طول فترة التأخير، فنقدر نشيل
+        // الإخفاء المبدئي بدون وميض.
+        setRevealWaiting(false)
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -30px 0px" },
+    )
+    io.observe(el)
+    return () => {
+      io.disconnect()
+      anim?.cancel()
+    }
+  }, [revealActive, revealStyle, revealSpeed])
+  const revealAttrs = revealStyle
+    ? {
+        "data-reveal-style": revealStyle,
+        ref,
+      }
+    : { ref }
+  const revealHideStyle: React.CSSProperties | null =
+    revealActive && revealWaiting
+      ? { opacity: 0, ...(as === "span" ? { display: "inline-block" } : null) }
+      : revealActive && as === "span"
+        ? { display: "inline-block" }
+        : null
+
   // أي عناصر ثانية بستايلز الصفحة مربوطة بهالعنصر عن طريق duplicateOf
   // (يعني اتسوّت له بزر "تكرار") — نعرضها كنسخ شقيقة جنبه مباشرة، بنفس
   // الشكل (as/className/style/children) بس كل وحدة فيها تدير نفسها
@@ -460,10 +622,20 @@ export function EditableText({
   if (!editable) {
     const saved = styles[id]
     if (saved?.hidden) return duplicatesNode
-    if (!saved) {
+    if (!saved && !revealStyle) {
       return (
         <>
           <Tag className={className} style={style}>
+            {children}
+          </Tag>
+          {duplicatesNode}
+        </>
+      )
+    }
+    if (!saved) {
+      return (
+        <>
+          <Tag className={className} style={{ ...style, ...revealHideStyle }} {...revealAttrs}>
             {children}
           </Tag>
           {duplicatesNode}
@@ -475,6 +647,7 @@ export function EditableText({
     return (
       <>
         <Tag
+          {...revealAttrs}
           className={className}
           style={{
             ...style,
@@ -486,6 +659,7 @@ export function EditableText({
             ...(saved.rotation ? { rotate: `${saved.rotation}deg` } : null),
             display: "inline-block",
             position: "relative",
+            ...(revealActive && revealWaiting ? { opacity: 0 } : null),
           }}
         >
           {displayChildren}
@@ -1410,6 +1584,90 @@ export function EditPanel() {
               />
             </div>
           )}
+
+          <div style={row}>
+            <label style={label}>✨ نمط ظهور النص (عند التمرير)</label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <button
+                style={{
+                  ...btn,
+                  borderColor: st.reveal === undefined ? "#B8862F" : "#3A2A1E",
+                  background: st.reveal === undefined ? "rgba(184,134,47,.18)" : "transparent",
+                }}
+                onClick={() => updateStyle(selectedId, { reveal: undefined })}
+                title="يتبع النمط العام أو الافتراضي الحالي"
+              >
+                افتراضي
+              </button>
+              {TEXT_REVEAL_OPTIONS.map((o) => (
+                <button
+                  key={o.id}
+                  style={{
+                    ...btn,
+                    borderColor: st.reveal === o.id ? "#B8862F" : "#3A2A1E",
+                    background: st.reveal === o.id ? "rgba(184,134,47,.18)" : "transparent",
+                  }}
+                  onClick={() => {
+                    updateStyle(selectedId, { reveal: o.id })
+                    const el = document.querySelector<HTMLElement>(
+                      `[data-editable-id="${selectedId}"]`,
+                    )
+                    if (el) playTextReveal(el, o.id, st.revealSpeed ?? 1)
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <label style={{ ...label, marginTop: 10 }}>
+              السرعة ({(st.revealSpeed ?? 1).toFixed(1)}×)
+            </label>
+            <input
+              type="range"
+              min={0.5}
+              max={2}
+              step={0.1}
+              value={st.revealSpeed ?? 1}
+              onChange={(e) => updateStyle(selectedId, { revealSpeed: Number(e.target.value) })}
+              style={{ width: "100%" }}
+            />
+            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+              <button
+                style={{ ...btn, flex: 1 }}
+                onClick={() => {
+                  const el = document.querySelector<HTMLElement>(
+                    `[data-editable-id="${selectedId}"]`,
+                  )
+                  if (el && st.reveal) playTextReveal(el, st.reveal, st.revealSpeed ?? 1)
+                }}
+              >
+                ▶ معاينة
+              </button>
+              <button
+                style={{ ...btn, flex: 1 }}
+                onClick={() =>
+                  updateStyle("text-reveal-all", {
+                    reveal: st.reveal,
+                    revealSpeed: st.revealSpeed,
+                  })
+                }
+                title="يطبّق هذا النمط والسرعة على كل النصوص اللي ما لها نمط خاص"
+              >
+                تطبيق على كل النصوص
+              </button>
+            </div>
+            {styles["text-reveal-all"]?.reveal && (
+              <p style={{ fontSize: 10, opacity: 0.7, margin: "6px 0 0" }}>
+                النمط العام الحالي: {TEXT_REVEAL_OPTIONS.find((o) => o.id === styles["text-reveal-all"]?.reveal)?.label}{" "}
+                <span
+                  style={{ textDecoration: "underline", cursor: "pointer" }}
+                  onClick={() => resetStyle("text-reveal-all")}
+                >
+                  إلغاء
+                </span>
+              </p>
+            )}
+          </div>
 
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button
