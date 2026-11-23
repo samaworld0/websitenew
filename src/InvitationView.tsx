@@ -1300,7 +1300,7 @@ function WisalTemplateView({
 
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع) */}
           {!hideStartUi && (
-<div
+<EditableText id="door-card-box" as="div"
             className="relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl"
             style={{ backgroundColor: "rgba(255, 255, 255, 0.06)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}
           >
@@ -1313,7 +1313,7 @@ function WisalTemplateView({
             <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
-          </div>
+          </EditableText>
 )}
         </div>
       )}
@@ -2285,7 +2285,7 @@ function WisalTemplateTwoView({
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
               يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
           {!hideStartUi && (
-<div
+<EditableText id="door-card-box" as="div"
             className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
@@ -2300,19 +2300,19 @@ function WisalTemplateTwoView({
             <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
-          </div>
+          </EditableText>
 )}
 
           {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً.
               نفس فكرة الاختفاء قبل الفيديو. */}
           {!hideStartUi && (
-<div
+<EditableText id="door-knock-group" as="div"
             className={`relative z-10 flex flex-col items-center text-center mt-4 transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
           >
             <p className="text-sm font-bold text-[#F1D989] custom-font-amiri drop-shadow-lg mb-2">
-              دُقّوا على الباب ثلاث دقّات ليُفتح
+              <EditableText id="door-knock-hint">دُقّوا على الباب ثلاث دقّات ليُفتح</EditableText>
             </p>
             <div className="flex items-center justify-center gap-2.5">
               {[0, 1, 2].map((i) => (
@@ -2328,7 +2328,7 @@ function WisalTemplateTwoView({
                 />
               ))}
             </div>
-          </div>
+          </EditableText>
 )}
         </div>
       )}
@@ -3304,7 +3304,7 @@ function WisalTemplateThreeView({
           {/* المربع الصغير أسفل الشاشة — خلفية Blur بدل السواد، وحد مزدوج (خارجي وداخلي رفيع).
               يختفي (fade) أول ما تكتمل الدقة الثالثة، قبل ما يبدأ فيديو الفتح. */}
           {!hideStartUi && (
-<div
+<EditableText id="door-card-box" as="div"
             className={`relative z-10 flex flex-col items-center text-center px-6 py-6 w-[240px] sm:w-[280px] rounded-2xl border border-[var(--gold)]/40 shadow-2xl transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
@@ -3319,19 +3319,19 @@ function WisalTemplateThreeView({
             <p className="text-2xl font-bold text-[#F1D989] custom-font-ruqaa drop-shadow-lg" style={{ marginBottom: 0 }}>
               <EditableText id="door-card-tap-hint">اضغط لفتح الباب</EditableText>
             </p>
-          </div>
+          </EditableText>
 )}
 
           {/* تعليمة الدقّات الثلاث + النقاط — عنصر مستقل تحت المربع، بمنتصف الشاشة أفقياً.
               نفس فكرة الاختفاء قبل الفيديو. */}
           {!hideStartUi && (
-<div
+<EditableText id="door-knock-group" as="div"
             className={`relative z-10 flex flex-col items-center text-center mt-4 transition-opacity duration-500 ${
               boxHidden ? "opacity-0" : "opacity-100"
             }`}
           >
             <p className="text-sm font-bold text-[#F1D989] custom-font-amiri drop-shadow-lg mb-2">
-              دُقّوا على الباب ثلاث دقّات ليُفتح
+              <EditableText id="door-knock-hint">دُقّوا على الباب ثلاث دقّات ليُفتح</EditableText>
             </p>
             <div className="flex items-center justify-center gap-2.5">
               {[0, 1, 2].map((i) => (
@@ -3347,7 +3347,7 @@ function WisalTemplateThreeView({
                 />
               ))}
             </div>
-          </div>
+          </EditableText>
 )}
         </div>
       )}

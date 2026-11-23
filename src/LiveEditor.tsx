@@ -75,6 +75,9 @@ export interface TextStyle {
   // نمط ظهور النص عند وصول الزائر له بالتمرير (شوف TEXT_REVEAL_OPTIONS).
   // غير محدد = يتبع النمط العام (text-reveal-all) أو الافتراضي الحالي.
   reveal?: TextRevealStyle
+  // ضبابية خلفية العنصر (backdrop-filter: blur) بالبكسل — للمربعات الزجاجية
+  // مثل مربع "اطرق لفتح الباب". غير محدد = القيمة الافتراضية للعنصر.
+  blur?: number
   // سرعة الظهور: 0.5 (أبطأ) … 2 (أسرع). الافتراضي 1.
   revealSpeed?: number
 }
@@ -662,6 +665,9 @@ export function EditableText({
             ...(saved.font ? { fontFamily: saved.font } : null),
             ...(saved.color ? { color: saved.color } : null),
             ...(saved.bgColor ? { backgroundColor: saved.bgColor } : null),
+            ...(saved.blur !== undefined
+              ? { backdropFilter: `blur(${saved.blur}px)`, WebkitBackdropFilter: `blur(${saved.blur}px)` }
+              : null),
             transform: `translate(${x}px, ${y}px)`,
             ...(saved.rotation ? { rotate: `${saved.rotation}deg` } : null),
             display: "inline-block",
@@ -760,6 +766,9 @@ export function EditableText({
         ...(st.font ? { fontFamily: st.font } : null),
         ...(st.color ? { color: st.color } : null),
         ...(st.bgColor ? { backgroundColor: st.bgColor } : null),
+        ...(st.blur !== undefined
+          ? { backdropFilter: `blur(${st.blur}px)`, WebkitBackdropFilter: `blur(${st.blur}px)` }
+          : null),
         transform: `translate(${percentToPx(offX)}px, ${percentToPx(offY)}px)`,
         ...(rotation ? { rotate: `${rotation}deg` } : null),
         display: "inline-block",
@@ -768,7 +777,7 @@ export function EditableText({
         opacity: isHidden ? 0.35 : 1,
         outline: isSelected ? "2px dashed #B8862F" : "2px dashed transparent",
         outlineOffset: 4,
-        borderRadius: 4,
+        borderRadius: (style?.borderRadius as any) ?? 4,
         transition: "outline-color .15s ease, opacity .15s ease",
         zIndex: isSelected ? 350 : offX || offY ? 40 : undefined,
       }}
@@ -1573,6 +1582,25 @@ export function EditPanel() {
               ))}
               <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>بدون</button>
             </div>
+          </div>
+
+          <div style={row}>
+            <label style={label}>
+              ضبابية الخلفية خلف العنصر (Blur):{" "}
+              {st.blur === undefined ? "افتراضي" : `${st.blur}px`}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={40}
+              step={1}
+              value={st.blur ?? 18}
+              onChange={(e) => updateStyle(selectedId, { blur: Number(e.target.value) })}
+              style={{ width: "100%" }}
+            />
+            <button style={{ ...btn, marginTop: 6 }} onClick={() => updateStyle(selectedId, { blur: undefined })}>
+              رجوع للافتراضي
+            </button>
           </div>
 
           {onUploadImage && (
