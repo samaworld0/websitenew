@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, type RefObject, type ReactNode } from "rea
 import { Invitation, TextStyle, CustomFont } from "./types"
 import { submitRSVP, uploadMedia } from "./backend"
 import Reveal from "./Reveal"
-import SealTemplateView from "./SealTemplate"
 import { RoseIcon } from "./icons"
 import {
   EditModeProvider,
@@ -3558,14 +3557,6 @@ heroBg=${tail(inv.heroBg)} doorBgVideo=${tail(inv.doorBgVideo)}`}
           customFonts={customFonts}
           skipIntro={skipIntro}
         />
-      ) : inv.templateType === "seal" ? (
-        <SealTemplateView
-          inv={inv}
-          editable={editable}
-          onStylesChange={onStylesChange}
-          customFonts={customFonts}
-          skipIntro={skipIntro}
-        />
       ) : inv.templateType === "wisal3" ? (
         <WisalTemplateThreeView
           inv={inv}

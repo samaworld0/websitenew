@@ -993,8 +993,6 @@ function InvitationForm({
         ? "wisal2"
         : inv.templateType === "wisal3"
         ? "wisal3"
-        : inv.templateType === "seal"
-        ? "seal"
         : inv.heroBg || inv.introVideo
         ? "wisal"
         : undefined,
@@ -1384,7 +1382,7 @@ function InvitationForm({
           <div className="flex flex-col sm:flex-row gap-3">
             <label
               className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
-                inv.templateType !== "wisal2" && inv.templateType !== "wisal3" && inv.templateType !== "seal"
+                inv.templateType !== "wisal2" && inv.templateType !== "wisal3"
                   ? "border-[#D4AF37] bg-[#fdf8ee]"
                   : "border-[#e5d9c3]"
               }`}
@@ -1394,7 +1392,7 @@ function InvitationForm({
                 name="templateVersion"
                 className="mt-1 h-4 w-4 accent-[#D4AF37]"
                 checked={
-                  inv.templateType !== "wisal2" && inv.templateType !== "wisal3" && inv.templateType !== "seal"
+                  inv.templateType !== "wisal2" && inv.templateType !== "wisal3"
                 }
                 onChange={() => set("templateType", undefined)}
               />
@@ -1446,28 +1444,6 @@ function InvitationForm({
                 <span className="text-[#8a7561]">
                   نسخة مستقلة ثالثة بنفس الشكل حالياً — تقدرين تطلبين
                   تعديلات عليها لحالها بدون ما تأثر على القالبين 1 و2
-                </span>
-              </span>
-            </label>
-            <label
-              className={`flex-1 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
-                inv.templateType === "seal"
-                  ? "border-[#D4AF37] bg-[#fdf8ee]"
-                  : "border-[#e5d9c3]"
-              }`}
-            >
-              <input
-                type="radio"
-                name="templateVersion"
-                className="mt-1 h-4 w-4 accent-[#D4AF37]"
-                checked={inv.templateType === "seal"}
-                onChange={() => set("templateType", "seal")}
-              />
-              <span className="text-sm">
-                <span className="font-bold block">القالب 4 — ختم الشمع ✨</span>
-                <span className="text-[#8a7561]">
-                  ظرف فاخر بختم شمع ينكسر بلمسة الضيف، اسم الضيف بخط اليد
-                  (?guest=الاسم)، عدّ تنازلي، إضافة للتقويم وتأكيد حضور
                 </span>
               </span>
             </label>

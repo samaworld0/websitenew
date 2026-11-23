@@ -87,37 +87,3 @@ export const invitations: Invitation[] = [
     musicUrl: "/music/background-2.mp3",
   },
 ]
-
-
-// دعوة تجريبية للقالب الرابع "ختم الشمع" — تُفتح من الرابط ?demo=seal بدون
-// ما تنحفظ بقاعدة البيانات، حتى تجربين القالب وتشوفينه مباشرة.
-export const sealDemoInvitation: Invitation = {
-  id: 900001,
-  category: "wedding",
-  title: "دعوة زواج — ختم الشمع",
-  subtitle: "حسن وسارة",
-  groom: "حسن",
-  bride: "سارة",
-  date: "٦ جمادى الأولى ١٤٤٨",
-  dateGreg: "٢٠ ديسمبر ٢٠٢٦",
-  time: "٧:٣٠ مساءً",
-  eventDateTime: "2026-12-20T19:30",
-  venue: "قاعة الياسمين الملكية",
-  mapUrl: "",
-  city: "بغداد - الكرادة",
-  groomFamily: "نجل السيد أحمد الربيعي وعائلته الكريمة",
-  brideFamily: "كريمة السيد محمود الجبوري وعائلته الكريمة",
-  gradient: ["#190709", "#2a0e14", "#190709"],
-  accentColor: "#D4AF37",
-  tag: "جديد",
-  price: "",
-  verse:
-    "وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً",
-  templateType: "seal",
-  isPrivate: true,
-  schedule: [
-    { label: "استقبال الضيوف", time: "٧:٣٠ مساءً" },
-    { label: "دخول العروسين", time: "٨:٣٠ مساءً" },
-    { label: "العشاء", time: "٩:٣٠ مساءً" },
-  ],
-}
