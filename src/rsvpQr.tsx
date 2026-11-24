@@ -122,6 +122,7 @@ type Guest = {
   title?: string
   groom?: string
   bride?: string
+  disabled?: boolean
 }
 
 const shell = (children: React.ReactNode, color = "#fefcf8") => (
@@ -163,7 +164,9 @@ export function ScanPage({ id }: { id: string }) {
           ? "⚠️ هذا الباركود مستخدم من قبل"
           : st === "undone"
             ? "تم التراجع عن الوصول"
-            : "غير موجود",
+            : st === "disabled"
+              ? "⛔ هذا الباركود معطّل"
+              : "غير موجود",
     )
   }
 
@@ -172,6 +175,15 @@ export function ScanPage({ id }: { id: string }) {
     return shell(<p className="font-bold text-red-600">❌ باركود غير صالح</p>, "#fff5f5")
 
   const title = [guest.groom, guest.bride].filter(Boolean).join(" & ") || guest.title
+  if (guest.disabled)
+    return shell(
+      <>
+        <p className="text-sm text-[#8a7561]">{title}</p>
+        <h1 className="text-xl font-bold my-3 text-[#2C1810]">{guest.name}</h1>
+        <p className="font-bold text-red-600">⛔ هذا الباركود معطّل</p>
+      </>,
+      "#fff5f5",
+    )
   return shell(
     <>
       <p className="text-sm text-[#8a7561]">{title}</p>
@@ -210,6 +222,7 @@ type Row = {
   companions: number
   attendance: string
   checked_in_at: string | null
+  disabled?: boolean
 }
 
 const fmt = (t: string | null) =>
@@ -303,10 +316,11 @@ export function DoorPage({ doorKey }: { doorKey: string }) {
   if (result) {
     const ok = result.status === "ok"
     const used = result.status === "already"
+    const off = result.status === "disabled"
     const bg = ok ? "#f0fdf4" : "#fff5f5"
     return shell(
       <>
-        {ok || used ? (
+        {ok || used || off ? (
           <>
             <h1 className="text-2xl font-bold text-[#2C1810]">{result.name}</h1>
             <p className="text-sm text-[#8a7561] mt-1">
@@ -318,6 +332,7 @@ export function DoorPage({ doorKey }: { doorKey: string }) {
             {result.status === "wrong_invitation" ? "❌ هذا الباركود لدعوة ثانية" : "❌ باركود غير صالح"}
           </p>
         )}
+        {off && <p className="mt-3 font-bold text-red-600">⛔ هذا الباركود معطّل</p>}
         {used && (
           <p className="mt-3 font-bold text-red-600">
             ⛔ مستخدم من قبل {result.checked_in_at ? `(${fmt(result.checked_in_at)})` : ""}
@@ -372,7 +387,7 @@ export function DoorPage({ doorKey }: { doorKey: string }) {
             <button className="w-full flex justify-between py-2 text-sm" onClick={() => lookup(g.id)}>
               <span>{g.name}</span>
               <span className={g.checked_in_at ? "text-green-600" : "text-[#8a7561]"}>
-                {g.checked_in_at ? `✓ ${fmt(g.checked_in_at)}` : "—"}
+                {g.disabled ? "معطّل" : g.checked_in_at ? `✓ ${fmt(g.checked_in_at)}` : "—"}
               </span>
             </button>
           </li>
@@ -411,11 +426,11 @@ export async function revokeDoorLink(inv: Invitation) {
 }
 
 export function AttendancePanel({ inv, onClose }: { inv: Invitation; onClose: () => void }) {
-  const [rows, setRows] = useState<(Row & { message?: string })[] | null>(null)
+  const [rows, setRows] = useState<(Row & { message?: string; disabled_at?: string | null })[] | null>(null)
   const load = async () => {
     const { data } = await supabase
       .from("rsvps")
-      .select("id,name,companions,attendance,checked_in_at,message")
+      .select("id,name,companions,attendance,checked_in_at,message,disabled_at")
       .eq("invitation_id", inv.id)
       .order("created_at", { ascending: false })
     setRows((data as any) || [])
@@ -425,6 +440,10 @@ export function AttendancePanel({ inv, onClose }: { inv: Invitation; onClose: ()
   }, [inv.id])
   const act = async (id: string, undo: boolean) => {
     await supabase.rpc("admin_checkin", { p_id: id, p_undo: undo })
+    load()
+  }
+  const toggleOff = async (id: string, off: boolean) => {
+    await supabase.rpc("admin_set_disabled", { p_id: id, p_disabled: off })
     load()
   }
   const arrived = rows?.filter((r) => r.checked_in_at).length ?? 0
@@ -441,14 +460,25 @@ export function AttendancePanel({ inv, onClose }: { inv: Invitation; onClose: ()
               <span>
                 {r.name}
                 {r.companions > 0 ? ` (+${r.companions})` : ""}
+                {r.disabled_at && <span className="text-red-600"> ⛔ معطّل</span>}
                 {r.checked_in_at && <span className="text-green-600"> ✓ {fmt(r.checked_in_at)}</span>}
               </span>
-              <button
-                className="px-3 py-1 rounded-full border text-xs"
-                onClick={() => act(r.id, !!r.checked_in_at)}
-              >
-                {r.checked_in_at ? "تراجع" : "وصل"}
-              </button>
+              <span className="flex gap-1">
+                {!r.disabled_at && (
+                  <button
+                    className="px-3 py-1 rounded-full border text-xs"
+                    onClick={() => act(r.id, !!r.checked_in_at)}
+                  >
+                    {r.checked_in_at ? "تراجع" : "وصل"}
+                  </button>
+                )}
+                <button
+                  className={`px-3 py-1 rounded-full border text-xs ${r.disabled_at ? "text-green-700" : "text-red-600"}`}
+                  onClick={() => toggleOff(r.id, !r.disabled_at)}
+                >
+                  {r.disabled_at ? "تفعيل" : "تعطيل"}
+                </button>
+              </span>
             </li>
           ))}
           {rows?.length === 0 && <li className="p-4 text-center text-[#8a7561]">ما أكو تسجيلات بعد</li>}
