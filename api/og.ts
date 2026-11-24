@@ -47,16 +47,16 @@ function buildHtml(p: { title: string; description: string; image: string; pageU
     <meta property="og:site_name" content="${escapeHtml(SITE_NAME)}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
-    <meta property="og:image" content="${image}" />
+${image ? `    <meta property="og:image" content="${image}" />
     <meta property="og:image:secure_url" content="${image}" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:height" content="630" />` : ""}
     <meta property="og:url" content="${pageUrl}" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="${image ? "summary_large_image" : "summary"}" />
     <meta name="twitter:title" content="${title}" />
     <meta name="twitter:description" content="${description}" />
-    <meta name="twitter:image" content="${image}" />
+${image ? `    <meta name="twitter:image" content="${image}" />` : ""}
   </head>
   <body>
     <p>${title}</p>
@@ -76,7 +76,14 @@ export default async function handler(req: any, res: any) {
   let description = "أنشئ دعوتك الإلكترونية الفاخرة بدقائق"
   let image = DEFAULT_IMAGE
 
-  if (previewId && /^\d+$/.test(previewId)) {
+  // روابط الباركود/الاستقبال: معاينة محايدة بدون صورة ولا بيانات (خاصة).
+  const isDoor = !!query.get("door")
+  const isScan = !!query.get("scan")
+  if (isDoor || isScan) {
+    title = isDoor ? "بوابة الاستقبال" : "بطاقة دخول"
+    description = isDoor ? "رابط خاص بفريق الاستقبال" : "باركود الدخول للمناسبة"
+    image = ""
+  } else if (previewId && /^\d+$/.test(previewId)) {
     try {
       const r = await fetch(
         `${SUPABASE_URL}/rest/v1/invitations?id=eq.${previewId}&select=title,subtitle,groom,bride,dateGreg,time,venue,coverImage,heroBg,introPoster,textStyles`,
@@ -102,7 +109,7 @@ export default async function handler(req: any, res: any) {
     }
   }
 
-  const body = Buffer.from(buildHtml({ title, description, image: toWhatsappSafeImage(image, host), pageUrl }), "utf-8")
+  const body = Buffer.from(buildHtml({ title, description, image: image ? toWhatsappSafeImage(image, host) : "", pageUrl }), "utf-8")
   res.statusCode = 200
   res.setHeader("Content-Type", "text/html; charset=utf-8")
   res.setHeader("Content-Length", String(body.length))
