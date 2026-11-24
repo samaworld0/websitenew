@@ -999,11 +999,22 @@ function InvitationForm({
     const cleanInv: Invitation = {
       ...inv,
       mapUrl: normalizeMapUrl(inv.mapUrl || ""),
+      // لو الدعوة أصلاً من نوع "وصال" (أي نسخة)، نخليها كما هي دايماً —
+      // قبل كان هذا الشرط يعتمد بس على وجود heroBg أو introVideo، فلو
+      // دعوة "وصال" كانت تستخدم doorBgVideo بس (بدون heroBg ولا
+      // introVideo)، أي حفظ عادي (حتى لو تعديل بسيط زي "تخطي فيديو
+      // الفتح") كان يصفّر templateType لـ undefined ويكسر الدعوة كلها
+      // (ترجع لقالب فاضي بس عنوان/عنوان فرعي). الحل: نحافظ على templateType
+      // الحالي دايماً لو كان أصلاً wisal/wisal2/wisal3، ونكتشف "وصال"
+      // تلقائياً فقط لو كانت الدعوة جديدة (templateType فاضي) وعندها أي
+      // وسائط قسم أول (heroBg أو introVideo أو doorBgVideo).
       templateType: inv.templateType === "wisal2"
         ? "wisal2"
         : inv.templateType === "wisal3"
         ? "wisal3"
-        : inv.heroBg || inv.introVideo
+        : inv.templateType === "wisal"
+        ? "wisal"
+        : inv.heroBg || inv.introVideo || inv.doorBgVideo
         ? "wisal"
         : undefined,
       // نشيل عناصر برنامج الحفل الفاضية كلياً (بدون نص وبدون وقت) قبل
