@@ -636,6 +636,9 @@ function WisalTemplateView({
   const [submitted, setSubmitted] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
+  // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
+  // نعطّل الزر ونعرض مؤشر تحميل عليه عشان الضيف يتأكد إن ضغطته سجّلت.
+  const [isSubmitting, setIsSubmitting] = useState(false)
   // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
   // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
   // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
@@ -775,30 +778,36 @@ function WisalTemplateView({
     }
   }
 
-  const handleRSVP = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleRSVP = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (isSubmitting) return
+    setIsSubmitting(true)
 
-    // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
-    // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
-    if (inv.sheetId) {
-      const result = await submitRSVP({
-        sheetId: inv.sheetId,
-        name: guestName,
-        attendance,
-        companions,
-        message: guestNote,
-      })
-      if (!result.success) {
-        console.error("فشل إرسال تأكيد الحضور للشيت")
-      }
-    }
+    try {
+      // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
+      // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
+      if (inv.sheetId) {
+        const result = await submitRSVP({
+          sheetId: inv.sheetId,
+          name: guestName,
+          attendance,
+          companions,
+          message: guestNote,
+        })
+        if (!result.success) {
+          console.error("فشل إرسال تأكيد الحضور للشيت")
+        }
+      }
 
-    if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-      const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
-      if (id) setQrId(id)
-    }
-    setSubmitted(true)
-  }
+      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+        const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+        if (id) setQrId(id)
+      }
+      setSubmitted(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <EditModeProvider
@@ -1261,16 +1270,22 @@ function WisalTemplateView({
                       />
                     </div>
 
-                    <EditableButton
-                      id="bg-rsvp-submit"
-                      type="submit"
-                      className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "var(--gold)" }}
-                    >
-                      <EditableText id="rsvp-submit-button">
-                        إرسال التأكيد
-                      </EditableText>
-                    </EditableButton>
+                    <EditableButton
+                      id="bg-rsvp-submit"
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-90 shadow-md flex items-center justify-center gap-2 ${
+                        isSubmitting ? "opacity-70 cursor-wait" : ""
+                      }`}
+                      style={{ backgroundColor: "var(--gold)" }}
+                    >
+                      {isSubmitting && (
+                        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      )}
+                      <EditableText id="rsvp-submit-button">
+                        إرسال التأكيد
+                      </EditableText>
+                    </EditableButton>
                   </form>
                 )}
               </EditableBackground>
@@ -1584,6 +1599,9 @@ function WisalTemplateTwoView({
   const [submitted, setSubmitted] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
+  // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
+  // نعطّل الزر ونعرض مؤشر تحميل عليه عشان الضيف يتأكد إن ضغطته سجّلت.
+  const [isSubmitting, setIsSubmitting] = useState(false)
   // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
   // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
   // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
@@ -1756,30 +1774,36 @@ function WisalTemplateTwoView({
     }
   }
 
-  const handleRSVP = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleRSVP = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (isSubmitting) return
+    setIsSubmitting(true)
 
-    // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
-    // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
-    if (inv.sheetId) {
-      const result = await submitRSVP({
-        sheetId: inv.sheetId,
-        name: guestName,
-        attendance,
-        companions,
-        message: guestNote,
-      })
-      if (!result.success) {
-        console.error("فشل إرسال تأكيد الحضور للشيت")
-      }
-    }
+    try {
+      // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
+      // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
+      if (inv.sheetId) {
+        const result = await submitRSVP({
+          sheetId: inv.sheetId,
+          name: guestName,
+          attendance,
+          companions,
+          message: guestNote,
+        })
+        if (!result.success) {
+          console.error("فشل إرسال تأكيد الحضور للشيت")
+        }
+      }
 
-    if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-      const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
-      if (id) setQrId(id)
-    }
-    setSubmitted(true)
-  }
+      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+        const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+        if (id) setQrId(id)
+      }
+      setSubmitted(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <EditModeProvider
@@ -2246,16 +2270,22 @@ function WisalTemplateTwoView({
                       />
                     </div>
 
-                    <EditableButton
-                      id="bg-rsvp-submit"
-                      type="submit"
-                      className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "var(--gold)" }}
-                    >
-                      <EditableText id="rsvp-submit-button">
-                        إرسال التأكيد
-                      </EditableText>
-                    </EditableButton>
+                    <EditableButton
+                      id="bg-rsvp-submit"
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-90 shadow-md flex items-center justify-center gap-2 ${
+                        isSubmitting ? "opacity-70 cursor-wait" : ""
+                      }`}
+                      style={{ backgroundColor: "var(--gold)" }}
+                    >
+                      {isSubmitting && (
+                        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      )}
+                      <EditableText id="rsvp-submit-button">
+                        إرسال التأكيد
+                      </EditableText>
+                    </EditableButton>
                   </form>
                 )}
               </EditableBackground>
@@ -2609,6 +2639,9 @@ function WisalTemplateThreeView({
   const [submitted, setSubmitted] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
+  // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
+  // نعطّل الزر ونعرض مؤشر تحميل عليه عشان الضيف يتأكد إن ضغطته سجّلت.
+  const [isSubmitting, setIsSubmitting] = useState(false)
   // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
   // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
   // pointer-events-none (بدون ما تنشال فعلياً من الصفحة)، أحياناً توقف
@@ -2781,30 +2814,36 @@ function WisalTemplateThreeView({
     }
   }
 
-  const handleRSVP = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleRSVP = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (isSubmitting) return
+    setIsSubmitting(true)
 
-    // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
-    // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
-    if (inv.sheetId) {
-      const result = await submitRSVP({
-        sheetId: inv.sheetId,
-        name: guestName,
-        attendance,
-        companions,
-        message: guestNote,
-      })
-      if (!result.success) {
-        console.error("فشل إرسال تأكيد الحضور للشيت")
-      }
-    }
+    try {
+      // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
+      // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
+      if (inv.sheetId) {
+        const result = await submitRSVP({
+          sheetId: inv.sheetId,
+          name: guestName,
+          attendance,
+          companions,
+          message: guestNote,
+        })
+        if (!result.success) {
+          console.error("فشل إرسال تأكيد الحضور للشيت")
+        }
+      }
 
-    if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-      const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
-      if (id) setQrId(id)
-    }
-    setSubmitted(true)
-  }
+      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+        const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+        if (id) setQrId(id)
+      }
+      setSubmitted(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <EditModeProvider
@@ -3271,16 +3310,22 @@ function WisalTemplateThreeView({
                       />
                     </div>
 
-                    <EditableButton
-                      id="bg-rsvp-submit"
-                      type="submit"
-                      className="w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition shadow-md"
-                      style={{ backgroundColor: "var(--gold)" }}
-                    >
-                      <EditableText id="rsvp-submit-button">
-                        إرسال التأكيد
-                      </EditableText>
-                    </EditableButton>
+                    <EditableButton
+                      id="bg-rsvp-submit"
+                      type="submit"
+                      disabled={isSubmitting}
+                      className={`w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-90 shadow-md flex items-center justify-center gap-2 ${
+                        isSubmitting ? "opacity-70 cursor-wait" : ""
+                      }`}
+                      style={{ backgroundColor: "var(--gold)" }}
+                    >
+                      {isSubmitting && (
+                        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      )}
+                      <EditableText id="rsvp-submit-button">
+                        إرسال التأكيد
+                      </EditableText>
+                    </EditableButton>
                   </form>
                 )}
               </EditableBackground>
