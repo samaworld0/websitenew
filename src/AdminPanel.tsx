@@ -11,6 +11,7 @@ import {
   uploadMedia,
 } from "./backend"
 import DesignPanel from "./DesignPanel"
+import MediaCleanup from "./MediaCleanup"
 import { createDoorLink, revokeDoorLink, AttendancePanel } from "./rsvpQr"
 import HomePageDesignPanel from "./HomePageDesignPanel"
 import { DEFAULT_SCHEDULE } from "./InvitationView"
@@ -2905,6 +2906,7 @@ export default function AdminPanel({
       <div className="max-w-5xl mx-auto px-5 py-8 space-y-6">
         {activeTab === "settings" && (
           <>
+            <MediaCleanup />
             <div className="flex items-center justify-between rounded-2xl border border-[#e5d9c3] bg-white p-5 sm:p-7">
               <div>
                 <h3 className="text-lg font-bold" style={{ fontFamily: "Amiri, serif" }}>
