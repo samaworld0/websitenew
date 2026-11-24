@@ -5,6 +5,7 @@ import { loadInvitations, loadSiteSettings } from "./backend"
 import AdminPanel from "./AdminPanel"
 import HomePage from "./HomePage"
 import InvitationFullView from "./InvitationView"
+import { ScanPage, DoorPage } from "./rsvpQr"
 
 // App.tsx مسؤول فقط عن التوجيه (routing) بين:
 // 1) لوحة التحكم (?admin=1)
@@ -138,6 +139,10 @@ const PHONE_W = 430
 export default function App() {
   const { w, h } = useViewport()
   const p = new URLSearchParams(window.location.search)
+  const scanId = p.get("scan")
+  const doorKey = p.get("door")
+  if (scanId) return <ScanPage id={scanId} />
+  if (doorKey) return <DoorPage doorKey={doorKey} />
   const needFrame =
     !!p.get("preview") &&
     p.get("admin") !== "1" &&

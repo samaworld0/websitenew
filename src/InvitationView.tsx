@@ -4,6 +4,7 @@ import { submitRSVP, uploadMedia } from "./backend"
 import Reveal from "./Reveal"
 import { TextRevealGateContext } from "./LiveEditor"
 import { RoseIcon } from "./icons"
+import { isQrEnabled, registerRsvpQr, RsvpQrCard } from "./rsvpQr"
 import {
   EditModeProvider,
   DeselectSurface,
@@ -633,6 +634,7 @@ function WisalTemplateView({
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
   // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
   // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
@@ -791,6 +793,10 @@ function WisalTemplateView({
       }
     }
 
+    if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+      const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+      if (id) setQrId(id)
+    }
     setSubmitted(true)
   }
 
@@ -1156,6 +1162,7 @@ function WisalTemplateView({
                     <EditableText id="rsvp-success-message">
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
+{qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
@@ -1575,6 +1582,7 @@ function WisalTemplateTwoView({
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
   // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
   // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
@@ -1766,6 +1774,10 @@ function WisalTemplateTwoView({
       }
     }
 
+    if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+      const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+      if (id) setQrId(id)
+    }
     setSubmitted(true)
   }
 
@@ -2135,6 +2147,7 @@ function WisalTemplateTwoView({
                     <EditableText id="rsvp-success-message">
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
+{qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
@@ -2594,6 +2607,7 @@ function WisalTemplateThreeView({
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
   // بعض متصفحات الجوال (خصوصاً Safari بالآيفون) عندها خلل معروف: طبقة
   // كانت شغالة فوق الشاشة (position:absolute) لو انخفت بس بـ opacity+
@@ -2785,6 +2799,10 @@ function WisalTemplateThreeView({
       }
     }
 
+    if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+      const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+      if (id) setQrId(id)
+    }
     setSubmitted(true)
   }
 
@@ -3154,6 +3172,7 @@ function WisalTemplateThreeView({
                     <EditableText id="rsvp-success-message">
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
+{qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">

@@ -11,6 +11,7 @@ import {
   uploadMedia,
 } from "./backend"
 import DesignPanel from "./DesignPanel"
+import { createDoorLink, revokeDoorLink, AttendancePanel } from "./rsvpQr"
 import HomePageDesignPanel from "./HomePageDesignPanel"
 import { DEFAULT_SCHEDULE } from "./InvitationView"
 
@@ -885,6 +886,15 @@ function InvitationForm({
       }
     })
 
+  const setQrCheckin = (on: boolean) =>
+    setInv((prev) => {
+      const prevStyles = prev.textStyles || {}
+      return {
+        ...prev,
+        textStyles: { ...prevStyles, "qr-checkin": { ...(prevStyles["qr-checkin"] || {}), hidden: on } },
+      }
+    })
+
   const setTextStyleText = (elementId: string, text: string, allowEmpty = false) =>
     setInv((prev) => {
       const prevStyles = prev.textStyles || {}
@@ -1616,6 +1626,21 @@ function InvitationForm({
               تبدأ الدعوة بشاشة "اضغط لفتح الدعوة"، ولما الضيف يضغط
               يتخطى المقطع/حركة الفتح ويوصل للقسم الأول مباشرة، بدون لمعة
               أو وميض أو تلاشي.
+            </span>
+          </span>
+        </label>
+
+        <label className="sm:col-span-2 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border border-[#e5d9c3]">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[#D4AF37]"
+            checked={!!inv.textStyles?.["qr-checkin"]?.hidden}
+            onChange={(e) => setQrCheckin(e.target.checked)}
+          />
+          <span className="text-sm">
+            <span className="font-bold block">باركود تأكيد الحضور</span>
+            <span className="text-[#8a7561]">
+              لما الضيف يأكد حضوره (نعم) يطلع له باركود باسمه يحفظه ويبرزه عند الاستقبال. بعد الحفظ، من «المزيد» بالقائمة تطلعين رابط الاستقبال للموظفين وقائمة الحضور.
             </span>
           </span>
         </label>
@@ -2369,6 +2394,8 @@ function InvitationRow({
   onToggleFavorite?: (inv: Invitation) => void
 }) {
   const [moreOpen, setMoreOpen] = useState(false)
+  const [showAtt, setShowAtt] = useState(false)
+  const qrOn = !!inv.textStyles?.["qr-checkin"]?.hidden
   const created = createdTime(inv)
   const sheetLink = resolveSheetLink(inv)
   const cover = inv.coverImage || inv.heroBg || inv.introPoster
@@ -2521,6 +2548,30 @@ function InvitationRow({
                 📊 شيت الحضور
               </span>
             )}
+            {qrOn && (
+              <>
+                <button
+                  className={linkBtn}
+                  onClick={async () => {
+                    if (!window.confirm("إنشاء رابط استقبال جديد؟ (الرابط القديم يتوقف)")) return
+                    try {
+                      const link = await createDoorLink(inv)
+                      try { await navigator.clipboard.writeText(link); alert("تم نسخ رابط الاستقبال ✓\nأرسليه للموظفين فقط.\n\n" + link) }
+                      catch { window.prompt("رابط الاستقبال:", link) }
+                    } catch (e: any) { alert("تعذّر إنشاء الرابط: " + e.message) }
+                  }}
+                >
+                  🔗 رابط الاستقبال
+                </button>
+                <button className={linkBtn} onClick={() => setShowAtt(true)}>👥 الحضور</button>
+                <button
+                  className={linkBtn}
+                  onClick={async () => { if (window.confirm("إيقاف رابط الاستقبال؟")) { await revokeDoorLink(inv); alert("تم الإيقاف") } }}
+                >
+                  ⛔ إيقاف الرابط
+                </button>
+              </>
+            )}
             <button
               onClick={() => onCopyAsPrivate(inv, nextId)}
               className={linkBtn}
@@ -2554,6 +2605,7 @@ function InvitationRow({
           </div>
         )}
       </div>
+      {showAtt && <AttendancePanel inv={inv} onClose={() => setShowAtt(false)} />}
     </div>
   )
 }
