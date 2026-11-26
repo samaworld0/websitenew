@@ -13,6 +13,7 @@ import {
   EditableButton,
   EditableLinkBackground,
   EditPanel,
+  DuplicableSection,
   BackgroundsMenu,
   TransitionsMenu,
   useEditMode,
@@ -956,6 +957,7 @@ function WisalTemplateView({
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
             {/* قسم الآية وبطاقة الدعوة والعداد التنازلي — خلفية كريمية
                 (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
+<DuplicableSection sectionKey="verse">
             <EditableBackground
               id="bg-verse-section"
               className="py-24 px-6 flex flex-col items-center"
@@ -1022,10 +1024,12 @@ function WisalTemplateView({
                 </p>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
                 وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
                 لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+<DuplicableSection sectionKey="countdown">
             <EditableBackground
               id="bg-countdown-section"
               className="py-16 px-6 flex flex-col items-center"
@@ -1086,6 +1090,7 @@ function WisalTemplateView({
                 </div>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
@@ -1115,6 +1120,7 @@ function WisalTemplateView({
             {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
                 قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
                 bg-location-section). */}
+<DuplicableSection sectionKey="location">
             <EditableBackground
               id="bg-location-section"
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
@@ -1142,6 +1148,7 @@ function WisalTemplateView({
                 </EditableLinkBackground>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
@@ -1944,6 +1951,7 @@ function WisalTemplateTwoView({
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
             {/* قسم الآية وبطاقة الدعوة والعداد التنازلي — خلفية كريمية
                 (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
+<DuplicableSection sectionKey="verse">
             <EditableBackground
               id="bg-verse-section"
               className="py-24 px-6 flex flex-col items-center"
@@ -2010,10 +2018,12 @@ function WisalTemplateTwoView({
                 </p>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
                 وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
                 لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+<DuplicableSection sectionKey="countdown">
             <EditableBackground
               id="bg-countdown-section"
               className="py-16 px-6 flex flex-col items-center"
@@ -2074,6 +2084,7 @@ function WisalTemplateTwoView({
                 </div>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
@@ -2103,6 +2114,7 @@ function WisalTemplateTwoView({
             {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
                 قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
                 bg-location-section). */}
+<DuplicableSection sectionKey="location">
             <EditableBackground
               id="bg-location-section"
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
@@ -2130,6 +2142,7 @@ function WisalTemplateTwoView({
                 </EditableLinkBackground>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
@@ -2972,6 +2985,7 @@ function WisalTemplateThreeView({
           <div className="w-full bg-[#FAF7F2] text-[#3D312A] relative z-20">
             {/* قسم الآية وبطاقة الدعوة والعداد التنازلي — خلفية كريمية
                 (قابلة للتلوين أو وضع صورة من التصميم المباشر) */}
+<DuplicableSection sectionKey="verse">
             <EditableBackground
               id="bg-verse-section"
               className="py-24 px-6 flex flex-col items-center"
@@ -3038,10 +3052,12 @@ function WisalTemplateThreeView({
                 </p>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم العداد التنازلي (باقي على فرحنا) — منفصل عن قسم الآية
                 وبطاقة الدعوة، خلفية كريمية مستقلة قابلة للتلوين/الإخفاء
                 لحالها من التصميم المباشر (معرّفها bg-countdown-section). */}
+<DuplicableSection sectionKey="countdown">
             <EditableBackground
               id="bg-countdown-section"
               className="py-16 px-6 flex flex-col items-center"
@@ -3102,6 +3118,7 @@ function WisalTemplateThreeView({
                 </div>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم برنامج الحفل — خلفية حمراء (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground
@@ -3131,6 +3148,7 @@ function WisalTemplateThreeView({
             {/* قسم مكان الحفل — منفصل عن قسم البرنامج، خلفية حمراء مستقلة
                 قابلة للتلوين/الإخفاء لحالها من التصميم المباشر (معرّفها
                 bg-location-section). */}
+<DuplicableSection sectionKey="location">
             <EditableBackground
               id="bg-location-section"
               className="py-20 px-6 flex flex-col items-center text-[#F5EBE0] border-t-2 border-[var(--gold)]"
@@ -3158,6 +3176,7 @@ function WisalTemplateThreeView({
                 </EditableLinkBackground>
               </Reveal>
             </EditableBackground>
+</DuplicableSection>
 
             {/* قسم تأكيد الحضور — يرجع كريمي مع خط ذهبي فاصل (قابلة للتلوين من التصميم المباشر) */}
             <EditableBackground

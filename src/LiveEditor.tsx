@@ -70,6 +70,8 @@ export interface TextStyle {
   // مدة انتقال/تلاشي (بالميلي ثانية) — تُستخدم بعناصر "انتقال" خاصة
   // (مو نص عادي) زي عنصر تلاشي فتح الدعوة. شوف TransitionsMenu.
   duration?: number
+  // عدد نسخ القسم المكرّرة (شوف DuplicableSection). يُخزَّن بعنصر خاص باسم section-copies-<قسم>
+  copies?: number
   // نوع منحنى الحركة (سرعة الانتقال) — CSS transition-timing-function.
   easing?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"
   // نمط ظهور النص عند وصول الزائر له بالتمرير (شوف TEXT_REVEAL_OPTIONS).
@@ -300,6 +302,8 @@ interface EditModeValue {
   // ينشئ نسخة جديدة كاملة من عنصر موجود (نفس الستايل) بمعرّف جديد،
   // ويحددها تلقائياً حتى يقدر المستخدم يسحبها لمكانها فوراً.
   duplicateElement: (id: string) => void
+  // تكرار قسم كامل: يزيد/ينقص عدد نسخه. onCopy: يعطي معرّفات عناصر الأصل لنسخ تصميمها
+  setSectionCopies: (key: string, count: number, sourceIds?: string[]) => void
   undo: () => void
   redo: () => void
   canUndo: boolean
@@ -323,6 +327,7 @@ const EditModeContext = createContext<EditModeValue>({
   updateStyle: () => {},
   resetStyle: () => {},
   duplicateElement: () => {},
+  setSectionCopies: () => {},
   undo: () => {},
   redo: () => {},
   canUndo: false,
@@ -333,6 +338,10 @@ const EditModeContext = createContext<EditModeValue>({
   setZoom: () => {},
   customFonts: [],
 })
+
+// بادئة معرّفات العناصر داخل نسخ الأقسام المكرّرة (DuplicableSection):
+// كل نسخة عندها بادئة خاصة، فكل نص/خلفية فيها يتخزن بمعرّف مستقل ولا يلمس الأصل.
+export const IdPrefixContext = createContext<string>("")
 
 export function useEditMode() {
   return useContext(EditModeContext)
@@ -418,6 +427,38 @@ export function EditModeProvider({
       return next
     })
     setSelectedId(newId)
+  }
+
+  const sectionPrefix = (key: string, i: number) => `sec-${key}-${i}--`
+  const setSectionCopies = (key: string, count: number, sourceIds: string[] = []) => {
+    const n = Math.max(0, Math.min(5, Math.floor(count)))
+    setStyles((prev) => {
+      pushHistory(prev)
+      const next = { ...prev }
+      const old = prev[`section-copies-${key}`]?.copies || 0
+      if (n > old) {
+        // نسخة جديدة: ننسخ تصميم عناصر الأصل (ألوان/خطوط/نصوص) لمعرّفات النسخة
+        for (let i = old + 1; i <= n; i++) {
+          const pre = sectionPrefix(key, i)
+          for (const sid of sourceIds) {
+            if (prev[sid]) {
+              const st = { ...prev[sid] }
+              if (st.duplicateOf) st.duplicateOf = pre + st.duplicateOf
+              next[pre + sid] = st
+            }
+          }
+        }
+      } else if (n < old) {
+        // حذف نسخ: نمسح كل ستايلاتها حتى ما يبقى شي يتسرّب لو انضافت من جديد
+        for (let i = n + 1; i <= old; i++) {
+          const pre = sectionPrefix(key, i)
+          for (const k of Object.keys(next)) if (k.startsWith(pre)) delete next[k]
+        }
+      }
+      next[`section-copies-${key}`] = { ...(prev[`section-copies-${key}`] || {}), copies: n }
+      onStylesChange?.(next)
+      return next
+    })
   }
 
   const undo = () => {
@@ -516,6 +557,7 @@ export function EditModeProvider({
         updateStyle,
         resetStyle,
         duplicateElement,
+        setSectionCopies,
         undo,
         redo,
         canUndo: undoStack.current.length > 0,
@@ -561,7 +603,7 @@ interface DragState {
 }
 
 export function EditableText({
-  id,
+  id: rawId,
   as = "span",
   className,
   style,
@@ -574,6 +616,7 @@ export function EditableText({
   children: ReactNode
 }) {
   const { editable, styles, selectedId, setSelectedId, updateStyle, zoom } = useEditMode()
+  const id = useContext(IdPrefixContext) + rawId
   const ref = useRef<HTMLElement | null>(null)
   const dragRef = useRef<DragState | null>(null)
   const zoomRef = useRef(zoom)
@@ -646,9 +689,11 @@ export function EditableText({
     duplicateIds.length > 0 ? (
       <>
         {duplicateIds.map((dupId) => (
-          <EditableText key={dupId} id={dupId} as={as} className={className} style={style}>
-            {children}
-          </EditableText>
+          <IdPrefixContext.Provider key={dupId} value="">
+            <EditableText id={dupId} as={as} className={className} style={style}>
+              {children}
+            </EditableText>
+          </IdPrefixContext.Provider>
         ))}
       </>
     ) : null
@@ -852,7 +897,7 @@ export function EditableText({
 // ---------------------------------------------------------------------------
 
 export function EditableLinkBackground({
-  id,
+  id: rawId,
   href,
   target,
   rel,
@@ -869,6 +914,7 @@ export function EditableLinkBackground({
   children?: ReactNode
 }) {
   const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const id = useContext(IdPrefixContext) + rawId
   const st = styles[id] || {}
   const isSelected = editable && selectedId === id
 
@@ -908,7 +954,7 @@ export function EditableLinkBackground({
 // ---------------------------------------------------------------------------
 
 export function EditableImage({
-  id,
+  id: rawId,
   src,
   alt = "",
   className,
@@ -921,6 +967,7 @@ export function EditableImage({
   style?: React.CSSProperties
 }) {
   const { editable, styles, selectedId, setSelectedId, updateStyle } = useEditMode()
+  const id = useContext(IdPrefixContext) + rawId
   const st = styles[id] || {}
   const finalSrc = st.imageUrl || src
   const isSelected = editable && selectedId === id
@@ -965,7 +1012,7 @@ export function EditableImage({
 // ---------------------------------------------------------------------------
 
 export function EditableButton({
-  id,
+  id: rawId,
   type = "button",
   onClick,
   className,
@@ -982,6 +1029,7 @@ export function EditableButton({
   disabled?: boolean
 }) {
   const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const id = useContext(IdPrefixContext) + rawId
   const st = styles[id] || {}
   const isSelected = editable && selectedId === id
 
@@ -1018,7 +1066,7 @@ export function EditableButton({
 // ---------------------------------------------------------------------------
 
 export function EditableBackground({
-  id,
+  id: rawId,
   className,
   style,
   children,
@@ -1035,6 +1083,7 @@ export function EditableBackground({
   position?: React.CSSProperties["position"]
 }) {
   const { editable, styles, selectedId, setSelectedId } = useEditMode()
+  const id = useContext(IdPrefixContext) + rawId
   const st = styles[id] || {}
   const isSelected = editable && selectedId === id
 
@@ -2164,5 +2213,62 @@ export function ZoomControls() {
       <span style={{ color: "#fff", fontSize: 11, minWidth: 40, textAlign: "center" }}>{percent}%</span>
       <button style={btn} disabled={zoom >= MAX_ZOOM} onClick={() => setZoom(zoom + 0.1)}>+</button>
     </div>
+  )
+}
+
+
+// ---------------------------------------------------------------------------
+// DuplicableSection — يلفّ قسم ويسمح بتكراره من التصميم المباشر. الأصل يبقى
+// بمعرّفاته كما هي (بدون أي تغيير بالبيانات المحفوظة)، وكل نسخة تشتغل
+// بمعرّفات ببادئة خاصة فتتعدّل باستقلال. للأقسام اللي بدون حالة خاصة فقط
+// (مو نموذج تأكيد الحضور).
+// ---------------------------------------------------------------------------
+export function DuplicableSection({ sectionKey, children }: { sectionKey: string; children: ReactNode }) {
+  const { editable, styles, setSectionCopies } = useEditMode()
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+  const copies = Math.max(0, Math.min(5, styles[`section-copies-${sectionKey}`]?.copies || 0))
+  const parentPrefix = useContext(IdPrefixContext)
+
+  const bar = (label: string, onClick: () => void, danger = false) => (
+    <div style={{ display: "flex", justifyContent: "center", padding: "6px 0", background: "#fefcf8" }}>
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          padding: "6px 16px",
+          borderRadius: 999,
+          fontSize: 12,
+          fontWeight: 700,
+          cursor: "pointer",
+          border: `1px solid ${danger ? "#dc2626" : "#B8862F"}`,
+          color: danger ? "#dc2626" : "#8a5f14",
+          background: "#fff",
+        }}
+      >
+        {label}
+      </button>
+    </div>
+  )
+
+  const add = () => {
+    const ids = Array.from(wrapRef.current?.querySelectorAll<HTMLElement>("[data-editable-id]") || [])
+      .map((el) => el.getAttribute("data-editable-id") || "")
+      .filter(Boolean)
+    setSectionCopies(sectionKey, copies + 1, ids)
+  }
+
+  return (
+    <>
+      <div ref={wrapRef} style={{ display: "contents" }}>
+        {children}
+      </div>
+      {editable && copies < 5 && bar("➕ تكرار هذا القسم", add)}
+      {Array.from({ length: copies }, (_, idx) => (
+        <IdPrefixContext.Provider key={idx} value={`${parentPrefix}sec-${sectionKey}-${idx + 1}--`}>
+          {children}
+          {editable && idx === copies - 1 && bar("🗑 حذف آخر نسخة من القسم", () => setSectionCopies(sectionKey, copies - 1), true)}
+        </IdPrefixContext.Provider>
+      ))}
+    </>
   )
 }
