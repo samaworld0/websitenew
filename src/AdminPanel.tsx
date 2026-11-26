@@ -2874,12 +2874,37 @@ export default function AdminPanel({
   }
 
   const startCopyAsPrivate = (inv: Invitation, forcedNextId: number) => {
+    // النسخة تطلع بدون بيانات خاصة بالأصل: بدون موقع وموعد الحفل، بدون
+    // صوت الدعوة، وبدون شيت (يُنشأ شيت جديد لها عند الحاجة). وما ننقل
+    // علامات المفضلة/الحالة ولا باركود الحضور.
+    const styles = { ...(inv.textStyles || {}) }
+    for (const k of [
+      "admin-favorite",
+      "admin-inprogress",
+      "admin-done",
+      "qr-checkin",
+      "venue",
+      "city",
+      "date",
+    ]) {
+      delete styles[k]
+    }
     setEditing({
       ...inv,
       id: forcedNextId,
       sheetId: "",
       sheetUrl: "",
       isPrivate: true,
+      venue: "",
+      city: "",
+      mapUrl: "",
+      date: "",
+      dateGreg: "",
+      time: "",
+      eventDateTime: "",
+      musicUrl: "",
+      knockSoundUrl: "",
+      textStyles: styles,
     })
     setEditingIsNew(true)
   }
