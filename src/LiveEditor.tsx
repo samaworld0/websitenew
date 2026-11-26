@@ -343,6 +343,10 @@ const EditModeContext = createContext<EditModeValue>({
 // كل نسخة عندها بادئة خاصة، فكل نص/خلفية فيها يتخزن بمعرّف مستقل ولا يلمس الأصل.
 export const IdPrefixContext = createContext<string>("")
 
+// بوابة فيديوهات الأقسام: الزوّار ما يبدأ فيديو القسم عندهم إلا بعد ما
+// ينفتح فيديو الفتح ويختفي الباب (القيمة الافتراضية true = يشتغل مباشرة).
+export const VideoGateContext = createContext<boolean>(true)
+
 export function useEditMode() {
   return useContext(EditModeContext)
 }
@@ -1086,6 +1090,11 @@ export function EditableBackground({
   const id = useContext(IdPrefixContext) + rawId
   const st = styles[id] || {}
   const isSelected = editable && selectedId === id
+  const videoGateOpen = useContext(VideoGateContext)
+  const sectionVideoRef = useRef<HTMLVideoElement | null>(null)
+  useEffect(() => {
+    if (videoGateOpen || editable) sectionVideoRef.current?.play().catch(() => {})
+  }, [videoGateOpen, editable, st.videoUrl])
 
   // وضع العرض العادي (زوار الدعوة الحقيقيين): لو القسم اتطفى بالكامل من
   // التصميم المباشر، ما نرندر منه ولا حرف — القسم كله (بكل ما فيه من
@@ -1136,8 +1145,10 @@ export function EditableBackground({
       {st.videoUrl && (
         <video
           key={st.videoUrl}
+          ref={sectionVideoRef}
           src={st.videoUrl}
-          autoPlay
+          preload="auto"
+          autoPlay={editable || videoGateOpen}
           loop
           muted
           playsInline

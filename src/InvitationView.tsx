@@ -14,6 +14,7 @@ import {
   EditableLinkBackground,
   EditPanel,
   DuplicableSection,
+  VideoGateContext,
   BackgroundsMenu,
   TransitionsMenu,
   useEditMode,
@@ -818,6 +819,7 @@ function WisalTemplateView({
       onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
+    <VideoGateContext.Provider value={doorRemoved}>
     <DeselectSurface>
     <GoldAccentScope>
     <div
@@ -1377,6 +1379,7 @@ function WisalTemplateView({
     </div>
     </GoldAccentScope>
     </DeselectSurface>
+</VideoGateContext.Provider>
     {editable && <EditPanel />}
     {editable && (
       <BackgroundsMenu
@@ -1808,6 +1811,7 @@ function WisalTemplateTwoView({
       onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
+    <VideoGateContext.Provider value={doorRemoved}>
     <DeselectSurface>
     <GoldAccentScope>
     <div
@@ -2407,6 +2411,7 @@ function WisalTemplateTwoView({
     </div>
     </GoldAccentScope>
     </DeselectSurface>
+</VideoGateContext.Provider>
     {editable && <EditPanel />}
     {editable && (
       <BackgroundsMenu
@@ -2842,6 +2847,7 @@ function WisalTemplateThreeView({
       onUploadImage={uploadDesignImage}
       customFonts={customFonts}
     >
+    <VideoGateContext.Provider value={doorRemoved}>
     <DeselectSurface>
     <GoldAccentScope>
     <div
@@ -3441,6 +3447,7 @@ function WisalTemplateThreeView({
     </div>
     </GoldAccentScope>
     </DeselectSurface>
+</VideoGateContext.Provider>
     {editable && <EditPanel />}
     {editable && (
       <BackgroundsMenu
