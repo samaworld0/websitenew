@@ -2,7 +2,7 @@ import { useState } from "react"
 import { supabase } from "./backend"
 
 // تنظيف الملفات غير المستخدمة بمخزن Supabase. القائمة تُحسب على السيرفر
-// (ملفات غير مذكورة بأي دعوة أو إعدادات، وأقدم من 3 أيام)، والسيرفر نفسه
+// (ملفات غير مذكورة بأي دعوة أو إعدادات)، والسيرفر نفسه
 // يمنع حذف أي ملف خارج هذي القائمة.
 export default function MediaCleanup() {
   const [list, setList] = useState<{ name: string; size: number }[] | null>(null)
@@ -47,7 +47,7 @@ export default function MediaCleanup() {
         تنظيف الملفات غير المستخدمة
       </h3>
       <p className="text-sm text-[#8a7561] mt-1">
-        يفحص مخزن الصور والفيديوهات ويحذف الملفات اللي ما تستخدمها أي دعوة ولا إعدادات الموقع (الملفات المرفوعة قبل أقل من 3 أيام تُستثنى).
+        يفحص مخزن الصور والفيديوهات ويحذف الملفات اللي ما تستخدمها أي دعوة ولا إعدادات الموقع.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button

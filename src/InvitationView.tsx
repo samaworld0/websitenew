@@ -1397,18 +1397,6 @@ function WisalTemplateView({
       />
     )}
     {editable && (
-      <TransitionsMenu
-        items={[
-          {
-            id: DOOR_TEXT_TRANSITION_ID,
-            label: "تلاشي نصوص القسم الأول",
-            defaultDuration: 1000,
-            onPreview: replayDoorTextTransition,
-          },
-        ]}
-      />
-    )}
-    {editable && (
       // بوضع التصميم المباشر الباب يشتغل عادي زي عند الزوّار (اضغطي عليه
       // بنفسك لتفتحينه)، وهذا الزر يرجّعك لشاشة الباب المغلقة من جديد
       // بأي لحظة، حتى تقدرين تعدّلين نصوصها أو تعيدين تجربة الفتح كم
@@ -2430,18 +2418,6 @@ function WisalTemplateTwoView({
           { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
           { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
           { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
-        ]}
-      />
-    )}
-    {editable && (
-      <TransitionsMenu
-        items={[
-          {
-            id: DOOR_TEXT_TRANSITION_ID,
-            label: "تلاشي نصوص القسم الأول",
-            defaultDuration: 1000,
-            onPreview: replayDoorTextTransition,
-          },
         ]}
       />
     )}
@@ -3470,18 +3446,6 @@ function WisalTemplateThreeView({
           { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
           { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
           { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
-        ]}
-      />
-    )}
-    {editable && (
-      <TransitionsMenu
-        items={[
-          {
-            id: DOOR_TEXT_TRANSITION_ID,
-            label: "تلاشي نصوص القسم الأول",
-            defaultDuration: 1000,
-            onPreview: replayDoorTextTransition,
-          },
         ]}
       />
     )}
