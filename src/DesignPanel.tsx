@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Invitation, TextStyle, CustomFont } from "./types"
-import { saveInvitation } from "./backend"
+import { saveInvitationMerged } from "./backend"
 import InvitationFullView from "./InvitationView"
 
 // عمود قاعدة البيانات المطلوب لحفظ تخصيصات التصميم — لو ناقص نعرض
@@ -29,6 +29,8 @@ export default function DesignPanel({
     invitation.textStyles || {},
   )
   const [styles, setStyles] = stylesRef
+  // النسخة اللي بدأنا منها — نحدّثها بعد كل حفظ ناجح (شوف saveInvitationMerged)
+  const baseRef = useRef<Invitation>(invitation)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [missingColumnSql, setMissingColumnSql] = useState<string | null>(null)
@@ -36,7 +38,9 @@ export default function DesignPanel({
   const handleSave = async () => {
     setSaving(true)
     setMissingColumnSql(null)
-    const result = await saveInvitation({ ...invitation, textStyles: styles })
+    const ours = { ...invitation, textStyles: styles }
+    const result = await saveInvitationMerged(baseRef.current, ours)
+    if (result.success) baseRef.current = ours
     setSaving(false)
 
     if (!result.success) {

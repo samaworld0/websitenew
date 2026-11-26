@@ -21,8 +21,16 @@ function AppInner() {
   )
   const [siteSettings, setSiteSettings] = useState(defaultSiteSettings)
 
+  const [loadFailed, setLoadFailed] = useState(false)
+  const loadAll = () => {
+    setLoadFailed(false)
+    loadInvitations().then((list) => {
+      if (list) setAllInvitations(list)
+      else setLoadFailed(true)
+    })
+  }
   useEffect(() => {
-    loadInvitations().then(setAllInvitations)
+    loadAll()
     loadSiteSettings().then(setSiteSettings)
   }, [])
 
@@ -65,6 +73,26 @@ function AppInner() {
 
   // لسه ما وصلت بيانات Supabase الحقيقية (أول تحميل) — نعرض شاشة تحميل
   // بسيطة بدل ما نعرض بيانات وهمية مؤقتة.
+  if (allInvitations === null && loadFailed) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ backgroundColor: "#fefcf8" }}
+        dir="rtl"
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="text-sm text-[#8a7561]">تعذّر تحميل البيانات — تأكد من الاتصال بالإنترنت</span>
+          <button
+            onClick={loadAll}
+            className="px-5 py-2 rounded-full text-sm font-bold bg-[#D4AF37] text-[#2C1810]"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (allInvitations === null) {
     return (
       <div
@@ -87,7 +115,7 @@ function AppInner() {
     return (
       <AdminPanel
         invitations={allInvitations}
-        onRefresh={() => loadInvitations().then(setAllInvitations)}
+        onRefresh={() => loadInvitations().then((list) => list && setAllInvitations(list))}
         siteSettings={siteSettings}
         onSiteSettingsRefresh={() => loadSiteSettings().then(setSiteSettings)}
       />

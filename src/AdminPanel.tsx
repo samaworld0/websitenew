@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Invitation, SiteSettings, CustomFont } from "./types"
 import {
   saveInvitation,
+  saveInvitationMerged,
   deleteInvitation,
   signInWithPassword,
   signOut,
@@ -793,6 +794,8 @@ function InvitationForm({
         ? initial.schedule
         : DEFAULT_SCHEDULE.map((item) => ({ ...item })),
   }))
+  // النسخة اللي بدأ منها النموذج — الحفظ يدمج تعديلاتك مع آخر نسخة بالقاعدة
+  const baseRef = useRef<Invitation>(inv)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
@@ -1024,7 +1027,8 @@ function InvitationForm({
         (item) => item.label.trim() || item.time.trim(),
       ),
     }
-    const result = await saveInvitation(cleanInv)
+    const result = isNew ? await saveInvitation(cleanInv) : await saveInvitationMerged(baseRef.current, cleanInv)
+    if (result.success) baseRef.current = cleanInv
     setSaving(false)
     if (!result.success) {
       setError(result.error || "صار خطأ أثناء الحفظ، حاول مرة ثانية")
@@ -2814,7 +2818,7 @@ export default function AdminPanel({
   const handleToggleFavorite = async (inv: Invitation) => {
     setDeleteError("")
     const prevStyles = inv.textStyles || {}
-    const result = await saveInvitation({
+    const result = await saveInvitationMerged(inv, {
       ...inv,
       textStyles: {
         ...prevStyles,
@@ -2837,7 +2841,7 @@ export default function AdminPanel({
   ) => {
     setDeleteError("")
     const prevStyles = inv.textStyles || {}
-    const result = await saveInvitation({
+    const result = await saveInvitationMerged(inv, {
       ...inv,
       textStyles: {
         ...prevStyles,

@@ -126,33 +126,77 @@ function mergeWithLocalFields(row: any): Invitation {
 
 // تحميل الدعوات من Supabase. أول مرة (لو الجدول فاضي) نزرعه بالبيانات
 // المحلية بـ data.ts.
-export async function loadInvitations(): Promise<Invitation[]> {
-  try {
-    const { data, error } = await supabase
-      .from("invitations")
-      .select("*")
-      .order("id", { ascending: true })
-
-    if (error) throw error
-
-    if (!data || data.length === 0) {
-      const seedRows = seedInvitations.map(toDatabaseInvitation)
-      const { error: seedError } = await supabase
+export async function loadInvitations(): Promise<Invitation[] | null> {
+  // لو فشل التحميل (نت ضعيف مثلاً) نعيد المحاولة، وبعدها نرجع null — ما
+  // نرجّع أبداً بيانات افتراضية وهمية، لأن أي حفظ بعدها كان يكتب فوق
+  // بيانات الدعوات الحقيقية.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const { data, error } = await supabase
         .from("invitations")
-        .upsert(seedRows, { onConflict: "id" })
+        .select("*")
+        .order("id", { ascending: true })
 
-      if (seedError) {
-        console.error("Supabase seed invitations error:", seedError)
+      if (error) throw error
+
+      if (!data || data.length === 0) {
+        const seedRows = seedInvitations.map(toDatabaseInvitation)
+        const { error: seedError } = await supabase
+          .from("invitations")
+          .upsert(seedRows, { onConflict: "id" })
+
+        if (seedError) {
+          console.error("Supabase seed invitations error:", seedError)
+        }
+
+        return seedInvitations
       }
 
-      return seedInvitations
+      return data.map(mergeWithLocalFields)
+    } catch (err) {
+      console.error("Supabase loadInvitations error:", err)
+      await new Promise((r) => setTimeout(r, 700 * (attempt + 1)))
     }
-
-    return data.map(mergeWithLocalFields)
-  } catch (err) {
-    console.error("Supabase loadInvitations error:", err)
-    return seedInvitations
   }
+  return null
+}
+
+// حفظ آمن: يدمج تعديلاتك مع آخر نسخة محفوظة بالقاعدة بدل ما يكتب نسختك
+// القديمة فوقها. base = النسخة اللي بدأتِ منها، ours = نسختك بعد التعديل.
+// أي حقل (أو عنصر تصميم) ما غيّرتيه يؤخذ من آخر نسخة بالقاعدة.
+export async function saveInvitationMerged(base: Invitation, ours: Invitation) {
+  let toSave = ours
+  try {
+    const { data } = await supabase
+      .from("invitations")
+      .select("*")
+      .eq("id", ours.id)
+      .maybeSingle()
+    if (data) {
+      const latest = mergeWithLocalFields(data) as any
+      const b = base as any
+      const o = ours as any
+      const same = (x: any, y: any) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null)
+      const merged: any = { ...latest }
+      for (const k of Object.keys(o)) {
+        if (k === "textStyles") continue
+        if (!same(o[k], b[k])) merged[k] = o[k]
+      }
+      const bs = (b.textStyles || {}) as Record<string, any>
+      const os = (o.textStyles || {}) as Record<string, any>
+      const ms: Record<string, any> = { ...(latest.textStyles || {}) }
+      for (const k of new Set([...Object.keys(bs), ...Object.keys(os)])) {
+        if (same(os[k], bs[k])) continue
+        if (k in os) ms[k] = os[k]
+        else delete ms[k]
+      }
+      merged.textStyles = ms
+      toSave = merged as Invitation
+    }
+  } catch (e) {
+    console.error("saveInvitationMerged: تعذّر جلب آخر نسخة، نحفظ مباشرة", e)
+  }
+  return saveInvitation(toSave)
 }
 
 // الحقول الاختيارية اللي ممكن أعمدتها ما تكون مضافة بعد بجدول
