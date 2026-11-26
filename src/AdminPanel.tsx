@@ -2781,8 +2781,12 @@ export default function AdminPanel({
       ? Math.max(...invitations.map((i) => i.id)) + 1
       : 1
 
-  const publicInvitations = invitations.filter((inv) => !inv.isPrivate)
-  const privateInvitations = invitations.filter((inv) => inv.isPrivate)
+  // الدعوة اللي علّمتيها "مفضلة" أو "مكتمل" تنتقل لتبويبها وتختفي من
+  // تبويبي "الدعوات" و"الدعوات الخاصة" (ترجع لما تشيلين العلامة).
+  const movedOut = (inv: Invitation) =>
+    isFavorite(inv) || !!inv.textStyles?.["admin-done"]?.hidden
+  const publicInvitations = invitations.filter((inv) => !inv.isPrivate && !movedOut(inv))
+  const privateInvitations = invitations.filter((inv) => inv.isPrivate && !movedOut(inv))
   const favoriteInvitations = groupByMonth(invitations.filter(isFavorite)).flatMap(
     (g) => g.items,
   )
@@ -2892,8 +2896,8 @@ export default function AdminPanel({
               لوحة تحكم سما
             </h1>
             <p className="text-[10px] text-[#8a7561]">
-              إدارة الدعوات — {publicInvitations.length} عامة ·{" "}
-              {privateInvitations.length} خاصة
+              إدارة الدعوات — {invitations.filter((i) => !i.isPrivate).length} عامة ·{" "}
+              {invitations.filter((i) => i.isPrivate).length} خاصة
             </p>
           </div>
           <a href="?" className="text-sm text-[#8a7561] hover:text-[#2C1810]">
