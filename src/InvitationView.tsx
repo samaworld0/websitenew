@@ -20,6 +20,22 @@ import {
   useEditMode,
 } from "./LiveEditor"
 
+// فيديو خلفية القسم الأول: يبدأ لما ينتهي فيديو الفتح من مهمته (تنفتح
+// الدعوة) بدل ما يشتغل خلف الباب من البداية.
+function GatedBgVideo({
+  play,
+  ...props
+}: { play: boolean } & React.VideoHTMLAttributes<HTMLVideoElement>) {
+  const ref = useRef<HTMLVideoElement | null>(null)
+  useEffect(() => {
+    const v = ref.current
+    if (!v) return
+    if (play) v.play().catch(() => {})
+    else v.pause()
+  }, [play])
+  return <video ref={ref} preload="auto" autoPlay={play} {...props} />
+}
+
 // تدرّج اللمعة: لو ما فيه لون مخصص يرجع للذهبي الأصلي، وإلا يبنيه من اللون المختار.
 function flashBackground(color?: string) {
   if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) {
@@ -896,10 +912,10 @@ function WisalTemplateView({
             </div>
             <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
-              <video
+              <GatedBgVideo
                 key={inv.doorBgVideo || "default-door-bg"}
                 src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                autoPlay
+                play={isOpen || editable}
                 loop
                 muted
                 playsInline
@@ -1892,10 +1908,10 @@ function WisalTemplateTwoView({
             </div>
             <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
-              <video
+              <GatedBgVideo
                 key={inv.doorBgVideo || "default-door-bg"}
                 src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                autoPlay
+                play={isOpen || editable}
                 loop
                 muted
                 playsInline
@@ -2928,10 +2944,10 @@ function WisalTemplateThreeView({
             </div>
             <HeroGlow />
             {(inv.doorBgVideo || !inv.heroBg) && !doorBgVideoFailed && (
-              <video
+              <GatedBgVideo
                 key={inv.doorBgVideo || "default-door-bg"}
                 src={inv.doorBgVideo || "/videos/door-bg.mp4"}
-                autoPlay
+                play={isOpen || editable}
                 loop
                 muted
                 playsInline
