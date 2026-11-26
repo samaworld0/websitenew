@@ -2738,7 +2738,7 @@ export default function AdminPanel({
   const [checkingSession, setCheckingSession] = useState(true)
   const [authed, setAuthed] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "invitations" | "private" | "favorites" | "settings"
+    "invitations" | "private" | "favorites" | "inprogress" | "done" | "settings"
   >("invitations")
   const [editing, setEditing] = useState<Invitation | null>(null)
   const [editingIsNew, setEditingIsNew] = useState(false)
@@ -2786,6 +2786,14 @@ export default function AdminPanel({
   const favoriteInvitations = groupByMonth(invitations.filter(isFavorite)).flatMap(
     (g) => g.items,
   )
+
+  const hasFlag = (inv: Invitation, key: string) => !!inv.textStyles?.[key]?.hidden
+  const inProgressInvitations = groupByMonth(
+    invitations.filter((i) => hasFlag(i, "admin-inprogress")),
+  ).flatMap((g) => g.items)
+  const doneInvitations = groupByMonth(
+    invitations.filter((i) => hasFlag(i, "admin-done")),
+  ).flatMap((g) => g.items)
 
   const handleDelete = async (id: number) => {
     setDeleteError("")
@@ -2938,6 +2946,32 @@ export default function AdminPanel({
           <button
             onClick={() => {
               closeForm()
+              setActiveTab("inprogress")
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              activeTab === "inprogress"
+                ? "bg-[#D4AF37] text-[#2C1810]"
+                : "text-[#8a7561]"
+            }`}
+          >
+            🕐 قيد الإنشاء{inProgressInvitations.length > 0 ? ` (${inProgressInvitations.length})` : ""}
+          </button>
+          <button
+            onClick={() => {
+              closeForm()
+              setActiveTab("done")
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              activeTab === "done"
+                ? "bg-[#D4AF37] text-[#2C1810]"
+                : "text-[#8a7561]"
+            }`}
+          >
+            ✅ مكتمل{doneInvitations.length > 0 ? ` (${doneInvitations.length})` : ""}
+          </button>
+          <button
+            onClick={() => {
+              closeForm()
               setActiveTab("settings")
             }}
             className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
@@ -3061,6 +3095,86 @@ export default function AdminPanel({
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {favoriteInvitations.map((inv) => (
+                  <InvitationRow
+                    key={inv.id}
+                    inv={inv}
+                    nextId={nextId}
+                    deletingId={deletingId}
+                    setDeletingId={setDeletingId}
+                    onDelete={handleDelete}
+                    onEdit={startEdit}
+                    onCopyAsPrivate={startCopyAsPrivate}
+                    onDesignEdit={setDesignEditingInv}
+                    onToggleFavorite={handleToggleFavorite}
+ onToggleFlag={handleToggleFlag}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+        {activeTab === "inprogress" && !editing && !creating && (
+          <>
+            <div>
+              <h2 className="text-base font-bold">🕐 قيد الإنشاء</h2>
+              <p className="text-sm text-[#8a7561] mt-1">
+                الدعوات اللي علّمتيها بالساعة 🕐 (عامة وخاصة) تجمعت هنا.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                {deleteError}
+              </div>
+            )}
+
+            {inProgressInvitations.length === 0 ? (
+              <p className="text-sm text-[#8a7561] text-center py-10">
+                ما أكو دعوات قيد الإنشاء. اضغطي على الساعة 🕐 بأي دعوة حتى تظهر هنا.
+              </p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {inProgressInvitations.map((inv) => (
+                  <InvitationRow
+                    key={inv.id}
+                    inv={inv}
+                    nextId={nextId}
+                    deletingId={deletingId}
+                    setDeletingId={setDeletingId}
+                    onDelete={handleDelete}
+                    onEdit={startEdit}
+                    onCopyAsPrivate={startCopyAsPrivate}
+                    onDesignEdit={setDesignEditingInv}
+                    onToggleFavorite={handleToggleFavorite}
+ onToggleFlag={handleToggleFlag}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+        {activeTab === "done" && !editing && !creating && (
+          <>
+            <div>
+              <h2 className="text-base font-bold">✅ مكتمل</h2>
+              <p className="text-sm text-[#8a7561] mt-1">
+                الدعوات اللي علّمتيها بعلامة ✓ (عامة وخاصة) تجمعت هنا.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                {deleteError}
+              </div>
+            )}
+
+            {doneInvitations.length === 0 ? (
+              <p className="text-sm text-[#8a7561] text-center py-10">
+                ما أكو دعوات مكتملة. اضغطي على علامة ✓ بأي دعوة حتى تظهر هنا.
+              </p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {doneInvitations.map((inv) => (
                   <InvitationRow
                     key={inv.id}
                     inv={inv}
