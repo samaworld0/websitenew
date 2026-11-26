@@ -2394,6 +2394,7 @@ function InvitationRow({
   onCopyAsPrivate,
   onDesignEdit,
   onToggleFavorite,
+  onToggleFlag,
 }: {
   inv: Invitation
   nextId: number
@@ -2404,6 +2405,7 @@ function InvitationRow({
   onCopyAsPrivate: (inv: Invitation, nextId: number) => void
   onDesignEdit: (inv: Invitation) => void
   onToggleFavorite?: (inv: Invitation) => void
+  onToggleFlag?: (inv: Invitation, key: "admin-inprogress" | "admin-done") => void
 }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const [showAtt, setShowAtt] = useState(false)
@@ -2467,21 +2469,53 @@ function InvitationRow({
           #{inv.id}
         </span>
         {onToggleFavorite && (
-          <button
-            type="button"
-            onClick={() => onToggleFavorite(inv)}
-            title={isFavorite(inv) ? "إزالة من المفضلة" : "إضافة للمفضلة"}
-            aria-label={isFavorite(inv) ? "إزالة من المفضلة" : "إضافة للمفضلة"}
-            className={`absolute bottom-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-lg shadow ${
-              isFavorite(inv)
-                ? "bg-[#D4AF37] text-white"
-                : "bg-white/85 text-[#8a7561] hover:text-[#D4AF37]"
-            }`}
-          >
-            {isFavorite(inv) ? "★" : "☆"}
-          </button>
+          <div className="absolute bottom-2 left-2 z-10 flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(inv)}
+              title={isFavorite(inv) ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+              aria-label={isFavorite(inv) ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+              className={`w-9 h-9 rounded-full flex items-center justify-center text-lg shadow cursor-pointer ${
+                isFavorite(inv)
+                  ? "bg-[#D4AF37] text-white"
+                  : "bg-white/85 text-[#8a7561] hover:text-[#D4AF37]"
+              }`}
+            >
+              {isFavorite(inv) ? "★" : "☆"}
+            </button>
+            {onToggleFlag && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onToggleFlag(inv, "admin-inprogress")}
+                  title={inv.textStyles?.["admin-inprogress"]?.hidden ? "إزالة علامة قيد الإنشاء" : "قيد الإنشاء"}
+                  aria-label="قيد الإنشاء"
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-lg shadow cursor-pointer ${
+                    inv.textStyles?.["admin-inprogress"]?.hidden
+                      ? "bg-[#f59e0b] text-white"
+                      : "bg-white/85 grayscale opacity-80 hover:opacity-100"
+                  }`}
+                >
+                  🕐
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onToggleFlag(inv, "admin-done")}
+                  title={inv.textStyles?.["admin-done"]?.hidden ? "إزالة علامة مكتمل" : "مكتمل"}
+                  aria-label="مكتمل"
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-xl font-bold shadow cursor-pointer ${
+                    inv.textStyles?.["admin-done"]?.hidden
+                      ? "bg-[#16a34a] text-white"
+                      : "bg-white/85 text-[#16a34a]/50 hover:text-[#16a34a]"
+                  }`}
+                >
+                  ✓
+                </button>
+              </>
+            )}
+          </div>
         )}
-        <div className="absolute bottom-2 right-3 left-3 text-white">
+        <div className="absolute bottom-2 right-3 left-[8.5rem] text-white pointer-events-none">
           <p className="font-bold text-sm truncate drop-shadow">
             {inv.title || "بدون عنوان"}
           </p>
@@ -2785,6 +2819,26 @@ export default function AdminPanel({
     onRefresh()
   }
 
+  const handleToggleFlag = async (
+    inv: Invitation,
+    key: "admin-inprogress" | "admin-done",
+  ) => {
+    setDeleteError("")
+    const prevStyles = inv.textStyles || {}
+    const result = await saveInvitation({
+      ...inv,
+      textStyles: {
+        ...prevStyles,
+        [key]: { ...(prevStyles[key] || {}), hidden: !prevStyles[key]?.hidden },
+      },
+    })
+    if (!result.success) {
+      setDeleteError("تعذّر تحديث الحالة، حاول مرة ثانية")
+      return
+    }
+    onRefresh()
+  }
+
   const closeForm = () => {
     setEditing(null)
     setEditingIsNew(false)
@@ -2975,6 +3029,7 @@ export default function AdminPanel({
                     onCopyAsPrivate={startCopyAsPrivate}
                     onDesignEdit={setDesignEditingInv}
                   onToggleFavorite={handleToggleFavorite}
+ onToggleFlag={handleToggleFlag}
                   />
                   ))}</div>
                 </div>
@@ -3017,6 +3072,7 @@ export default function AdminPanel({
                     onCopyAsPrivate={startCopyAsPrivate}
                     onDesignEdit={setDesignEditingInv}
                     onToggleFavorite={handleToggleFavorite}
+ onToggleFlag={handleToggleFlag}
                   />
                 ))}
               </div>
@@ -3071,6 +3127,7 @@ export default function AdminPanel({
                         onCopyAsPrivate={startCopyAsPrivate}
                         onDesignEdit={setDesignEditingInv}
                         onToggleFavorite={handleToggleFavorite}
+ onToggleFlag={handleToggleFlag}
                       />
                     ))}
                   </div>
