@@ -72,6 +72,8 @@ export interface TextStyle {
   duration?: number
   // عدد نسخ القسم المكرّرة (شوف DuplicableSection). يُخزَّن بعنصر خاص باسم section-copies-<قسم>
   copies?: number
+  // أقصى عدد (مثلاً أقصى عدد مرافقين بنموذج تأكيد الحضور)
+  max?: number
   // نوع منحنى الحركة (سرعة الانتقال) — CSS transition-timing-function.
   easing?: "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out"
   // نمط ظهور النص عند وصول الزائر له بالتمرير (شوف TEXT_REVEAL_OPTIONS).

@@ -649,6 +649,13 @@ function WisalTemplateView({
   const [timeLeft, setTimeLeft] = useState(calcTimeLeft)
   const [attendance, setAttendance] = useState("نعم")
   const [companions, setCompanions] = useState(0)
+  // خيارات المرافقين (من لوحة التحكم): إخفاء الخانة أو تحديد أقصى عدد
+
+  const noCompanions = !!inv.textStyles?.["rsvp-companions"]?.hidden
+
+  const maxCompanions = Math.max(0, Math.min(20, inv.textStyles?.["rsvp-companions"]?.max ?? 20))
+
+  const companionsValue = noCompanions ? 0 : Math.min(companions, maxCompanions)
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
@@ -809,7 +816,7 @@ function WisalTemplateView({
           sheetId: inv.sheetId,
           name: guestName,
           attendance,
-          companions,
+          companions: companionsValue,
           message: guestNote,
         })
         if (!result.success) {
@@ -818,7 +825,7 @@ function WisalTemplateView({
       }
 
       if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+        const id = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
         if (id) setQrId(id)
       }
       setSubmitted(true)
@@ -1253,6 +1260,7 @@ function WisalTemplateView({
                       </div>
                     </div>
 
+                    {(editable || !noCompanions) && (
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
                         <EditableText id="rsvp-companions-label">
@@ -1281,7 +1289,7 @@ function WisalTemplateView({
                         <EditableButton
                           id="bg-rsvp-counter-btn"
                           type="button"
-                          onClick={() => setCompanions(companions + 1)}
+                          onClick={() => setCompanions(Math.min(maxCompanions, companions + 1))}
                           className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
@@ -1289,6 +1297,7 @@ function WisalTemplateView({
                         </EditableButton>
                       </EditableBackground>
                     </div>
+                    )}
 
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
@@ -1627,6 +1636,13 @@ function WisalTemplateTwoView({
   const [timeLeft, setTimeLeft] = useState(calcTimeLeft)
   const [attendance, setAttendance] = useState("نعم")
   const [companions, setCompanions] = useState(0)
+  // خيارات المرافقين (من لوحة التحكم): إخفاء الخانة أو تحديد أقصى عدد
+
+  const noCompanions = !!inv.textStyles?.["rsvp-companions"]?.hidden
+
+  const maxCompanions = Math.max(0, Math.min(20, inv.textStyles?.["rsvp-companions"]?.max ?? 20))
+
+  const companionsValue = noCompanions ? 0 : Math.min(companions, maxCompanions)
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
@@ -1820,7 +1836,7 @@ function WisalTemplateTwoView({
           sheetId: inv.sheetId,
           name: guestName,
           attendance,
-          companions,
+          companions: companionsValue,
           message: guestNote,
         })
         if (!result.success) {
@@ -1829,7 +1845,7 @@ function WisalTemplateTwoView({
       }
 
       if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+        const id = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
         if (id) setQrId(id)
       }
       setSubmitted(true)
@@ -2268,6 +2284,7 @@ function WisalTemplateTwoView({
                       </div>
                     </div>
 
+                    {(editable || !noCompanions) && (
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
                         <EditableText id="rsvp-companions-label">
@@ -2296,7 +2313,7 @@ function WisalTemplateTwoView({
                         <EditableButton
                           id="bg-rsvp-counter-btn"
                           type="button"
-                          onClick={() => setCompanions(companions + 1)}
+                          onClick={() => setCompanions(Math.min(maxCompanions, companions + 1))}
                           className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
@@ -2304,6 +2321,7 @@ function WisalTemplateTwoView({
                         </EditableButton>
                       </EditableBackground>
                     </div>
+                    )}
 
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
@@ -2682,6 +2700,13 @@ function WisalTemplateThreeView({
   const [timeLeft, setTimeLeft] = useState(calcTimeLeft)
   const [attendance, setAttendance] = useState("نعم")
   const [companions, setCompanions] = useState(0)
+  // خيارات المرافقين (من لوحة التحكم): إخفاء الخانة أو تحديد أقصى عدد
+
+  const noCompanions = !!inv.textStyles?.["rsvp-companions"]?.hidden
+
+  const maxCompanions = Math.max(0, Math.min(20, inv.textStyles?.["rsvp-companions"]?.max ?? 20))
+
+  const companionsValue = noCompanions ? 0 : Math.min(companions, maxCompanions)
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
@@ -2875,7 +2900,7 @@ function WisalTemplateThreeView({
           sheetId: inv.sheetId,
           name: guestName,
           attendance,
-          companions,
+          companions: companionsValue,
           message: guestNote,
         })
         if (!result.success) {
@@ -2884,7 +2909,7 @@ function WisalTemplateThreeView({
       }
 
       if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const id = await registerRsvpQr(inv, guestName, attendance, companions, guestNote)
+        const id = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
         if (id) setQrId(id)
       }
       setSubmitted(true)
@@ -3323,6 +3348,7 @@ function WisalTemplateThreeView({
                       </div>
                     </div>
 
+                    {(editable || !noCompanions) && (
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
                         <EditableText id="rsvp-companions-label">
@@ -3351,7 +3377,7 @@ function WisalTemplateThreeView({
                         <EditableButton
                           id="bg-rsvp-counter-btn"
                           type="button"
-                          onClick={() => setCompanions(companions + 1)}
+                          onClick={() => setCompanions(Math.min(maxCompanions, companions + 1))}
                           className="w-10 h-10 rounded-full border border-[var(--gold)]/30 flex items-center justify-center text-xl font-bold shadow-sm"
                           style={{ backgroundColor: "#ffffff" }}
                         >
@@ -3359,6 +3385,7 @@ function WisalTemplateThreeView({
                         </EditableButton>
                       </EditableBackground>
                     </div>
+                    )}
 
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">

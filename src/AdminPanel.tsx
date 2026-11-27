@@ -890,6 +890,18 @@ function InvitationForm({
       }
     })
 
+  const setCompanionsOpt = (patch: { hidden?: boolean; max?: number | undefined }) =>
+    setInv((prev) => {
+      const prevStyles = prev.textStyles || {}
+      return {
+        ...prev,
+        textStyles: {
+          ...prevStyles,
+          "rsvp-companions": { ...(prevStyles["rsvp-companions"] || {}), ...patch },
+        },
+      }
+    })
+
   const setQrCheckin = (on: boolean) =>
     setInv((prev) => {
       const prevStyles = prev.textStyles || {}
@@ -1645,6 +1657,39 @@ function InvitationForm({
             </span>
           </span>
         </label>
+
+        <div className="sm:col-span-2 rounded-lg px-4 py-3 border border-[#e5d9c3] flex flex-col gap-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-[#D4AF37]"
+              checked={!!inv.textStyles?.["rsvp-companions"]?.hidden}
+              onChange={(e) => setCompanionsOpt({ hidden: e.target.checked })}
+            />
+            <span className="text-sm">
+              <span className="font-bold block">إلغاء خانة المرافقين</span>
+              <span className="text-[#8a7561]">تختفي خانة «عدد المرافقين» من نموذج تأكيد الحضور ويُسجَّل الضيف بدون مرافقين.</span>
+            </span>
+          </label>
+          {!inv.textStyles?.["rsvp-companions"]?.hidden && (
+            <label className="flex items-center gap-3 text-sm">
+              <span className="font-bold">أقصى عدد للمرافقين</span>
+              <input
+                type="number"
+                min={0}
+                max={20}
+                placeholder="بدون حد (20)"
+                className="w-28 rounded-lg border border-[#e5d9c3] px-3 py-1.5"
+                value={inv.textStyles?.["rsvp-companions"]?.max ?? ""}
+                onChange={(e) =>
+                  setCompanionsOpt({
+                    max: e.target.value === "" ? undefined : Math.max(0, Math.min(20, Number(e.target.value))),
+                  })
+                }
+              />
+            </label>
+          )}
+        </div>
 
         <label className="sm:col-span-2 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border border-[#e5d9c3]">
           <input
