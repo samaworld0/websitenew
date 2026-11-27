@@ -1242,14 +1242,6 @@ function WisalTemplateView({
                                   : undefined,
                               }}
                             >
-                              {isActive && (
-                                <span
-                                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow"
-                                  style={{ backgroundColor: "var(--gold)", boxShadow: "0 0 0 2px #fff" }}
-                                >
-                                  ✓
-                                </span>
-                              )}
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
                               </EditableText>
@@ -2264,14 +2256,6 @@ function WisalTemplateTwoView({
                                   : undefined,
                               }}
                             >
-                              {isActive && (
-                                <span
-                                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow"
-                                  style={{ backgroundColor: "var(--gold)", boxShadow: "0 0 0 2px #fff" }}
-                                >
-                                  ✓
-                                </span>
-                              )}
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
                               </EditableText>
@@ -3326,14 +3310,6 @@ function WisalTemplateThreeView({
                                   : undefined,
                               }}
                             >
-                              {isActive && (
-                                <span
-                                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow"
-                                  style={{ backgroundColor: "var(--gold)", boxShadow: "0 0 0 2px #fff" }}
-                                >
-                                  ✓
-                                </span>
-                              )}
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
                               </EditableText>
