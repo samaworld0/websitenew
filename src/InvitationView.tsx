@@ -1436,7 +1436,6 @@ function WisalTemplateView({
           { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
           { id: "bg-rsvp-companions-box", label: "خلفية صندوق عدد المرافقين" },
           { id: "bg-rsvp-counter-btn", label: "خلفية زري + / -" },
-          { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
           { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
           { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
         ]}
@@ -2489,7 +2488,6 @@ function WisalTemplateTwoView({
           { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
           { id: "bg-rsvp-companions-box", label: "خلفية صندوق عدد المرافقين" },
           { id: "bg-rsvp-counter-btn", label: "خلفية زري + / -" },
-          { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
           { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
           { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
         ]}
@@ -3545,7 +3543,6 @@ function WisalTemplateThreeView({
           { id: "bg-rsvp-card", label: "خلفية بطاقة تأكيد الحضور" },
           { id: "bg-rsvp-companions-box", label: "خلفية صندوق عدد المرافقين" },
           { id: "bg-rsvp-counter-btn", label: "خلفية زري + / -" },
-          { id: "bg-rsvp-option-selected", label: "خلفية زر الحضور (وهو محدد)" },
           { id: "bg-rsvp-option-unselected", label: "خلفية أزرار الحضور (غير محددة)" },
           { id: "bg-rsvp-submit", label: "خلفية زر إرسال التأكيد" },
         ]}

@@ -1376,6 +1376,15 @@ export function EditPanel() {
                 </button>
               </div>
             </div>
+          ) : selectedId === "bg-rsvp-option-selected" ? (
+            <div style={row}>
+              <label style={label}>خيار "تأكيد الحضور" وقت ما يكون محدد</label>
+              <div style={{ fontSize: 11, color: "#C9B896", lineHeight: 1.6 }}>
+                لون هذا العنصر ثابت على الذهبي مع حلقة تمييز، وما تقدرين
+                تغيّرينه من هنا — عشان كذا دايماً يبان واضح إنه "محدد" مهما
+                كان لون باقي الخيارات.
+              </div>
+            </div>
           ) : (
             <>
               <div style={row}>
