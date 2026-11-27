@@ -1227,10 +1227,10 @@ function WisalTemplateView({
                               id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
                               type="button"
                               onClick={() => setAttendance(opt)}
-                              className={`relative py-3 rounded-xl text-base font-medium transition active:scale-95 active:brightness-90 ${
+                              className={`relative py-3 rounded-xl text-base transition active:scale-95 active:brightness-90 ${
                                 isActive
-                                  ? "text-white shadow"
-                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
+                                  ? "text-white shadow font-bold scale-[1.04]"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A] font-medium"
                               }`}
                               style={{
                                 backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
@@ -1238,7 +1238,7 @@ function WisalTemplateView({
                                 // الخلفية المخصّص إطلاقاً — يضل واضح حتى لو الأدمن لوّن
                                 // زر "محدد" و"غير محدد" بنفس اللون من التصميم المباشر.
                                 boxShadow: isActive
-                                  ? "0 0 0 2px #fff, 0 0 0 4px var(--gold)"
+                                  ? "0 0 0 2px #fff, 0 0 0 6px var(--gold), 0 0 0 7px rgba(0,0,0,0.18)"
                                   : undefined,
                               }}
                             >
@@ -2241,10 +2241,10 @@ function WisalTemplateTwoView({
                               id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
                               type="button"
                               onClick={() => setAttendance(opt)}
-                              className={`relative py-3 rounded-xl text-base font-medium transition active:scale-95 active:brightness-90 ${
+                              className={`relative py-3 rounded-xl text-base transition active:scale-95 active:brightness-90 ${
                                 isActive
-                                  ? "text-white shadow"
-                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
+                                  ? "text-white shadow font-bold scale-[1.04]"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A] font-medium"
                               }`}
                               style={{
                                 backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
@@ -2252,7 +2252,7 @@ function WisalTemplateTwoView({
                                 // الخلفية المخصّص إطلاقاً — يضل واضح حتى لو الأدمن لوّن
                                 // زر "محدد" و"غير محدد" بنفس اللون من التصميم المباشر.
                                 boxShadow: isActive
-                                  ? "0 0 0 2px #fff, 0 0 0 4px var(--gold)"
+                                  ? "0 0 0 2px #fff, 0 0 0 6px var(--gold), 0 0 0 7px rgba(0,0,0,0.18)"
                                   : undefined,
                               }}
                             >
@@ -3295,10 +3295,10 @@ function WisalTemplateThreeView({
                               id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
                               type="button"
                               onClick={() => setAttendance(opt)}
-                              className={`relative py-3 rounded-xl text-base font-medium transition active:scale-95 active:brightness-90 ${
+                              className={`relative py-3 rounded-xl text-base transition active:scale-95 active:brightness-90 ${
                                 isActive
-                                  ? "text-white shadow"
-                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
+                                  ? "text-white shadow font-bold scale-[1.04]"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A] font-medium"
                               }`}
                               style={{
                                 backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
@@ -3306,7 +3306,7 @@ function WisalTemplateThreeView({
                                 // الخلفية المخصّص إطلاقاً — يضل واضح حتى لو الأدمن لوّن
                                 // زر "محدد" و"غير محدد" بنفس اللون من التصميم المباشر.
                                 boxShadow: isActive
-                                  ? "0 0 0 2px #fff, 0 0 0 4px var(--gold)"
+                                  ? "0 0 0 2px #fff, 0 0 0 6px var(--gold), 0 0 0 7px rgba(0,0,0,0.18)"
                                   : undefined,
                               }}
                             >
