@@ -139,18 +139,9 @@ export async function loadInvitations(): Promise<Invitation[] | null> {
 
       if (error) throw error
 
-      if (!data || data.length === 0) {
-        const seedRows = seedInvitations.map(toDatabaseInvitation)
-        const { error: seedError } = await supabase
-          .from("invitations")
-          .upsert(seedRows, { onConflict: "id" })
-
-        if (seedError) {
-          console.error("Supabase seed invitations error:", seedError)
-        }
-
-        return seedInvitations
-      }
+      // ما نزرع بيانات تجريبية أبداً: لو رجع الجدول فاضي بالخطأ ما نبي نكتب
+      // دعوات وهمية بالقاعدة.
+      if (!data) throw new Error("no data")
 
       return data.map(mergeWithLocalFields)
     } catch (err) {
