@@ -1219,27 +1219,43 @@ function WisalTemplateView({
                         <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
                       </label>
                       <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => {
-                          const isActive = attendance === opt
-                          return (
-                            <EditableButton
-                              key={opt}
-                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
-                              type="button"
-                              onClick={() => setAttendance(opt)}
-                              className={`py-3 rounded-xl text-base font-medium transition ${
-                                isActive
-                                  ? "text-white shadow"
-                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
-                              }`}
-                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
-                            >
-                              <EditableText id={`rsvp-option-${opt}`}>
-                                {opt}
-                              </EditableText>
-                            </EditableButton>
-                          )
-                        })}
+                        {["نعم", "لا", "ربما"].map((opt) => {
+                          const isActive = attendance === opt
+                          return (
+                            <EditableButton
+                              key={opt}
+                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
+                              type="button"
+                              onClick={() => setAttendance(opt)}
+                              className={`relative py-3 rounded-xl text-base font-medium transition ${
+                                isActive
+                                  ? "text-white shadow"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
+                              }`}
+                              style={{
+                                backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
+                                // تظليل التحديد (حلقة ذهبية + علامة صح) ما يعتمد على لون
+                                // الخلفية المخصّص إطلاقاً — يضل واضح حتى لو الأدمن لوّن
+                                // زر "محدد" و"غير محدد" بنفس اللون من التصميم المباشر.
+                                boxShadow: isActive
+                                  ? "0 0 0 2px #fff, 0 0 0 4px var(--gold)"
+                                  : undefined,
+                              }}
+                            >
+                              {isActive && (
+                                <span
+                                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow"
+                                  style={{ backgroundColor: "var(--gold)", boxShadow: "0 0 0 2px #fff" }}
+                                >
+                                  ✓
+                                </span>
+                              )}
+                              <EditableText id={`rsvp-option-${opt}`}>
+                                {opt}
+                              </EditableText>
+                            </EditableButton>
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -1299,13 +1315,23 @@ function WisalTemplateView({
                       id="bg-rsvp-submit"
                       type="submit"
                       disabled={isSubmitting}
-                      className={`w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-90 shadow-md flex items-center justify-center gap-2 ${
-                        isSubmitting ? "opacity-70 cursor-wait" : ""
+                      className={`relative w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-75 shadow-md flex items-center justify-center gap-2 overflow-hidden ${
+                        isSubmitting ? "cursor-wait" : ""
                       }`}
                       style={{ backgroundColor: "var(--gold)" }}
                     >
                       {isSubmitting && (
-                        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        // تعتيم ثابت فوق الزر (مش opacity على الزر كله) حتى يبان واضح
+                        // مهما كان لون الزر فاتح أو غامق.
+                        <span className="absolute inset-0 bg-black/25 pointer-events-none" />
+                      )}
+                      {isSubmitting && (
+                        // mix-blend-difference يخلي لون الدائرة ينعكس تلقائياً حسب لون
+                        // الخلفية تحتها، فتضل واضحة مهما كان لون الزر.
+                        <span
+                          className="relative inline-block w-5 h-5 border-[3px] border-white/40 border-t-white rounded-full animate-spin"
+                          style={{ mixBlendMode: "difference" }}
+                        />
                       )}
                       <EditableText id="rsvp-submit-button">
                         إرسال التأكيد
@@ -2215,27 +2241,43 @@ function WisalTemplateTwoView({
                         <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
                       </label>
                       <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => {
-                          const isActive = attendance === opt
-                          return (
-                            <EditableButton
-                              key={opt}
-                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
-                              type="button"
-                              onClick={() => setAttendance(opt)}
-                              className={`py-3 rounded-xl text-base font-medium transition ${
-                                isActive
-                                  ? "text-white shadow"
-                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
-                              }`}
-                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
-                            >
-                              <EditableText id={`rsvp-option-${opt}`}>
-                                {opt}
-                              </EditableText>
-                            </EditableButton>
-                          )
-                        })}
+                        {["نعم", "لا", "ربما"].map((opt) => {
+                          const isActive = attendance === opt
+                          return (
+                            <EditableButton
+                              key={opt}
+                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
+                              type="button"
+                              onClick={() => setAttendance(opt)}
+                              className={`relative py-3 rounded-xl text-base font-medium transition ${
+                                isActive
+                                  ? "text-white shadow"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
+                              }`}
+                              style={{
+                                backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
+                                // تظليل التحديد (حلقة ذهبية + علامة صح) ما يعتمد على لون
+                                // الخلفية المخصّص إطلاقاً — يضل واضح حتى لو الأدمن لوّن
+                                // زر "محدد" و"غير محدد" بنفس اللون من التصميم المباشر.
+                                boxShadow: isActive
+                                  ? "0 0 0 2px #fff, 0 0 0 4px var(--gold)"
+                                  : undefined,
+                              }}
+                            >
+                              {isActive && (
+                                <span
+                                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow"
+                                  style={{ backgroundColor: "var(--gold)", boxShadow: "0 0 0 2px #fff" }}
+                                >
+                                  ✓
+                                </span>
+                              )}
+                              <EditableText id={`rsvp-option-${opt}`}>
+                                {opt}
+                              </EditableText>
+                            </EditableButton>
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -2295,13 +2337,23 @@ function WisalTemplateTwoView({
                       id="bg-rsvp-submit"
                       type="submit"
                       disabled={isSubmitting}
-                      className={`w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-90 shadow-md flex items-center justify-center gap-2 ${
-                        isSubmitting ? "opacity-70 cursor-wait" : ""
+                      className={`relative w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-75 shadow-md flex items-center justify-center gap-2 overflow-hidden ${
+                        isSubmitting ? "cursor-wait" : ""
                       }`}
                       style={{ backgroundColor: "var(--gold)" }}
                     >
                       {isSubmitting && (
-                        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        // تعتيم ثابت فوق الزر (مش opacity على الزر كله) حتى يبان واضح
+                        // مهما كان لون الزر فاتح أو غامق.
+                        <span className="absolute inset-0 bg-black/25 pointer-events-none" />
+                      )}
+                      {isSubmitting && (
+                        // mix-blend-difference يخلي لون الدائرة ينعكس تلقائياً حسب لون
+                        // الخلفية تحتها، فتضل واضحة مهما كان لون الزر.
+                        <span
+                          className="relative inline-block w-5 h-5 border-[3px] border-white/40 border-t-white rounded-full animate-spin"
+                          style={{ mixBlendMode: "difference" }}
+                        />
                       )}
                       <EditableText id="rsvp-submit-button">
                         إرسال التأكيد
@@ -3251,27 +3303,43 @@ function WisalTemplateThreeView({
                         <EditableText id="rsvp-attend-label">هل ستحضر؟</EditableText>
                       </label>
                       <div className="grid grid-cols-3 gap-3">
-                        {["نعم", "لا", "ربما"].map((opt) => {
-                          const isActive = attendance === opt
-                          return (
-                            <EditableButton
-                              key={opt}
-                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
-                              type="button"
-                              onClick={() => setAttendance(opt)}
-                              className={`py-3 rounded-xl text-base font-medium transition ${
-                                isActive
-                                  ? "text-white shadow"
-                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
-                              }`}
-                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
-                            >
-                              <EditableText id={`rsvp-option-${opt}`}>
-                                {opt}
-                              </EditableText>
-                            </EditableButton>
-                          )
-                        })}
+                        {["نعم", "لا", "ربما"].map((opt) => {
+                          const isActive = attendance === opt
+                          return (
+                            <EditableButton
+                              key={opt}
+                              id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
+                              type="button"
+                              onClick={() => setAttendance(opt)}
+                              className={`relative py-3 rounded-xl text-base font-medium transition ${
+                                isActive
+                                  ? "text-white shadow"
+                                  : "border border-[var(--gold)]/30 text-[#3D312A]"
+                              }`}
+                              style={{
+                                backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
+                                // تظليل التحديد (حلقة ذهبية + علامة صح) ما يعتمد على لون
+                                // الخلفية المخصّص إطلاقاً — يضل واضح حتى لو الأدمن لوّن
+                                // زر "محدد" و"غير محدد" بنفس اللون من التصميم المباشر.
+                                boxShadow: isActive
+                                  ? "0 0 0 2px #fff, 0 0 0 4px var(--gold)"
+                                  : undefined,
+                              }}
+                            >
+                              {isActive && (
+                                <span
+                                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow"
+                                  style={{ backgroundColor: "var(--gold)", boxShadow: "0 0 0 2px #fff" }}
+                                >
+                                  ✓
+                                </span>
+                              )}
+                              <EditableText id={`rsvp-option-${opt}`}>
+                                {opt}
+                              </EditableText>
+                            </EditableButton>
+                          )
+                        })}
                       </div>
                     </div>
 
@@ -3331,13 +3399,23 @@ function WisalTemplateThreeView({
                       id="bg-rsvp-submit"
                       type="submit"
                       disabled={isSubmitting}
-                      className={`w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-90 shadow-md flex items-center justify-center gap-2 ${
-                        isSubmitting ? "opacity-70 cursor-wait" : ""
+                      className={`relative w-full py-4 hover:bg-[#9E7024] text-white font-bold rounded-2xl text-base transition active:scale-95 active:brightness-75 shadow-md flex items-center justify-center gap-2 overflow-hidden ${
+                        isSubmitting ? "cursor-wait" : ""
                       }`}
                       style={{ backgroundColor: "var(--gold)" }}
                     >
                       {isSubmitting && (
-                        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        // تعتيم ثابت فوق الزر (مش opacity على الزر كله) حتى يبان واضح
+                        // مهما كان لون الزر فاتح أو غامق.
+                        <span className="absolute inset-0 bg-black/25 pointer-events-none" />
+                      )}
+                      {isSubmitting && (
+                        // mix-blend-difference يخلي لون الدائرة ينعكس تلقائياً حسب لون
+                        // الخلفية تحتها، فتضل واضحة مهما كان لون الزر.
+                        <span
+                          className="relative inline-block w-5 h-5 border-[3px] border-white/40 border-t-white rounded-full animate-spin"
+                          style={{ mixBlendMode: "difference" }}
+                        />
                       )}
                       <EditableText id="rsvp-submit-button">
                         إرسال التأكيد
