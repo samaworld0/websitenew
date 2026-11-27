@@ -208,18 +208,30 @@ export function playTextReveal(
       anim.oncancel = clean
       return anim
     }
-    case "type":
+    case "type": {
+      // كتابة ناعمة: مسح متواصل بحافة ناعمة (بدون خطوات steps ولا blur عشان
+      // ما تتقطع بالجوالات) — كل ما كان النص أطول طالت المدة.
+      const grad = "linear-gradient(to left, #000 0%, #000 78%, transparent 100%)"
+      const e = el.style as any
+      e.maskImage = e.webkitMaskImage = grad
+      e.maskSize = e.webkitMaskSize = "250% 100%"
+      e.maskRepeat = e.webkitMaskRepeat = "no-repeat"
       anim = el.animate(
         [
-          { clipPath: "inset(0 0 0 100%)", filter: "blur(3px)", opacity: 0.4 },
-          { clipPath: "inset(0 0 0 0)", filter: "blur(0px)", opacity: 1 },
-        ],
-        opt(
-          Math.min(2200, Math.max(600, len * 38)),
-          `steps(${Math.min(80, Math.max(10, len * 2))}, end)`,
-        ),
+          { maskPosition: "0% 0%", webkitMaskPosition: "0% 0%" },
+          { maskPosition: "100% 0%", webkitMaskPosition: "100% 0%" },
+        ] as Keyframe[],
+        opt(Math.min(2600, Math.max(900, len * 55)), "linear"),
       )
-      break
+      const clean = () => {
+        e.maskImage = e.webkitMaskImage = ""
+        e.maskSize = e.webkitMaskSize = ""
+        e.maskRepeat = e.webkitMaskRepeat = ""
+      }
+      anim.onfinish = clean
+      anim.oncancel = clean
+      return anim
+    }
     default:
       return null
   }
@@ -259,16 +271,22 @@ export const FONT_OPTIONS: { label: string; family: string }[] = [
 ]
 
 export const COLOR_PRESETS: string[] = [
-  "#111111",
-  "#333333",
-  "#666666",
-  "#B8862F",
-  "#D4AF37",
-  "#7A3546",
-  "#2A6F97",
-  "#2F7A4F",
-  "#F5E9E4",
-  "#FFFFFF",
+  // محايدة
+  "#000000", "#111111", "#333333", "#666666", "#999999", "#CCCCCC", "#F5F5F5", "#FFFFFF",
+  // كريمي وبيج
+  "#FEFCF8", "#F5E9E4", "#EBDCC3", "#D8C3A5", "#A68A64", "#6F4E37", "#3E2723",
+  // ذهبي
+  "#F1D989", "#D4AF37", "#B8862F", "#8A6A1F",
+  // وردي وأحمر
+  "#FADADD", "#F4A6B7", "#E75480", "#C2185B", "#7A3546", "#B71C1C", "#800020",
+  // بنفسجي
+  "#E6DDF5", "#B39DDB", "#7E57C2", "#4A148C",
+  // أزرق
+  "#DCEBF7", "#90CAF9", "#2A6F97", "#1A3A5C", "#0B1F3A",
+  // أخضر
+  "#DDEFE0", "#9CCC9F", "#2F7A4F", "#1B4332", "#0F2A1D",
+  // برتقالي
+  "#FFE0B2", "#F5A25D", "#C75B12",
 ]
 
 const injectedFonts = new Set<string>()
@@ -1676,8 +1694,39 @@ export function EditPanel() {
                   }}
                 />
               ))}
+              <input
+                type="color"
+                value={(st.bgColor || "#ffffff").slice(0, 7)}
+                onChange={(e) =>
+                  updateStyle(selectedId, { bgColor: e.target.value + (st.bgColor && st.bgColor.length === 9 ? st.bgColor.slice(7) : "") })
+                }
+                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+                title="أي لون"
+              />
               <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>بدون</button>
             </div>
+            {st.bgColor && (
+              <div style={{ marginTop: 8 }}>
+                <label style={label}>
+                  شفافية الخلفية: {Math.round((st.bgColor.length === 9 ? parseInt(st.bgColor.slice(7), 16) / 255 : 1) * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={Math.round((st.bgColor.length === 9 ? parseInt(st.bgColor.slice(7), 16) / 255 : 1) * 100)}
+                  onChange={(e) => {
+                    const a = Math.round((Number(e.target.value) / 100) * 255)
+                    const base = st.bgColor!.slice(0, 7)
+                    updateStyle(selectedId, {
+                      bgColor: a >= 255 ? base : base + a.toString(16).padStart(2, "0"),
+                    })
+                  }}
+                  style={{ width: "100%" }}
+                />
+              </div>
+            )}
           </div>
 
           <div style={row}>
