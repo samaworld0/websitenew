@@ -1232,7 +1232,17 @@ function WisalTemplateView({
                                   ? "text-white shadow-md"
                                   : "border border-[var(--gold)]/30 text-[#3D312A] font-medium"
                               }`}
-                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
+                              style={{
+                                backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
+                                // بعض الدعوات لوّن خيار "محدد" و"غير محدد" بنفس اللون تقريباً
+                                // من التصميم المباشر (حتى أبيض=أبيض بالاثنين) — فالتعبئة
+                                // اللونية وحدها ما تكفي تبين التحديد. الحلقة هذي مستقلة عن
+                                // bgColor/color اللي يتحكم فيهم التصميم المباشر، فتضل واضحة
+                                // دايماً مهما كان لون الخيارين.
+                                boxShadow: isActive
+                                  ? "0 0 0 2px #fff, 0 0 0 5px var(--gold)"
+                                  : undefined,
+                              }}
                             >
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
@@ -2238,7 +2248,17 @@ function WisalTemplateTwoView({
                                   ? "text-white shadow-md"
                                   : "border border-[var(--gold)]/30 text-[#3D312A] font-medium"
                               }`}
-                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
+                              style={{
+                                backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
+                                // بعض الدعوات لوّن خيار "محدد" و"غير محدد" بنفس اللون تقريباً
+                                // من التصميم المباشر (حتى أبيض=أبيض بالاثنين) — فالتعبئة
+                                // اللونية وحدها ما تكفي تبين التحديد. الحلقة هذي مستقلة عن
+                                // bgColor/color اللي يتحكم فيهم التصميم المباشر، فتضل واضحة
+                                // دايماً مهما كان لون الخيارين.
+                                boxShadow: isActive
+                                  ? "0 0 0 2px #fff, 0 0 0 5px var(--gold)"
+                                  : undefined,
+                              }}
                             >
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
@@ -3284,7 +3304,17 @@ function WisalTemplateThreeView({
                                   ? "text-white shadow-md"
                                   : "border border-[var(--gold)]/30 text-[#3D312A] font-medium"
                               }`}
-                              style={{ backgroundColor: isActive ? "var(--gold)" : "#FAF7F2" }}
+                              style={{
+                                backgroundColor: isActive ? "var(--gold)" : "#FAF7F2",
+                                // بعض الدعوات لوّن خيار "محدد" و"غير محدد" بنفس اللون تقريباً
+                                // من التصميم المباشر (حتى أبيض=أبيض بالاثنين) — فالتعبئة
+                                // اللونية وحدها ما تكفي تبين التحديد. الحلقة هذي مستقلة عن
+                                // bgColor/color اللي يتحكم فيهم التصميم المباشر، فتضل واضحة
+                                // دايماً مهما كان لون الخيارين.
+                                boxShadow: isActive
+                                  ? "0 0 0 2px #fff, 0 0 0 5px var(--gold)"
+                                  : undefined,
+                              }}
                             >
                               <EditableText id={`rsvp-option-${opt}`}>
                                 {opt}
