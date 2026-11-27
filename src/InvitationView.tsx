@@ -659,6 +659,8 @@ function WisalTemplateView({
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  // معاينة شاشة "بعد تأكيد الحضور" بوضع التصميم المباشر فقط (تتيح تعديلها)
+  const [previewSuccess, setPreviewSuccess] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
   // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
@@ -1198,7 +1200,18 @@ function WisalTemplateView({
                   </p>
                 </div>
 
-                {submitted ? (
+                {editable && (
+                  <div className="flex justify-center mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewSuccess((v) => !v)}
+                      className="px-4 py-1.5 rounded-full text-xs font-bold border border-[#B8862F] text-[#8a5f14] bg-white"
+                    >
+                      {previewSuccess ? "↩ رجوع لنموذج التأكيد" : "👁 عرض وتعديل شاشة ما بعد التأكيد"}
+                    </button>
+                  </div>
+                )}
+                {submitted || (editable && previewSuccess) ? (
                   <div className="text-center py-10 text-emerald-600 font-bold text-lg">
                     <EditableText id="rsvp-success-message">
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
@@ -1646,6 +1659,8 @@ function WisalTemplateTwoView({
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  // معاينة شاشة "بعد تأكيد الحضور" بوضع التصميم المباشر فقط (تتيح تعديلها)
+  const [previewSuccess, setPreviewSuccess] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
   // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
@@ -2222,7 +2237,18 @@ function WisalTemplateTwoView({
                   </p>
                 </div>
 
-                {submitted ? (
+                {editable && (
+                  <div className="flex justify-center mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewSuccess((v) => !v)}
+                      className="px-4 py-1.5 rounded-full text-xs font-bold border border-[#B8862F] text-[#8a5f14] bg-white"
+                    >
+                      {previewSuccess ? "↩ رجوع لنموذج التأكيد" : "👁 عرض وتعديل شاشة ما بعد التأكيد"}
+                    </button>
+                  </div>
+                )}
+                {submitted || (editable && previewSuccess) ? (
                   <div className="text-center py-10 text-emerald-600 font-bold text-lg">
                     <EditableText id="rsvp-success-message">
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
@@ -2710,6 +2736,8 @@ function WisalTemplateThreeView({
   const [guestName, setGuestName] = useState("")
   const [guestNote, setGuestNote] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  // معاينة شاشة "بعد تأكيد الحضور" بوضع التصميم المباشر فقط (تتيح تعديلها)
+  const [previewSuccess, setPreviewSuccess] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
   const [showFlash, setShowFlash] = useState(false)
   // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
@@ -3286,7 +3314,18 @@ function WisalTemplateThreeView({
                   </p>
                 </div>
 
-                {submitted ? (
+                {editable && (
+                  <div className="flex justify-center mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewSuccess((v) => !v)}
+                      className="px-4 py-1.5 rounded-full text-xs font-bold border border-[#B8862F] text-[#8a5f14] bg-white"
+                    >
+                      {previewSuccess ? "↩ رجوع لنموذج التأكيد" : "👁 عرض وتعديل شاشة ما بعد التأكيد"}
+                    </button>
+                  </div>
+                )}
+                {submitted || (editable && previewSuccess) ? (
                   <div className="text-center py-10 text-emerald-600 font-bold text-lg">
                     <EditableText id="rsvp-success-message">
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
