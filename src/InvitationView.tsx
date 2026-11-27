@@ -1227,7 +1227,7 @@ function WisalTemplateView({
                               id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
                               type="button"
                               onClick={() => setAttendance(opt)}
-                              className={`relative py-3 rounded-xl text-base font-medium transition ${
+                              className={`relative py-3 rounded-xl text-base font-medium transition active:scale-95 active:brightness-90 ${
                                 isActive
                                   ? "text-white shadow"
                                   : "border border-[var(--gold)]/30 text-[#3D312A]"
@@ -2249,7 +2249,7 @@ function WisalTemplateTwoView({
                               id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
                               type="button"
                               onClick={() => setAttendance(opt)}
-                              className={`relative py-3 rounded-xl text-base font-medium transition ${
+                              className={`relative py-3 rounded-xl text-base font-medium transition active:scale-95 active:brightness-90 ${
                                 isActive
                                   ? "text-white shadow"
                                   : "border border-[var(--gold)]/30 text-[#3D312A]"
@@ -3311,7 +3311,7 @@ function WisalTemplateThreeView({
                               id={isActive ? "bg-rsvp-option-selected" : "bg-rsvp-option-unselected"}
                               type="button"
                               onClick={() => setAttendance(opt)}
-                              className={`relative py-3 rounded-xl text-base font-medium transition ${
+                              className={`relative py-3 rounded-xl text-base font-medium transition active:scale-95 active:brightness-90 ${
                                 isActive
                                   ? "text-white shadow"
                                   : "border border-[var(--gold)]/30 text-[#3D312A]"
