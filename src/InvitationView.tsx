@@ -812,6 +812,16 @@ function WisalTemplateView({
     setIsSubmitting(true)
 
     try {
+      // لو الدعوة فيها باركود وانتهى العدد المحدد: ما نقبل تأكيد الحضور أبداً
+      setQrFull(false)
+      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
+        if (r.full) {
+          setQrFull(true)
+          return
+        }
+        if (r.id) setQrId(r.id)
+      }
       // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
       // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
       if (inv.sheetId) {
@@ -827,11 +837,6 @@ function WisalTemplateView({
         }
       }
 
-      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
-        if (r.id) setQrId(r.id)
-        else if (r.full) setQrFull(true)
-      }
       setSubmitted(true)
     } finally {
       setIsSubmitting(false)
@@ -1219,14 +1224,14 @@ function WisalTemplateView({
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
 {qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
-{qrFull && (
-  <p className="mt-3 text-sm font-medium text-[#8C7A6B]">
-    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لبطاقات الدخول لهذه الدعوة.</EditableText>
-  </p>
-)}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
+{qrFull && (
+  <p className="text-center text-sm font-bold text-red-600 bg-red-50 rounded-xl py-3 px-4">
+    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لهذه الدعوة ولا يمكن تأكيد الحضور.</EditableText>
+  </p>
+)}
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
                         <EditableText id="rsvp-name-label">الاسم الكريم</EditableText>
@@ -1852,6 +1857,16 @@ function WisalTemplateTwoView({
     setIsSubmitting(true)
 
     try {
+      // لو الدعوة فيها باركود وانتهى العدد المحدد: ما نقبل تأكيد الحضور أبداً
+      setQrFull(false)
+      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
+        if (r.full) {
+          setQrFull(true)
+          return
+        }
+        if (r.id) setQrId(r.id)
+      }
       // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
       // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
       if (inv.sheetId) {
@@ -1867,11 +1882,6 @@ function WisalTemplateTwoView({
         }
       }
 
-      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
-        if (r.id) setQrId(r.id)
-        else if (r.full) setQrFull(true)
-      }
       setSubmitted(true)
     } finally {
       setIsSubmitting(false)
@@ -2263,14 +2273,14 @@ function WisalTemplateTwoView({
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
 {qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
-{qrFull && (
-  <p className="mt-3 text-sm font-medium text-[#8C7A6B]">
-    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لبطاقات الدخول لهذه الدعوة.</EditableText>
-  </p>
-)}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
+{qrFull && (
+  <p className="text-center text-sm font-bold text-red-600 bg-red-50 rounded-xl py-3 px-4">
+    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لهذه الدعوة ولا يمكن تأكيد الحضور.</EditableText>
+  </p>
+)}
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
                         <EditableText id="rsvp-name-label">الاسم الكريم</EditableText>
@@ -2936,6 +2946,16 @@ function WisalTemplateThreeView({
     setIsSubmitting(true)
 
     try {
+      // لو الدعوة فيها باركود وانتهى العدد المحدد: ما نقبل تأكيد الحضور أبداً
+      setQrFull(false)
+      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
+        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
+        if (r.full) {
+          setQrFull(true)
+          return
+        }
+        if (r.id) setQrId(r.id)
+      }
       // يترسل فعلياً لشيت جوجل بس لو الدعوة عندها sheetId (دعوة خاصة
       // اتنشأت من لوحة تحكم). بدونه تبقى معاينة محلية فقط زي قبل.
       if (inv.sheetId) {
@@ -2951,11 +2971,6 @@ function WisalTemplateThreeView({
         }
       }
 
-      if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
-        if (r.id) setQrId(r.id)
-        else if (r.full) setQrFull(true)
-      }
       setSubmitted(true)
     } finally {
       setIsSubmitting(false)
@@ -3347,14 +3362,14 @@ function WisalTemplateThreeView({
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
 {qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
-{qrFull && (
-  <p className="mt-3 text-sm font-medium text-[#8C7A6B]">
-    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لبطاقات الدخول لهذه الدعوة.</EditableText>
-  </p>
-)}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
+{qrFull && (
+  <p className="text-center text-sm font-bold text-red-600 bg-red-50 rounded-xl py-3 px-4">
+    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لهذه الدعوة ولا يمكن تأكيد الحضور.</EditableText>
+  </p>
+)}
                     <div>
                       <label className="block text-sm text-[#8C7A6B] mb-2 font-medium">
                         <EditableText id="rsvp-name-label">الاسم الكريم</EditableText>
