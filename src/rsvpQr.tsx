@@ -18,7 +18,7 @@ export async function registerRsvpQr(
   attendance: string,
   companions: number,
   message: string,
-): Promise<string | null> {
+): Promise<{ id?: string; full?: boolean }> {
   try {
     const { data, error } = await supabase.rpc("submit_rsvp", {
       p_invitation_id: inv.id,
@@ -29,12 +29,12 @@ export async function registerRsvpQr(
     })
     if (error) {
       console.error("submit_rsvp", error.message)
-      return null
+      return { full: /limit_reached/.test(error.message) }
     }
-    return data as string
+    return { id: data as string }
   } catch (e) {
     console.error(e)
-    return null
+    return {}
   }
 }
 
@@ -451,7 +451,11 @@ export function AttendancePanel({ inv, onClose }: { inv: Invitation; onClose: ()
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" dir="rtl">
       <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
-          <b>الحضور — وصل {arrived} من {rows?.length ?? 0}</b>
+          <b>
+            الحضور — وصل {arrived} من {rows?.length ?? 0}
+            {inv.textStyles?.["qr-checkin"]?.max !== undefined &&
+              ` · الباركودات: ${rows?.filter((r: any) => !r.disabled_at).length ?? 0} من ${inv.textStyles["qr-checkin"].max}`}
+          </b>
           <button onClick={onClose}>✕</button>
         </div>
         <ul className="overflow-auto divide-y">

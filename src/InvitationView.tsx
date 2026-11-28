@@ -662,6 +662,7 @@ function WisalTemplateView({
   // معاينة شاشة "بعد تأكيد الحضور" بوضع التصميم المباشر فقط (تتيح تعديلها)
   const [previewSuccess, setPreviewSuccess] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
+  const [qrFull, setQrFull] = useState(false)
   const [showFlash, setShowFlash] = useState(false)
   // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
   // نعطّل الزر ونعرض مؤشر تحميل عليه عشان الضيف يتأكد إن ضغطته سجّلت.
@@ -827,8 +828,9 @@ function WisalTemplateView({
       }
 
       if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const id = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
-        if (id) setQrId(id)
+        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
+        if (r.id) setQrId(r.id)
+        else if (r.full) setQrFull(true)
       }
       setSubmitted(true)
     } finally {
@@ -1217,6 +1219,11 @@ function WisalTemplateView({
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
 {qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
+{qrFull && (
+  <p className="mt-3 text-sm font-medium text-[#8C7A6B]">
+    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لبطاقات الدخول لهذه الدعوة.</EditableText>
+  </p>
+)}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
@@ -1662,6 +1669,7 @@ function WisalTemplateTwoView({
   // معاينة شاشة "بعد تأكيد الحضور" بوضع التصميم المباشر فقط (تتيح تعديلها)
   const [previewSuccess, setPreviewSuccess] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
+  const [qrFull, setQrFull] = useState(false)
   const [showFlash, setShowFlash] = useState(false)
   // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
   // نعطّل الزر ونعرض مؤشر تحميل عليه عشان الضيف يتأكد إن ضغطته سجّلت.
@@ -1860,8 +1868,9 @@ function WisalTemplateTwoView({
       }
 
       if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const id = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
-        if (id) setQrId(id)
+        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
+        if (r.id) setQrId(r.id)
+        else if (r.full) setQrFull(true)
       }
       setSubmitted(true)
     } finally {
@@ -2254,6 +2263,11 @@ function WisalTemplateTwoView({
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
 {qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
+{qrFull && (
+  <p className="mt-3 text-sm font-medium text-[#8C7A6B]">
+    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لبطاقات الدخول لهذه الدعوة.</EditableText>
+  </p>
+)}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">
@@ -2739,6 +2753,7 @@ function WisalTemplateThreeView({
   // معاينة شاشة "بعد تأكيد الحضور" بوضع التصميم المباشر فقط (تتيح تعديلها)
   const [previewSuccess, setPreviewSuccess] = useState(false)
   const [qrId, setQrId] = useState<string | null>(null)
+  const [qrFull, setQrFull] = useState(false)
   const [showFlash, setShowFlash] = useState(false)
   // يصير true من لحظة ما الضيف يضغط "إرسال التأكيد" لحد ما الطلب يخلص —
   // نعطّل الزر ونعرض مؤشر تحميل عليه عشان الضيف يتأكد إن ضغطته سجّلت.
@@ -2937,8 +2952,9 @@ function WisalTemplateThreeView({
       }
 
       if (!editable && isQrEnabled(inv) && attendance === "نعم" && guestName.trim()) {
-        const id = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
-        if (id) setQrId(id)
+        const r = await registerRsvpQr(inv, guestName, attendance, companionsValue, guestNote)
+        if (r.id) setQrId(r.id)
+        else if (r.full) setQrFull(true)
       }
       setSubmitted(true)
     } finally {
@@ -3331,6 +3347,11 @@ function WisalTemplateThreeView({
                       تم إرسال تأكيد حضورك بنجاح، شكراً لك! 🌸
                     </EditableText>
 {qrId && <RsvpQrCard inv={inv} qrId={qrId} name={guestName} />}
+{qrFull && (
+  <p className="mt-3 text-sm font-medium text-[#8C7A6B]">
+    <EditableText id="rsvp-qr-full-message">عذراً، اكتمل العدد المحدد لبطاقات الدخول لهذه الدعوة.</EditableText>
+  </p>
+)}
                   </div>
                 ) : (
                   <form onSubmit={handleRSVP} className="space-y-7">

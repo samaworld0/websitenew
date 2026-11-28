@@ -1705,6 +1705,30 @@ function InvitationForm({
             </span>
           </span>
         </label>
+        {inv.textStyles?.["qr-checkin"]?.hidden && (
+          <label className="sm:col-span-2 flex items-center gap-3 text-sm -mt-1 px-4">
+            <span className="font-bold">أقصى عدد للباركودات</span>
+            <input
+              type="number"
+              min={1}
+              max={3000}
+              placeholder="بدون حد"
+              className="w-28 rounded-lg border border-[#e5d9c3] px-3 py-1.5"
+              value={inv.textStyles?.["qr-checkin"]?.max ?? ""}
+              onChange={(e) =>
+                setInv((prev) => {
+                  const prevStyles = prev.textStyles || {}
+                  const v = e.target.value === "" ? undefined : Math.max(1, Math.min(3000, Number(e.target.value)))
+                  return {
+                    ...prev,
+                    textStyles: { ...prevStyles, "qr-checkin": { ...(prevStyles["qr-checkin"] || {}), max: v } },
+                  }
+                })
+              }
+            />
+            <span className="text-[#8a7561]">لو وصل العدد ما يطلع باركود جديد (تأكيد الحضور يبقى يتسجل).</span>
+          </label>
+        )}
 
         <label
           className={`sm:col-span-2 flex items-start gap-3 rounded-lg px-4 py-3 cursor-pointer border ${
