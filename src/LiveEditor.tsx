@@ -1410,22 +1410,12 @@ export function EditPanel() {
               <div style={row}>
                 <label style={label}>لون الخلفية</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {COLOR_PRESETS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => updateStyle(selectedId, { bgColor: c, imageUrl: undefined, videoUrl: undefined })}
-                      style={{
-                        width: 22, height: 22, borderRadius: "50%", background: c,
-                        border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
-                        cursor: "pointer",
-                      }}
-                    />
-                  ))}
+                  
                   <input
                     type="color"
                     value={st.bgColor || "#ffffff"}
                     onChange={(e) => updateStyle(selectedId, { bgColor: e.target.value, imageUrl: undefined, videoUrl: undefined })}
-                    style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+                    style={{ width: 56, height: 40, padding: 0, border: "1px solid #3A2A1E", borderRadius: 8, background: "none", cursor: "pointer" }}
                   />
                   <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>افتراضي</button>
                 </div>
@@ -1466,19 +1456,7 @@ export function EditPanel() {
               <div style={row}>
                 <label style={label}>الخط الفاصل العلوي</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                  {COLOR_PRESETS.map((c) => (
-                    <button
-                      key={c}
-                      disabled={!!st.hideBorder}
-                      onClick={() => updateStyle(selectedId, { borderColor: c })}
-                      style={{
-                        width: 22, height: 22, borderRadius: "50%", background: c,
-                        border: st.borderColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
-                        cursor: st.hideBorder ? "not-allowed" : "pointer",
-                        opacity: st.hideBorder ? 0.4 : 1,
-                      }}
-                    />
-                  ))}
+                  
                   <input
                     type="color"
                     disabled={!!st.hideBorder}
@@ -1662,22 +1640,12 @@ export function EditPanel() {
           <div style={row}>
             <label style={label}>لون النص</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {COLOR_PRESETS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => updateStyle(selectedId, { color: c })}
-                  style={{
-                    width: 22, height: 22, borderRadius: "50%", background: c,
-                    border: st.color === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
-                    cursor: "pointer",
-                  }}
-                />
-              ))}
+              
               <input
                 type="color"
                 value={st.color || "#ffffff"}
                 onChange={(e) => updateStyle(selectedId, { color: e.target.value })}
-                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+                style={{ width: 56, height: 40, padding: 0, border: "1px solid #3A2A1E", borderRadius: 8, background: "none", cursor: "pointer" }}
               />
             </div>
           </div>
@@ -1685,24 +1653,14 @@ export function EditPanel() {
           <div style={row}>
             <label style={label}>لون الخلفية</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {COLOR_PRESETS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => updateStyle(selectedId, { bgColor: c })}
-                  style={{
-                    width: 22, height: 22, borderRadius: "50%", background: c,
-                    border: st.bgColor === c ? "2px solid #F1D989" : "1px solid #3A2A1E",
-                    cursor: "pointer",
-                  }}
-                />
-              ))}
+              
               <input
                 type="color"
                 value={(st.bgColor || "#ffffff").slice(0, 7)}
                 onChange={(e) =>
                   updateStyle(selectedId, { bgColor: e.target.value + (st.bgColor && st.bgColor.length === 9 ? st.bgColor.slice(7) : "") })
                 }
-                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+                style={{ width: 56, height: 40, padding: 0, border: "1px solid #3A2A1E", borderRadius: 8, background: "none", cursor: "pointer" }}
                 title="أي لون"
               />
               <button style={btn} onClick={() => updateStyle(selectedId, { bgColor: undefined })}>بدون</button>
@@ -1794,7 +1752,7 @@ export function EditPanel() {
                 type="color"
                 value={st.borderColor || "#d4af37"}
                 onChange={(e) => updateStyle(selectedId, { borderColor: e.target.value })}
-                style={{ width: 26, height: 26, padding: 0, border: "none", background: "none" }}
+                style={{ width: 56, height: 40, padding: 0, border: "1px solid #3A2A1E", borderRadius: 8, background: "none", cursor: "pointer" }}
               />
               {st.borderColor && (
                 <span
