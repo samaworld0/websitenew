@@ -789,10 +789,15 @@ function InvitationForm({
   // على "+" ثلاث مرات أول شي.
   const [inv, setInv] = useState<Invitation>(() => ({
     ...initial,
+    // القيم الافتراضية فقط للدعوة الجديدة. الدعوة المحفوظة تنفتح بما هو
+    // محفوظ فعلاً (حتى لو فاضي = القسم مخفي)، وإلا يرجع البرنامج المحذوف
+    // كل ما فتحتي التعديل.
     schedule:
       initial.schedule && initial.schedule.length > 0
         ? initial.schedule
-        : DEFAULT_SCHEDULE.map((item) => ({ ...item })),
+        : isNew
+          ? DEFAULT_SCHEDULE.map((item) => ({ ...item }))
+          : [],
   }))
   // النسخة اللي بدأ منها النموذج — الحفظ يدمج تعديلاتك مع آخر نسخة بالقاعدة
   const baseRef = useRef<Invitation>(inv)
